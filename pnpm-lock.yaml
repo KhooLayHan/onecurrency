@@ -16,12 +16,12 @@ importers:
         version: 9.1.7
       ultracite:
         specifier: 5.6.1
-        version: 5.6.1(typescript@5.8.3)
+        version: 5.6.1(typescript@5.9.3)
 
   backend:
     dependencies:
       hono:
-        specifier: ^4.9.10
+        specifier: ^4.9.11
         version: 4.9.11
     devDependencies:
       '@types/bun':
@@ -46,7 +46,7 @@ importers:
         specifier: ^10.0.10
         version: 10.0.10
       '@types/node':
-        specifier: ^22.18.8
+        specifier: ^22.18.10
         version: 22.18.10
       chai:
         specifier: ^5.3.3
@@ -58,7 +58,7 @@ importers:
         specifier: github:foundry-rs/forge-std#v1.9.4
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       hardhat:
-        specifier: ^3.0.6
+        specifier: ^3.0.7
         version: 3.0.7
       mocha:
         specifier: ^11.7.4
@@ -80,23 +80,23 @@ importers:
         version: 19.1.0(react@19.1.0)
     devDependencies:
       '@tailwindcss/postcss':
-        specifier: ^4
+        specifier: ^4.1.14
         version: 4.1.14
       '@types/node':
-        specifier: ^20
+        specifier: ^20.19.21
         version: 20.19.21
       '@types/react':
-        specifier: ^19
+        specifier: ^19.2.2
         version: 19.2.2
       '@types/react-dom':
-        specifier: ^19
+        specifier: ^19.2.1
         version: 19.2.1(@types/react@19.2.2)
       tailwindcss:
-        specifier: ^4
+        specifier: ^4.1.14
         version: 4.1.14
       typescript:
-        specifier: ^5
-        version: 5.8.3
+        specifier: ^5.9.3
+        version: 5.9.3
 
 packages:
 
@@ -1767,6 +1767,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   typical@4.0.0:
     resolution: {integrity: sha512-VAH4IvQ7BDFYglMd7BPRDfLgxZZX4O4TFcRDA6EN5X7erNJJq+McIEp8np9aVtxrCJ6qx4GTYVfOWNjcqwZgRw==}
     engines: {node: '>=8'}
@@ -2657,9 +2662,9 @@ snapshots:
       postcss: 8.5.6
       tailwindcss: 4.1.14
 
-  '@trpc/server@11.6.0(typescript@5.8.3)':
+  '@trpc/server@11.6.0(typescript@5.9.3)':
     dependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
 
   '@typechain/ethers-v6@0.5.1(ethers@6.15.0)(typechain@8.3.2(typescript@5.8.3))(typescript@5.8.3)':
     dependencies:
@@ -3485,11 +3490,11 @@ snapshots:
 
   tinyexec@1.0.1: {}
 
-  trpc-cli@0.11.0(@trpc/server@11.6.0(typescript@5.8.3))(zod@4.1.12):
+  trpc-cli@0.11.0(@trpc/server@11.6.0(typescript@5.9.3))(zod@4.1.12):
     dependencies:
       commander: 14.0.1
     optionalDependencies:
-      '@trpc/server': 11.6.0(typescript@5.8.3)
+      '@trpc/server': 11.6.0(typescript@5.9.3)
       zod: 4.1.12
 
   ts-command-line-args@2.5.1:
@@ -3532,18 +3537,20 @@ snapshots:
 
   typescript@5.8.3: {}
 
+  typescript@5.9.3: {}
+
   typical@4.0.0: {}
 
   typical@5.2.0: {}
 
-  ultracite@5.6.1(typescript@5.8.3):
+  ultracite@5.6.1(typescript@5.9.3):
     dependencies:
       '@clack/prompts': 0.11.0
-      '@trpc/server': 11.6.0(typescript@5.8.3)
+      '@trpc/server': 11.6.0(typescript@5.9.3)
       deepmerge: 4.3.1
       jsonc-parser: 3.3.1
       nypm: 0.6.2
-      trpc-cli: 0.11.0(@trpc/server@11.6.0(typescript@5.8.3))(zod@4.1.12)
+      trpc-cli: 0.11.0(@trpc/server@11.6.0(typescript@5.9.3))(zod@4.1.12)
       zod: 4.1.12
     transitivePeerDependencies:
       - '@orpc/server'
