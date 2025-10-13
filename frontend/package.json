@@ -1,7 +1,5 @@
 {
-  "name": "onecurrency",
-  "version": "0.1.0",
-  "private": true,
+  "name": "onecurrency-frontend",
   "dependencies": {
     "next": "15.5.4",
     "react": "19.1.0",
