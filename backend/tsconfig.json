@@ -1,7 +1,17 @@
 {
+  "extends": "../tsconfig.base.json",
+
   "compilerOptions": {
-    "strict": true,
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
-  }
+    "jsxImportSource": "hono/jsx",
+    "outDir": "dist",
+    "noEmit": false,
+    "rootDir": "./src",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
 }
