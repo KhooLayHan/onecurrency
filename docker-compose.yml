@@ -1,0 +1,42 @@
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres:17.6-trixie
+    container_name: onecurrency_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT}:5432"
+    networks:
+      - onecurrency_network
+
+  # Hono Backend API Service
+  api:
+    container_name: onecurrency_api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      DATABASE_URL: ${DB_CONNECTION}://${DB_USER}:${DB_PASSWORD}@db:${DB_PORT}/${DB_NAME}
+    ports:
+      - "${LOCAL_PORT}:${API_PORT}"
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - onecurrency_network
+
+volumes:
+  db_data:
+
+networks:
+  onecurrency_network:
+    driver: bridge
