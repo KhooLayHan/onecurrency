@@ -1,7 +1,7 @@
 {
   "name": "onecurrency-frontend",
   "dependencies": {
-    "next": "15.5.4",
+    "next": "^16.0.10",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
@@ -13,13 +13,12 @@
     "format": "biome format --write .",
     "test": "vitest"
   },
-
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.14",
-    "@types/node": "^20.19.21",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.1",
-    "tailwindcss": "^4.1.14",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^20.19.27",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   }
 }
