@@ -8,3 +8,6 @@
 /*/.turbo
 
 .github/workflows/docker-publish.yml
+
+# Documents
+document/
