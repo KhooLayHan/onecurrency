@@ -156,7 +156,7 @@ Ultracite enforces strict type safety, accessibility standards, and consistent c
 - Don't use bitwise operators.
 - Don't use expressions where the operation doesn't change the value.
 - Make sure Promise-like statements are handled appropriately.
-- Don't use __dirname__ and __filename__ in the global scope.
+- Don't use **dirname** and **filename** in the global scope.
 - Prevent import cycles.
 - Don't use configured elements.
 - Don't hardcode sensitive data like API keys and tokens.
@@ -319,22 +319,55 @@ Ultracite enforces strict type safety, accessibility standards, and consistent c
 - `npx ultracite fix` - Format and fix code automatically
 - `npx ultracite check` - Check for issues without fixing
 
-## Example: Error Handling
+## Error Handling
+
+- Avoid using `try/catch` when possible. Instead, use the [neverthrow](https://github.com/supermacro/neverthrow) library for type-safe error handling with `Result` types.
+
+### Why neverthrow?
+
+- **Type-safe**: Errors are explicit in the return type
+- **Composability**: Chain operations with `map`, `andThen`, `orElse`
+- **No exceptions**: Errors are values, not control flow
+- **Predictable**: Forces callers to handle both success and failure cases
+
+### Examples
 
 ```typescript
-// ✅ Good: Comprehensive error handling
-try {
-  const result = await fetchData();
-  return { success: true, data: result };
-} catch (error) {
-  console.error("API call failed:", error);
-  return { success: false, error: error.message };
+import { ok, err, Result } from "neverthrow";
+
+// ✅ Good: Using neverthrow for explicit error handling
+async function fetchUser(id: string): Promise<Result<User, Error>> {
+  const response = await fetch(`/api/users/${id}`);
+
+  if (!response.ok) {
+    return err(new Error(`Failed to fetch user: ${response.status}`));
+  }
+
+  const user = await response.json();
+  return ok(user);
 }
 
-// ❌ Bad: Swallowing errors
-try {
-  return await fetchData();
-} catch (e) {
-  console.log(e);
+// Usage - forced to handle both cases
+const result = await fetchUser("123");
+
+result.match(
+  (user) => console.log("User:", user),
+  (error) => console.error("Error:", error),
+);
+
+// Or use map/andThen for chaining
+const userName = result
+  .map((user) => user.name)
+  .mapErr((error) => `User fetch failed: ${error.message}`);
+
+// ❌ Bad: Using try/catch (avoid when possible)
+async function fetchUserBad(id: string): Promise<User> {
+  try {
+    const response = await fetch(`/api/users/${id}`);
+    return await response.json();
+  } catch (error) {
+    // Error type is unknown, caller might not handle it
+    throw error;
+  }
 }
 ```
