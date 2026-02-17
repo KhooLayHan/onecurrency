@@ -1,7 +1,7 @@
 services:
   # PostgreSQL Database Service
   db:
-    image: postgres:17.6-trixie
+    image: postgres:18-bookworm
     container_name: onecurrency_db
     restart: always
     environment:
