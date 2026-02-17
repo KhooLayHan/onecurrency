@@ -742,9 +742,12 @@ export const auth = betterAuth({
 
 ```typescript
 // Before database operations
-await db.execute(
-  sql`SET LOCAL app.current_user_id = ${userId}; SET LOCAL app.current_session_id = ${sessionId};`,
-);
+await db.transaction(async (tx) => {
+  await db.execute(
+    sql`SET LOCAL app.current_user_id = ${userId}; SET LOCAL app.current_session_id = ${sessionId};`,
+  );
+  // ... performs audited operations within this transaction
+});
 ```
 
 ---

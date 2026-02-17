@@ -336,15 +336,16 @@ Ultracite enforces strict type safety, accessibility standards, and consistent c
 import { ok, err, Result } from "neverthrow";
 
 // ✅ Good: Using neverthrow for explicit error handling
-async function fetchUser(id: string): Promise<Result<User, Error>> {
-  const response = await fetch(`/api/users/${id}`);
-
-  if (!response.ok) {
-    return err(new Error(`Failed to fetch user: ${response.status}`));
-  }
-
-  const user = await response.json();
-  return ok(user);
+function fetchUser(id: string): ResultAsync<User, Error> {
+  return ResultAsync.fromPromise(
+    fetch(`/api/users/${id}`).then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user: ${response.status}`);
+      }
+      return response.json() as Promise<User>;
+    }),
+    (error) => (error instanceof Error ? error : new Error(String(error))),
+  );
 }
 
 // Usage - forced to handle both cases
