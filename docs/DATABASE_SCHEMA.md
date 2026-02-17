@@ -601,7 +601,7 @@ CREATE TRIGGER update_accounts_updated_at BEFORE UPDATE ON accounts
 
 ## Optional Tables (Deferred Implementation)
 
-The following tables are included in the schema for future use but implementation is deferred. May be tweaked and updated in the future:
+The following tables are included in the schema for future use but implementation is deferred. Will need to be tweaked and updated in the future:
 
 ### withdrawals
 
