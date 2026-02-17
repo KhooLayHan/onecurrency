@@ -75,6 +75,17 @@ Immutable lookup for deposit/withdrawal statuses (merged from separate tables).
 | description | TEXT         |                                           | Human-readable description                                 |
 | created_at  | TIMESTAMPTZ  | NOT NULL, DEFAULT NOW()                   | Immutable timestamp                                        |
 
+**Seed Data:**
+
+```sql
+INSERT INTO transaction_statuses (name, description) VALUES
+  ('Pending', 'Transaction initiated, awaiting processing'),
+  ('Processing', 'Transaction being processed'),
+  ('Completed', 'Transaction successfully completed'),
+  ('Failed', 'Transaction failed'),
+  ('Refunded', 'Transaction refunded');
+```
+
 #### transaction_types
 
 Immutable lookup for blockchain transaction types.
@@ -85,6 +96,15 @@ Immutable lookup for blockchain transaction types.
 | name        | VARCHAR(100) | NOT NULL, UNIQUE                          | 'Mint', 'Burn', 'Transfer' |
 | description | TEXT         |                                           | Human-readable description |
 | created_at  | TIMESTAMPTZ  | NOT NULL, DEFAULT NOW()                   | Immutable timestamp        |
+
+**Seed Data:**
+
+```sql
+INSERT INTO transaction_types (name, description) VALUES
+  ('Mint', 'Tokens minted to address'),
+  ('Burn', 'Tokens burned from address'),
+  ('Transfer', 'Tokens transferred between addresses');
+```
 
 #### networks
 
@@ -133,6 +153,16 @@ Immutable lookup for role-based access control.
 | permissions | JSONB        | NOT NULL, DEFAULT '[]'                    | Array of permission strings   |
 | created_at  | TIMESTAMPTZ  | NOT NULL, DEFAULT NOW()                   | Immutable timestamp           |
 
+**Seed Data:**
+
+```sql
+INSERT INTO roles (name, description, permissions) VALUES
+  ('user', 'Standard user', '["deposit:create", "withdrawal:create", "wallet:read"]'::jsonb),
+  ('admin', 'Administrator', '["*"]'::jsonb),
+  ('compliance', 'Compliance officer', '["blacklist:manage", "kyc:verify"]'::jsonb),
+  ('support', 'Support staff', '["user:read", "deposit:read"]'::jsonb);
+```
+
 #### user_roles
 
 Junction table for many-to-many user-role relationships. Roles are explicitly assigned.
@@ -180,7 +210,7 @@ Core user entity with Better-Auth integration and OneCurrency extensions.
 
 **Constraints:**
 
-- `uq_users_email`: UNIQUE NULLS NOT DISTINCT (email, deleted_at)
+- `uq_users_email_active`: UNIQUE (email) WHERE deleted_at IS NULL
 - `chk_deposit_limit`: CHECK (deposit_limit_cents >= 0)
 
 **Indexes:**
@@ -743,7 +773,7 @@ export const auth = betterAuth({
 ```typescript
 // Before database operations
 await db.transaction(async (tx) => {
-  await db.execute(
+  await tx.execute(
     sql`SET LOCAL app.current_user_id = ${userId}; SET LOCAL app.current_session_id = ${sessionId};`,
   );
   // ... performs audited operations within this transaction
