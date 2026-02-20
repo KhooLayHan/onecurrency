@@ -12,3 +12,5 @@
 
 # Documents
 document/
+
+packages/tsconfig.tsbuildinfo
