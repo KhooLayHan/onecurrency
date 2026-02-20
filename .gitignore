@@ -2,7 +2,10 @@
 /node_modules
 
 .env
-.env.*
+.env.local
+.env.production
+.env.testing
+.env.staging
 
 .turbo
 /*/.turbo
