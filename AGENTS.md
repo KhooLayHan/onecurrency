@@ -79,7 +79,7 @@ No test framework currently configured.
 
 - **Indent**: 2 spaces (no tabs)
 - **Line endings**: LF
-- **Quotes**: Single quotes for strings
+- **Quotes**: Double quotes for strings
 - **Semicolons**: Do not use semicolons
 - **Max line length**: 80 characters (Biome default)
 - **Trailing commas**: ES5 compatible

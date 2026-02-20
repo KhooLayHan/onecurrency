@@ -3,6 +3,7 @@
 
 .env
 .env.*
+!.env.example
 
 .turbo
 /*/.turbo
@@ -11,3 +12,5 @@
 
 # Documents
 document/
+
+packages/tsconfig.tsbuildinfo

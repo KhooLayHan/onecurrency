@@ -1,3 +1,15 @@
 {
-  "extends": "../tsconfig.base.json"
+  "extends": "../tsconfig.base.json",
+
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "incremental": true,
+    "baseUrl": ".",
+    "rootDir": "./common/src",
+    "paths": {
+      "@/*": ["common/src/*"]
+    }
+  },
+  "include": ["common/src/**/*.ts", "common/src/**/*.tsx"],
+  "exclude": ["common/node_modules"]
 }
