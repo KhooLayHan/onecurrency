@@ -1,7 +1,7 @@
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
-const PORT_NUMBER = 3030;
+const PORT_NUMBER: number = 3030 as const;
 
 export const env = createEnv({
   server: {
