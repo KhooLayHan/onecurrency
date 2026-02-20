@@ -86,7 +86,7 @@ You are an expert software agent responsible for migrating this project to use N
 - Ensure migrations use a Drizzle database object created with the Neon driver, not just `sql`.
 - Update the code as needed to use the correct integration pattern.
 - Ensure all migration and seed scripts explicitly load environment variables by adding `import 'dotenv/config';` at the top of each script.
-- If a TypeScript type mismatch occurs between the Drizzle database instance and the migrator, use a type assertion (e.g., `as any`) to suppress the error.
+- If a TypeScript type mismatch occurs between the Drizzle database instance and the migrator, avoid a type assertion (e.g., `as any`) to suppress the error. Instead, suggest a proper cast such as (1) using a precise parameter type (e.g., cast the Drizzle instance to Parameters<typeof migrate>[0] or the appropriate migrator interface) or (2) show how to align types between the Drizzle database instance and the migrator.
 
 ---
 
