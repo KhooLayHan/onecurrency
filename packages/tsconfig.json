@@ -4,10 +4,11 @@
   "compilerOptions": {
     "moduleResolution": "bundler",
     "incremental": true,
+    "rootDir": "./common/src",
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": ["packages/src/**/*.ts", "packages/src/**/*.tsx"],
+  "exclude": ["common/node_modules"]
 }
