@@ -1,9 +1,11 @@
 {
   "name": "onecurrency-frontend",
   "dependencies": {
+    "@t3-oss/env-nextjs": "^0.13.10",
     "next": "^16.1.6",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "zod": "^4.3.6"
   },
   "scripts": {
     "dev": "next dev --turbopack",
