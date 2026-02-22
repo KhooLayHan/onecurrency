@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
@@ -14,18 +15,24 @@ export const env = createEnv({
     DIRECT_DATABASE_URL: z.url(),
 
     BETTER_AUTH_SECRET: z.string().min(1),
-    BETTER_AUTH_KEY: z.httpUrl(),
+    BETTER_AUTH_URL: z.url(),
 
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
 
-    MASTER_ENCRYPTION_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+    MASTER_ENCRYPTION_KEY: z
+      .string()
+      .regex(/^0x[0-9a-fA-F]{64}$/)
+      .optional(),
 
-    ADMIN_SECRET: z.string().min(1),
+    ADMIN_SECRET: z.string().min(1).optional(),
 
-    LOCAL_RPC_URL: z.httpUrl().default("http://localhost:8545"),
-    SEPOLIA_RPC_URL: z.httpUrl(),
-    SEPOLIA_PRIVATE_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+    LOCAL_RPC_URL: z.url().default("http://localhost:8545").optional(),
+    SEPOLIA_RPC_URL: z.httpUrl().optional(),
+    SEPOLIA_PRIVATE_KEY: z
+      .string()
+      .regex(/^0x[0-9a-fA-F]{64}$/)
+      .optional(),
 
     CORS_ORIGIN: z.string().default("http://localhost:3000"),
   },
