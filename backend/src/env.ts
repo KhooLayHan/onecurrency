@@ -27,7 +27,7 @@ export const env = createEnv({
 
     ADMIN_SECRET: z.string().min(1).optional(),
 
-    LOCAL_RPC_URL: z.url().default("http://localhost:8545").optional(),
+    LOCAL_RPC_URL: z.url().optional().default("http://localhost:8545"),
     SEPOLIA_RPC_URL: z.httpUrl().optional(),
     SEPOLIA_PRIVATE_KEY: z
       .string()

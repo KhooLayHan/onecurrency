@@ -15,10 +15,10 @@ export const pool = new Pool({ connectionString: env.DATABASE_URL });
 export const db = drizzle({
   client: pool,
   schema: {
-    ...kycStatuses,
-    ...transactionStatuses,
-    ...transactionTypes,
-    ...networks,
+    kycStatuses,
+    transactionStatuses,
+    transactionTypes,
+    networks,
   },
   logger: env.NODE_ENV !== "production",
 });
