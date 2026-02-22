@@ -1,5 +1,5 @@
 import { db } from "@/src/db";
-import { transactionStatuses } from "../schema/transaction-statuses";
+import { transactionStatuses } from "../schema/transactionStatuses";
 
 export const seedTransactionStatuses = async () => {
   await db.insert(transactionStatuses).values([
