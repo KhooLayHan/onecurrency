@@ -9,13 +9,15 @@
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "bun run src/seed.ts"
+    "db:seed": "bun run src/db/seeding.ts",
+    "db:prod-migrate": "bun run src/db/migration.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
     "@t3-oss/env-core": "^0.13.10",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^1.0.0-beta.15-859cf75",
+    "drizzle-seed": "^0.3.1",
     "hono": "^4.11.9",
     "ws": "^8.19.0",
     "zod": "^4.3.6"
