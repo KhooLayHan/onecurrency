@@ -1,0 +1,1 @@
+ALTER TABLE "networks" DROP CONSTRAINT "chk_networks_contract_address_format", ADD CONSTRAINT "chk_networks_contract_address_format" CHECK ("contract_address" IS NULL OR "contract_address" ~* '^0x[a-fA-F0-9]{40}$');

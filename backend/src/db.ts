@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 import { kycStatuses } from "./db/schema/kycStatuses";
 import { networks } from "./db/schema/networks";
+import { relation_ } from "./db/schema/relations";
 import { transactionStatuses } from "./db/schema/transactionStatuses";
 import { transactionTypes } from "./db/schema/transactionTypes";
 import { env } from "./env";
@@ -19,6 +20,7 @@ export const db = drizzle({
     transactionStatuses,
     transactionTypes,
     networks,
+    relation_,
   },
   logger: env.NODE_ENV !== "production",
 });
