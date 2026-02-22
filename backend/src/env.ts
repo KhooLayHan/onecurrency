@@ -14,7 +14,7 @@ export const env = createEnv({
     DIRECT_DATABASE_URL: z.url(),
 
     BETTER_AUTH_SECRET: z.string().min(1),
-    BETTER_AUTH_KEY: z.url(),
+    BETTER_AUTH_KEY: z.httpUrl(),
 
     GOOGLE_CLIENT_ID: z.string().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
