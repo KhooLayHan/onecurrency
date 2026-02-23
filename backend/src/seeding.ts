@@ -17,9 +17,7 @@ const reset = async (): Promise<void> => {
 
   for (const { table_name } of tables.rows) {
     await db.execute(
-      sql.raw(
-        `truncate table ${sql.identifier(table_name)} restart identity cascade`
-      )
+      sql`truncate table ${sql.identifier(table_name)} restart identity cascade`
     );
   }
 };
