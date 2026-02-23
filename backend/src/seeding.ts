@@ -1,9 +1,9 @@
 import { sql } from "drizzle-orm";
 import { db, pool } from "./db";
-import { seedKycStatuses } from "./db/seed/kycStatuses";
+import { seedKycStatuses } from "./db/seed/kyc-statuses";
 import { seedNetworks } from "./db/seed/networks";
-import { seedTransactionStatuses } from "./db/seed/transactionStatuses";
-import { seedTransactionTypes } from "./db/seed/transactionTypes";
+import { seedTransactionStatuses } from "./db/seed/transaction-statuses";
+import { seedTransactionTypes } from "./db/seed/transaction-types";
 
 const reset = async (): Promise<void> => {
   const tables = await db.execute<{ table_name: string }>(

@@ -1,3 +1,3 @@
-import { relations } from "drizzle-orm/_relations";
+import { defineRelations } from "drizzle-orm";
 
-export const relation_ = relations({});
+export const relations = defineRelations({});
