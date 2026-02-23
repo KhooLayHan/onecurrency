@@ -51,7 +51,7 @@ CREATE TRIGGER "audit_wallets" AFTER INSERT OR UPDATE OR DELETE ON "wallets"
   FOR EACH ROW EXECUTE FUNCTION "audit_trigger_func"();
 
 CREATE TRIGGER "audit_deposits" AFTER INSERT OR UPDATE ON "deposits"
-  FOR EACH ROW EXECUTE FUNCTION "audit_trigger_func'"();
+  FOR EACH ROW EXECUTE FUNCTION "audit_trigger_func"();
 
 -- * NOTE: Will uncomment once `blockchain_transactions` table schema is ready 
 -- CREATE TRIGGER "audit_blockchain_transactions" AFTER INSERT OR UPDATE ON "blockchain_transactions"
