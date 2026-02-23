@@ -2,11 +2,11 @@ import "dotenv/config";
 import { neonConfig, Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
-import { kycStatuses } from "./db/schema/kycStatuses";
+import { kycStatuses } from "./db/schema/kyc-statuses";
 import { networks } from "./db/schema/networks";
 import { relation_ } from "./db/schema/relations";
-import { transactionStatuses } from "./db/schema/transactionStatuses";
-import { transactionTypes } from "./db/schema/transactionTypes";
+import { transactionStatuses } from "./db/schema/transaction-statuses";
+import { transactionTypes } from "./db/schema/transaction-types";
 import { env } from "./env";
 
 neonConfig.webSocketConstructor = ws;
@@ -23,4 +23,5 @@ export const db = drizzle({
     relation_,
   },
   logger: env.NODE_ENV !== "production",
+  casing: "snake_case",
 });

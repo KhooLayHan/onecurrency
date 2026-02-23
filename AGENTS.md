@@ -138,6 +138,37 @@ import { Button } from "@/components/Button";
 import { utils } from "../lib/utils";
 ```
 
+### Module Structure
+
+- **Avoid barrel files** (index.ts that re-exports from other files)
+- **Avoid export defaults** - always use named exports
+- **Use direct imports** to the actual source file
+
+Benefits:
+
+- Better tree-shaking
+- Improved IDE auto-import functionality
+- Explicit dependencies and better code readability
+- Prevents circular dependency issues
+
+```typescript
+// Bad - barrel file pattern
+// index.ts
+export * from "./kyc-statuses"
+export * from "./roles"
+
+// Good - direct imports in consumer files
+import { kycStatuses } from "./db/schema/kyc-statuses"
+import { roles } from "./db/schema/roles"
+```
+
+For tools like Drizzle that need to discover multiple files, use glob patterns in config:
+
+```typescript
+// drizzle.config.ts
+schema: "./src/db/schema/**/*.ts"
+```
+
 ### React/Next.js
 
 - Use Server Components by default
