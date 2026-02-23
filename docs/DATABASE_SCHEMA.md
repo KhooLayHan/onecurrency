@@ -215,7 +215,6 @@ Core user entity with Better-Auth integration and OneCurrency extensions.
 
 **Indexes:**
 
-- `idx_users_public_id`: public_id
 - `idx_users_kyc_status`: kyc_status_id
 - `idx_users_created`: created_at DESC
 
