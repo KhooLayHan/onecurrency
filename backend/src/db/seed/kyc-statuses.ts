@@ -1,5 +1,5 @@
 import { db } from "@/src/db";
-import { kycStatuses } from "../schema/kycStatuses";
+import { kycStatuses } from "../schema/kyc-statuses";
 
 export const seedKycStatuses = async (): Promise<void> => {
   await db
