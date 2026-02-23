@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db, pool } from "./db";
 import { seedKycStatuses } from "./db/seed/kyc-statuses";
 import { seedNetworks } from "./db/seed/networks";
+import { seedRoles } from "./db/seed/roles";
 import { seedTransactionStatuses } from "./db/seed/transaction-statuses";
 import { seedTransactionTypes } from "./db/seed/transaction-types";
 
@@ -28,5 +29,6 @@ await seedKycStatuses();
 await seedTransactionStatuses();
 await seedTransactionTypes();
 await seedNetworks();
+await seedRoles();
 
 await pool.end();
