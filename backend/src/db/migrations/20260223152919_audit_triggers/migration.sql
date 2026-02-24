@@ -14,7 +14,7 @@ BEGIN
     ) VALUES (
       current_user_id, current_session_id,
       TG_TABLE_NAME || '.created', TG_TABLE_NAME, NEW.id,
-      to_jsonb(NEW) - 'password', NOW()
+      to_jsonb(NEW) - 'password' - 'encrypted_private_key', NOW()
     );
     RETURN NEW;
 
@@ -26,7 +26,7 @@ BEGIN
       ) VALUES (
         current_user_id, current_session_id,
         TG_TABLE_NAME || '.updated', TG_TABLE_NAME, NEW.id,
-        to_jsonb(OLD) - 'password', to_jsonb(NEW) - 'password', NOW()
+        to_jsonb(OLD) - 'password' - 'encrypted_private_key', to_jsonb(NEW) - 'password' - 'encrypted_private_key', NOW()
       );
     END IF;
     RETURN NEW;
@@ -37,7 +37,7 @@ BEGIN
     ) VALUES (
       current_user_id, current_session_id,
       TG_TABLE_NAME || '.deleted', TG_TABLE_NAME, OLD.id,
-      to_jsonb(OLD) - 'password', NOW()
+      to_jsonb(OLD) - 'password' - 'encrypted_private_key', NOW()
     );
     RETURN OLD;
   END IF;

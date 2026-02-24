@@ -53,6 +53,11 @@ export const wallets = pgTable(
       "chk_wallets_type",
       sql`${table.walletType} IN ('CUSTODIAL', 'EXTERNAL')`
     ),
+    check(
+      "chk_wallets_encrypted_key",
+      sql`(${table.walletType} = 'CUSTODIAL' AND ${table.encryptedPrivateKey} IS NOT NULL)
+          OR (${table.walletType} = 'EXTERNAL' AND ${table.encryptedPrivateKey} IS NULL)`
+    ),
     uniqueIndex("uq_wallets_primary")
       .on(table.userId, table.networkId)
       .where(sql`${table.isPrimary} = TRUE AND ${table.deletedAt} IS NULL`),
