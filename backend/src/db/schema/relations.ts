@@ -1,5 +1,7 @@
 import { defineRelations } from "drizzle-orm";
 import { accounts } from "./accounts";
+import { auditLogs } from "./audit-logs";
+import { blacklistedAddresses } from "./blacklisted-addresses";
 import { blockchainTransactions } from "./blockchain-transactions";
 import { deposits } from "./deposits";
 import { kycStatuses } from "./kyc-statuses";
@@ -12,10 +14,13 @@ import { userRoles } from "./user-roles";
 import { users } from "./users";
 import { verifications } from "./verifications";
 import { wallets } from "./wallets";
+import { webhookEvents } from "./webhook-events";
 
 export const relations = defineRelations(
   {
     accounts,
+    auditLogs,
+    blacklistedAddresses,
     blockchainTransactions,
     deposits,
     kycStatuses,
@@ -28,6 +33,7 @@ export const relations = defineRelations(
     users,
     verifications,
     wallets,
+    webhookEvents,
   },
   (r) => ({
     users: {
@@ -40,12 +46,15 @@ export const relations = defineRelations(
       userRoles: r.many.userRoles(),
       wallets: r.many.wallets(),
       deposits: r.many.deposits(),
+      auditLogs: r.many.auditLogs(),
+      blacklistedAddressesAdded: r.many.blacklistedAddresses(),
     },
     sessions: {
       user: r.one.users({
         from: r.sessions.userId,
         to: r.users.id,
       }),
+      auditLogs: r.many.auditLogs(),
     },
     accounts: {
       account: r.one.users({
@@ -83,6 +92,7 @@ export const relations = defineRelations(
     networks: {
       wallets: r.many.wallets(),
       blockchainTransactions: r.many.blockchainTransactions(),
+      blacklistedAddresses: r.many.blacklistedAddresses(),
     },
     deposits: {
       user: r.one.users({
@@ -117,6 +127,26 @@ export const relations = defineRelations(
     },
     transactionTypes: {
       blockchainTransactions: r.many.blockchainTransactions(),
+    },
+    auditLogs: {
+      user: r.one.users({
+        from: r.auditLogs.userId,
+        to: r.users.id,
+      }),
+      session: r.one.sessions({
+        from: r.auditLogs.sessionId,
+        to: r.sessions.id,
+      }),
+    },
+    blacklistedAddresses: {
+      network: r.one.networks({
+        from: r.blacklistedAddresses.networkId,
+        to: r.networks.id,
+      }),
+      addedBy: r.one.users({
+        from: r.blacklistedAddresses.addedByUserId,
+        to: r.users.id,
+      }),
     },
   })
 );
