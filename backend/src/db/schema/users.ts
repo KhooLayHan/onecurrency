@@ -12,8 +12,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-
-// import { kycStatuses } from "./kyc-statuses";
+import { kycStatuses } from "./kyc-statuses";
 
 const MAX_DEPOSIT_LIMIT_CENTS: bigint = 100_000n;
 

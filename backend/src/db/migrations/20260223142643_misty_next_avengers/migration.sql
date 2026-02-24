@@ -61,4 +61,4 @@ CREATE INDEX "idx_verifications_identifier" ON "verifications" ("identifier");--
 CREATE INDEX "idx_verifications_expires" ON "verifications" ("expires_at");--> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
--- ALTER TABLE "users" ADD CONSTRAINT "users_kyc_status_id_kyc_statuses_id_fkey" FOREIGN KEY ("kyc_status_id") REFERENCES "kyc_statuses"("id");
+ALTER TABLE "users" ADD CONSTRAINT "users_kyc_status_id_kyc_statuses_id_fkey" FOREIGN KEY ("kyc_status_id") REFERENCES "kyc_statuses"("id");

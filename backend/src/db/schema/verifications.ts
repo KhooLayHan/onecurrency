@@ -1,7 +1,7 @@
-import { bigint, index, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
-// export const verifications = pgTable(
-"verifications",
+export const verifications = pgTable(
+  "verifications",
   {
     id: bigint("id", { mode: "bigint" })
       .primaryKey()
@@ -19,8 +19,8 @@ import { bigint, index, text, timestamp } from "drizzle-orm/pg-core";
   (table) => [
     index("idx_verifications_identifier").on(table.identifier),
     index("idx_verifications_expires").on(table.expiresAt),
-  ];
-)
+  ]
+);
 
 export type Verification = typeof verifications.$inferSelect;
 export type NewVerification = typeof verifications.$inferInsert;
