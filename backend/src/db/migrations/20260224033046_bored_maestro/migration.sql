@@ -97,6 +97,7 @@ ALTER TABLE "blockchain_transactions" ADD CONSTRAINT "blockchain_transactions_L9
 ALTER TABLE "deposits" ADD CONSTRAINT "deposits_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id");--> statement-breakpoint
 ALTER TABLE "deposits" ADD CONSTRAINT "deposits_wallet_id_wallets_id_fkey" FOREIGN KEY ("wallet_id") REFERENCES "wallets"("id");--> statement-breakpoint
 ALTER TABLE "deposits" ADD CONSTRAINT "deposits_status_id_transaction_statuses_id_fkey" FOREIGN KEY ("status_id") REFERENCES "transaction_statuses"("id");--> statement-breakpoint
+ALTER TABLE "deposits" ADD CONSTRAINT "deposits_blockchain_tx_id_blockchain_transactions_id_fkey" FOREIGN KEY ("blockchain_tx_id") REFERENCES "blockchain_transactions"("id") ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_role_id_roles_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_granted_by_user_id_users_id_fkey" FOREIGN KEY ("granted_by_user_id") REFERENCES "users"("id");--> statement-breakpoint

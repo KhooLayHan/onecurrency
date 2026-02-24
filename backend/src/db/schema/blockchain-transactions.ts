@@ -59,6 +59,19 @@ export const blockchainTransactions = pgTable(
       sql`${table.toAddress} ~* '^0x[a-fA-F0-9]{40}$'`
     ),
     check("chk_blockchain_amount_nonnegative", sql`${table.amount} >= 0`),
+    check("chk_blockchain_amount_nonnegative", sql`${table.amount} >= 0`),
+    check(
+      "chk_blockchain_block_number_nonnegative",
+      sql`${table.blockNumber} IS NULL OR ${table.blockNumber} >= 0`
+    ),
+    check(
+      "chk_blockchain_gas_used_nonnegative",
+      sql`${table.gasUsed} IS NULL OR ${table.gasUsed} >= 0`
+    ),
+    check(
+      "chk_blockchain_gas_price_nonnegative",
+      sql`${table.gasPriceWei} IS NULL OR ${table.gasPriceWei} >= 0`
+    ),
     check(
       "chk_blockchain_confirmations_nonnegative",
       sql`${table.confirmations} >= 0`
@@ -67,6 +80,7 @@ export const blockchainTransactions = pgTable(
       "chk_blockchain_nonce_nonnegative",
       sql`${table.nonce} IS NULL OR ${table.nonce} >= 0`
     ),
+
     index("idx_blockchain_tx_network").on(table.networkId),
     index("idx_blockchain_tx_type").on(table.transactionTypeId),
     index("idx_blockchain_tx_from").on(sql`LOWER(${table.fromAddress})`),
