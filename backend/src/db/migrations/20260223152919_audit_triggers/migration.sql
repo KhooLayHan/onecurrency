@@ -42,7 +42,7 @@ BEGIN
     RETURN OLD;
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = pg_catalog, pg_temp;
 
 CREATE TRIGGER "audit_users" AFTER INSERT OR UPDATE OR DELETE ON "users"
