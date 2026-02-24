@@ -41,9 +41,7 @@ export const auditLogs = pgTable(
     index("idx_audit_entity").on(table.entityType, table.entityId),
     index("idx_audit_action").on(table.action),
     index("idx_audit_created").on(table.createdAt),
-    index("idx_audit_recent")
-      .on(table.entityType, table.createdAt)
-      .where(sql`${table.createdAt} > NOW() - INTERVAL '30 days'`),
+    index("idx_audit_entity_created").on(table.entityType, table.createdAt),
     index("idx_audit_metadata_gin").using("gin", sql`${table.metadata}`),
   ]
 );
