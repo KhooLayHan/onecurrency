@@ -59,7 +59,6 @@ export const blockchainTransactions = pgTable(
       sql`${table.toAddress} ~* '^0x[a-fA-F0-9]{40}$'`
     ),
     check("chk_blockchain_amount_nonnegative", sql`${table.amount} >= 0`),
-    check("chk_blockchain_amount_nonnegative", sql`${table.amount} >= 0`),
     check(
       "chk_blockchain_block_number_nonnegative",
       sql`${table.blockNumber} IS NULL OR ${table.blockNumber} >= 0`
