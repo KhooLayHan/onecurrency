@@ -56,11 +56,9 @@ export const wallets = pgTable(
     uniqueIndex("uq_wallets_primary")
       .on(table.userId, table.networkId)
       .where(sql`${table.isPrimary} = TRUE AND ${table.deletedAt} IS NULL`),
-    uniqueIndex("uq_idx_wallets_address_network").on(
-      sql`LOWER(${table.address})`,
-      table.networkId,
-      table.deletedAt
-    ),
+    uniqueIndex("uq_idx_wallets_address_network")
+      .on(sql`LOWER(${table.address})`, table.networkId)
+      .where(sql`${table.deletedAt} IS NULL`),
     index("idx_wallets_user")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),

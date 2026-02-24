@@ -39,9 +39,6 @@ export const blockchainTransactions = pgTable(
     gasPriceWei: numeric("gas_price_wei", { precision: 78, scale: 0 }),
     isConfirmed: boolean("is_confirmed").notNull().default(false),
     confirmations: integer("confirmations").notNull().default(0),
-    requiredConfirmations: integer("required_confirmations")
-      .notNull()
-      .default(1),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -69,10 +66,6 @@ export const blockchainTransactions = pgTable(
     check(
       "chk_blockchain_nonce_nonnegative",
       sql`${table.nonce} IS NULL OR ${table.nonce} >= 0`
-    ),
-    check(
-      "chk_blockchain_required_confirmations",
-      sql`${table.requiredConfirmations} > 0`
     ),
     index("idx_blockchain_tx_network").on(table.networkId),
     index("idx_blockchain_tx_type").on(table.transactionTypeId),

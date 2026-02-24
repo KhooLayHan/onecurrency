@@ -9,7 +9,7 @@ BEGIN
   current_session_id := NULLIF(current_setting('app.current_session_id', true), '')::BIGINT;
 
   IF TG_OP = 'INSERT' THEN
-    INSERT INTO "audit_logs" (
+    INSERT INTO "public"."audit_logs" (
       user_id, session_id, action, entity_type, entity_id, new_values, created_at
     ) VALUES (
       current_user_id, current_session_id,
@@ -20,7 +20,7 @@ BEGIN
 
   ELSIF TG_OP = 'UPDATE' THEN
     IF OLD IS DISTINCT FROM NEW THEN
-      INSERT INTO "audit_logs" (
+      INSERT INTO "public"."audit_logs" (
         user_id, session_id, action, entity_type, entity_id,
         old_values, new_values, created_at
       ) VALUES (
@@ -32,7 +32,7 @@ BEGIN
     RETURN NEW;
 
   ELSIF TG_OP = 'DELETE' THEN
-    INSERT INTO "audit_logs" (
+    INSERT INTO "public"."audit_logs" (
       user_id, session_id, action, entity_type, entity_id, old_values, created_at
     ) VALUES (
       current_user_id, current_session_id,
@@ -43,6 +43,7 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+SET search_path = pg_catalog, pg_temp;
 
 CREATE TRIGGER "audit_users" AFTER INSERT OR UPDATE OR DELETE ON "users"
   FOR EACH ROW EXECUTE FUNCTION "audit_trigger_func"();

@@ -97,6 +97,10 @@ export const relations = defineRelations(
         from: r.deposits.statusId,
         to: r.transactionStatuses.id,
       }),
+      blockchainTransaction: r.one.blockchainTransactions({
+        from: r.deposits.blockchainTxId,
+        to: r.blockchainTransactions.id,
+      }),
     },
     transactionStatuses: {
       deposits: r.many.deposits(),

@@ -12,6 +12,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { blockchainTransactions } from "./blockchain-transactions";
 import { transactionStatuses } from "./transaction-statuses";
 import { users } from "./users";
 import { wallets } from "./wallets";
@@ -48,7 +49,9 @@ export const deposits = pgTable(
     exchangeRate: numeric("exchange_rate", { precision: 19, scale: 8 })
       .notNull()
       .default("1.0"),
-    blockchainTxId: bigint("blockchain_tx_id", { mode: "bigint" }),
+    blockchainTxId: bigint("blockchain_tx_id", { mode: "bigint" }).references(
+      () => blockchainTransactions.id
+    ),
     idempotencyKey: varchar("idempotency_key", { length: 255 }).unique(),
     ipAddress: inet("ip_address"),
     userAgent: text("user_agent"),
