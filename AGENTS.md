@@ -80,7 +80,6 @@ No test framework currently configured.
 - **Indent**: 2 spaces (no tabs)
 - **Line endings**: LF
 - **Quotes**: Double quotes for strings
-- **Semicolons**: Do not use semicolons
 - **Max line length**: 80 characters (Biome default)
 - **Trailing commas**: ES5 compatible
 
@@ -154,19 +153,19 @@ Benefits:
 ```typescript
 // Bad - barrel file pattern
 // index.ts
-export * from "./kyc-statuses"
-export * from "./roles"
+export * from "./kyc-statuses";
+export * from "./roles";
 
 // Good - direct imports in consumer files
-import { kycStatuses } from "./db/schema/kyc-statuses"
-import { roles } from "./db/schema/roles"
+import { kycStatuses } from "./db/schema/kyc-statuses";
+import { roles } from "./db/schema/roles";
 ```
 
 For tools like Drizzle that need to discover multiple files, use glob patterns in config:
 
 ```typescript
 // drizzle.config.ts
-schema: "./src/db/schema/**/*.ts"
+schema: "./src/db/schema/**/*.ts";
 ```
 
 ### React/Next.js
