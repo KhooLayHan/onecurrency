@@ -9,10 +9,6 @@ import {
 import { roles } from "./roles";
 import { users } from "./users";
 
-// Note: Foreign key constraints referencing users table are commented out
-// until Better-Auth integration is complete. Uncomment and enable when
-// the users table is available.
-
 export const userRoles = pgTable(
   "user_roles",
   {
