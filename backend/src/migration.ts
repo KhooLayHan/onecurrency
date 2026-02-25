@@ -8,6 +8,11 @@ if (env.DB_MIGRATION !== true) {
   process.exit(1);
 }
 
-await migrate(db, { migrationsFolder: "./src/db/migrations" })
+await migrate(
+  db,
+  env.NODE_ENV === "production"
+    ? { migrationsFolder: "./src/db/migrations/prod" }
+    : { migrationsFolder: "./src/db/migrations/dev" }
+)
   .then()
   .finally(() => pool.end());

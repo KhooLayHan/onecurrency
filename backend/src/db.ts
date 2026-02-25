@@ -23,57 +23,16 @@ import { env } from "./env";
 
 neonConfig.webSocketConstructor = ws;
 
-// const migrationPool = new Pool({
-//   connectionString: env.DIRECT_DATABASE_URL,
-//   max: 1,
-// });
-// const seedingPool = new Pool({
-//   connectionString: env.DIRECT_DATABASE_URL,
-//   max: 1,
-// });
-const developmentPool = new Pool({
-  connectionString: env.DATABASE_URL,
+const connectionString =
+  env.DB_MIGRATION || env.DB_SEEDING
+    ? env.DIRECT_DATABASE_URL
+    : env.DATABASE_URL;
+const poolSize = env.DB_MIGRATION || env.DB_SEEDING ? 1 : undefined;
+
+export const pool: Pool = new Pool({
+  connectionString,
+  max: poolSize,
 });
-const productionPool = new Pool({
-  connectionString: env.DATABASE_URL,
-});
-
-// export const migrationPool = new Pool({
-//   connectionString: env.DIRECT_DATABASE_URL,
-// });
-
-// export const seedingPool = new Pool({
-//   connectionString: env.DIRECT_DATABASE_URL,
-// });
-
-// let pool: Pool;
-// if (env.NODE_ENV === "production") {
-//   pool = new Pool({ connectionString: env.DATABASE_URL });
-// } else {
-//   pool = new Pool({ connectionString: env.DEV_DATABASE_URL });
-// }
-
-// export pool;
-// export const pool = new Pool(
-//   env.NODE_ENV === "production"
-//     ? { connectionString: env.DATABASE_URL }
-//     : { connectionString: env.DIRECT_DATABASE_URL, max: 1 }
-// );
-
-export let pool: Pool = new Pool({
-  connectionString: env.DATABASE_URL,
-});
-
-// if (env.NODE_ENV === "production") {
-//   pool = productionPool;
-// }
-
-if (env.DB_MIGRATION === true || env.DB_SEEDING === true) {
-  pool = new Pool({
-    connectionString: env.DIRECT_DATABASE_URL,
-    max: 1,
-  });
-}
 
 export const db = drizzle({
   client: pool,

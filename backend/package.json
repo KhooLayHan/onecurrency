@@ -4,7 +4,7 @@
     "dev": "bun run --hot src/index.ts",
 
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "DB_MIGRATION=true drizzle-kit migrate",
+    "db:migrate": "DB_MIGRATION=true bun run src/migration.ts",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
@@ -13,12 +13,8 @@
     "db:seed": "DB_SEEDING=true bun run src/seeding.ts",
 
     "db:prod:generate": "NODE_ENV=production drizzle-kit generate",
-    "db:prod:migrate": "NODE_ENV=production DB_MIGRATION=true bun run src/migration.ts",
-    "db:prod:push": "NODE_ENV=production drizzle-kit push",
-    "db:prod:pull": "NODE_ENV=production drizzle-kit pull",
-    "db:prod:check": "NODE_ENV=production drizzle-kit check",
-    "db:prod:up": "NODE_ENV=production drizzle-kit up",
-    "db:prod:seed": "NODE_ENV=production DB_SEEDING=true bun run src/seeding.ts"
+    "db:prod:migrate": "NODE_ENV=production DB_MIGRATION=true bun --env-file=.env.production run src/migration.ts",
+    "db:prod:seed": "NODE_ENV=production DB_SEEDING=true bun --env-file=.env.production run src/seeding.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
