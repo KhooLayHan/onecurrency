@@ -4,7 +4,7 @@
     "dev": "bun run --hot src/index.ts",
 
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "DB_MIGRATION=true bun run src/migration.ts",
+    "db:migrate": "DB_MIGRATION=true bun --env-file=.env run src/migration.ts",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
@@ -12,7 +12,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "DB_SEEDING=true bun run src/seeding.ts",
 
-    "db:prod:generate": "NODE_ENV=production drizzle-kit generate",
+    "db:prod:generate": "NODE_ENV=production bun --env-file=.env.production run drizzle-kit generate",
     "db:prod:migrate": "NODE_ENV=production DB_MIGRATION=true bun --env-file=.env.production run src/migration.ts",
     "db:prod:seed": "NODE_ENV=production DB_SEEDING=true bun --env-file=.env.production run src/seeding.ts"
   },
