@@ -5,7 +5,7 @@ import { env } from "./env";
 if (env.DB_MIGRATION !== true) {
   // TODO: Will have to install pino logger dependencies
   // logger.info("DB_MIGRATION must be set to true");
-  process.exit(1);
+  process.exit(0);
 }
 
 await migrate(
