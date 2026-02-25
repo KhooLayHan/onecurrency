@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
@@ -13,6 +12,9 @@ export const env = createEnv({
 
     DATABASE_URL: z.url(),
     DIRECT_DATABASE_URL: z.url(),
+
+    DB_SEEDING: z.stringbool().default(false),
+    DB_MIGRATION: z.stringbool().default(false),
 
     BETTER_AUTH_SECRET: z.string().min(1),
     BETTER_AUTH_URL: z.url(),

@@ -45,11 +45,10 @@ export const blacklistedAddresses = pgTable(
     ),
     index("idx_blacklist_network").on(table.networkId),
     index("idx_blacklist_source").on(table.source),
-    index("idx_blacklist_active")
-      .on(sql`LOWER(${table.address})`)
-      .where(
-        sql`${table.expiresAt} IS NULL OR ${table.expiresAt} > CURRENT_TIMESTAMP`
-      ),
+    index("idx_blacklist_active").on(
+      sql`LOWER(${table.address})`,
+      table.expiresAt
+    ),
   ]
 );
 
