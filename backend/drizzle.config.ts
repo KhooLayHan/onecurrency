@@ -4,7 +4,10 @@ import { env } from "./src/env";
 
 export default defineConfig({
   schema: "./src/db/schema/**/*.ts",
-  out: "./src/db/migrations",
+  out:
+    env.NODE_ENV === "production"
+      ? "./src/db/migrations/prod"
+      : "./src/db/migrations/dev",
   dialect: "postgresql",
   dbCredentials: {
     url: env.DIRECT_DATABASE_URL,

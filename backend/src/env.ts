@@ -14,6 +14,9 @@ export const env = createEnv({
     DATABASE_URL: z.url(),
     DIRECT_DATABASE_URL: z.url(),
 
+    DB_SEEDING: z.boolean().default(false),
+    DB_MIGRATION: z.boolean().default(false),
+
     BETTER_AUTH_SECRET: z.string().min(1),
     BETTER_AUTH_URL: z.url(),
 
