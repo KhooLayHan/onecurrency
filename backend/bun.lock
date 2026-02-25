@@ -7,7 +7,6 @@
       "dependencies": {
         "@neondatabase/serverless": "^1.0.2",
         "@t3-oss/env-core": "^0.13.10",
-        "dotenv": "^17.3.1",
         "drizzle-orm": "^1.0.0-beta.15-859cf75",
         "hono": "^4.11.9",
         "ws": "^8.19.0",
@@ -649,13 +648,6 @@
       "",
       {},
       "sha512-N+MeXYoqr3pOgn8xfyRPREN7gHakLYjhsHhWGT3fWAiL4IkAt0iDw14QiiEm2bE30c5XX5q0FtAA3CK5f9/BUg=="
-    ],
-
-    "dotenv": [
-      "dotenv@17.3.1",
-      "",
-      {},
-      "sha512-IO8C/dzEb6O3F9/twg6ZLXz164a2fhTnEWb95H23Dm4OuN+92NmEAlTrupP9VW6Jm3sO26tQlqyvyi4CsnY9GA=="
     ],
 
     "drizzle-kit": [
