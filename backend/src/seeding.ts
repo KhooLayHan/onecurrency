@@ -10,13 +10,13 @@ import { env } from "./env";
 if (env.DB_SEEDING !== true) {
   // TODO: Will have to install pino logger dependencies
   // logger.info("DB_SEEDING must be set to true");
-  process.exit(1);
+  process.exit(0);
 }
 
 if (env.NODE_ENV === "production") {
   // TODO: Will have to install pino logger dependencies
   // logger.info("Seeding not allowed in production");
-  process.exit(1);
+  process.exit(0);
 }
 
 const reset = async (): Promise<void> => {
