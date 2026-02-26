@@ -1,0 +1,191 @@
+import { faker } from "@faker-js/faker";
+
+export const BATCH_SIZE = 50;
+
+export function randomBetween(min: number, max: number): number {
+  return faker.number.int({ min, max });
+}
+
+export function randomPercentage(): number {
+  return faker.number.int({ min: 0, max: 99 });
+}
+
+export function generateEthereumAddress(): string {
+  return `0x${faker.string.hexadecimal({ length: 40, casing: "lower" })}`;
+}
+
+export function generateTransactionHash(): string {
+  return `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
+}
+
+export function generateBlockHash(): string {
+  return `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
+}
+
+export function generateStripeSessionId(): string {
+  return `cs_test_${faker.string.alphanumeric(56)}`;
+}
+
+export function generateStripeCustomerId(): string {
+  return `cus_${faker.string.alphanumeric(14)}`;
+}
+
+export function generateStripePaymentIntentId(): string {
+  return `pi_${faker.string.alphanumeric(24)}`;
+}
+
+export function generateIdempotencyKey(): string {
+  return faker.string.uuid();
+}
+
+export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
+  const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+  let random = faker.number.int({ min: 0, max: totalWeight - 1 });
+
+  for (const item of items) {
+    random -= item.weight;
+    if (random < 0) {
+      return item.value;
+    }
+  }
+
+  return items[items.length - 1].value;
+}
+
+export function distributeByPercentage(
+  total: number,
+  distribution: Record<number, number>
+): Map<number, number> {
+  const result = new Map<number, number>();
+  const totalPercentage = Object.values(distribution).reduce(
+    (sum, p) => sum + p,
+    0
+  );
+
+  let remaining = total;
+  const entries = Object.entries(distribution);
+
+  for (let i = 0; i < entries.length; i++) {
+    const [key, percentage] = entries[i];
+    const keyNum = Number.parseInt(key, 10);
+
+    if (i === entries.length - 1) {
+      result.set(keyNum, remaining);
+    } else {
+      const count = Math.floor((total * percentage) / totalPercentage);
+      result.set(keyNum, count);
+      remaining -= count;
+    }
+  }
+
+  return result;
+}
+
+export function centsToDollars(cents: bigint): string {
+  return (Number(cents) / 100).toFixed(2);
+}
+
+export function dollarsToCents(dollars: number): bigint {
+  return BigInt(Math.round(dollars * 100));
+}
+
+export function generateDepositAmount(kycStatusId: number): bigint {
+  let minDollars: number;
+  let maxDollars: number;
+
+  switch (kycStatusId) {
+    case 1: // None
+    case 4: // Rejected
+    case 5: // Expired
+      minDollars = 10;
+      maxDollars = 500;
+      break;
+    case 2: // Pending
+      minDollars = 50;
+      maxDollars = 1000;
+      break;
+    case 3: // Verified
+      minDollars = 50;
+      maxDollars = 5000;
+      break;
+    default:
+      minDollars = 10;
+      maxDollars = 500;
+  }
+
+  const amountDistribution = faker.number.int({ min: 1, max: 100 });
+
+  let amount: number;
+  if (amountDistribution <= 60) {
+    // 60% small amounts: $10-$100
+    amount = faker.number.float({ min: 10, max: 100, fractionDigits: 2 });
+  } else if (amountDistribution <= 90) {
+    // 30% medium amounts: $100-$1000
+    amount = faker.number.float({ min: 100, max: 1000, fractionDigits: 2 });
+  } else {
+    // 10% large amounts: $1000-$5000
+    amount = faker.number.float({ min: 1000, max: 5000, fractionDigits: 2 });
+  }
+
+  amount = Math.min(Math.max(amount, minDollars), maxDollars);
+
+  return dollarsToCents(amount);
+}
+
+export function calculateFee(amountCents: bigint): bigint {
+  const feePercentage = faker.number.float({
+    min: 1,
+    max: 3,
+    fractionDigits: 2,
+  });
+  return (amountCents * BigInt(Math.round(feePercentage * 100))) / 10000n;
+}
+
+export function generateUserAgent(): string {
+  const browsers = ["Chrome", "Firefox", "Safari", "Edge"];
+  const browser = faker.helpers.arrayElement(browsers);
+
+  switch (browser) {
+    case "Chrome":
+      return `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${faker.number.int({ min: 120, max: 130 })}.0.0.0 Safari/537.36`;
+    case "Firefox":
+      return `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:${faker.number.int({ min: 120, max: 130 })}.0) Gecko/20100101 Firefox/${faker.number.int({ min: 120, max: 130 })}.0`;
+    case "Safari":
+      return `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/${faker.number.int({ min: 16, max: 17 })}.0 Safari/605.1.15`;
+    case "Edge":
+      return `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${faker.number.int({ min: 120, max: 130 })}.0.0.0 Safari/537.36 Edg/${faker.number.int({ min: 120, max: 130 })}.0.0.0`;
+    default:
+      return faker.internet.userAgent();
+  }
+}
+
+export function generateProviderName(walletType: string): string | undefined {
+  if (walletType === "CUSTODIAL") {
+    return;
+  }
+
+  const providers = [
+    { value: "MetaMask", weight: 70 },
+    { value: "WalletConnect", weight: 20 },
+    { value: "Coinbase Wallet", weight: 10 },
+  ];
+
+  return weightedRandom(
+    providers.map((p) => ({ value: p.value, weight: p.weight }))
+  );
+}
+
+export function generateWalletLabel(isPrimary: boolean, index: number): string {
+  if (isPrimary) {
+    const primaryLabels = ["Main Wallet", "Primary Wallet", "Trading Wallet"];
+    return faker.helpers.arrayElement(primaryLabels);
+  }
+
+  const secondaryLabels = [
+    "Savings",
+    "Backup",
+    "DApp Wallet",
+    `Wallet ${index + 1}`,
+  ];
+  return faker.helpers.arrayElement(secondaryLabels);
+}
