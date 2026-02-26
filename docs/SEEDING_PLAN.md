@@ -7,6 +7,7 @@ This document outlines the strategy for generating realistic fake data for devel
 **Goal**: Generate 100+ users with complete related data (wallets, sessions, transactions, deposits) spanning 6 months of history.
 
 **Target Records**:
+
 - 100 users (2 special + 98 generated)
 - ~150 wallets (1-2 per user)
 - ~200 sessions (1-3 per user)
@@ -28,7 +29,7 @@ This document outlines the strategy for generating realistic fake data for devel
 
 ## Seeding Order (Dependency Chain)
 
-```
+```text
 1. Lookup Tables (Already Seeded)
    ├── kyc_statuses
    ├── transaction_statuses
@@ -37,7 +38,7 @@ This document outlines the strategy for generating realistic fake data for devel
    └── roles
 
 2. Core Entities (In Order)
-   ├── Special Users (admin@onecurrency.com, test@onecurrency.com)
+   ├── Special Users (admin@onecurrency.com, user@onecurrency.com)
    ├── Regular Users (98 generated)
    ├── Wallets (1-2 per user)
    ├── Sessions (1-3 per user)
@@ -75,9 +76,9 @@ export interface SeedConfig {
   deposits: {
     perUser: { min: number; max: number };
     statusDistribution: {
-      completed: number;    // 60% - Successful end-to-end
-      pending: number;      // 20% - User hasn't finished Stripe checkout
-      failedNoTx: number;   // 15% - Card declined, no blockchain tx
+      completed: number; // 60% - Successful end-to-end
+      pending: number; // 20% - User hasn't finished Stripe checkout
+      failedNoTx: number; // 15% - Card declined, no blockchain tx
       hybridFailed: number; // 5% - Stripe worked, blockchain failed
     };
   };
@@ -91,11 +92,11 @@ const defaultSeedConfig: SeedConfig = {
   users: {
     count: 100,
     kycDistribution: {
-      1: 30,  // None - New users
-      2: 20,  // Pending - In progress
-      3: 40,  // Verified - Approved
-      4: 8,   // Rejected - Failed KYC
-      5: 2,   // Expired - Expired verification
+      1: 30, // None - New users
+      2: 20, // Pending - In progress
+      3: 40, // Verified - Approved
+      4: 8, // Rejected - Failed KYC
+      5: 2, // Expired - Expired verification
     },
     dateRangeMonths: 6,
     specialUsers: [
@@ -123,19 +124,19 @@ const defaultSeedConfig: SeedConfig = {
   sessions: { perUser: { min: 1, max: 3 } },
   userRoles: {
     roleDistribution: {
-      1: 95,  // user
-      2: 2,   // admin
-      3: 1,   // compliance
-      4: 2,   // support
+      1: 95, // user
+      2: 2, // admin
+      3: 1, // compliance
+      4: 2, // support
     },
   },
   deposits: {
     perUser: { min: 3, max: 5 },
     statusDistribution: {
-      completed: 60,    // Stripe success → Mint success
-      pending: 20,      // User in Stripe checkout
-      failedNoTx: 15,   // Card declined
-      hybridFailed: 5,   // Stripe success → Mint failed
+      completed: 60, // Stripe success → Mint success
+      pending: 20, // User in Stripe checkout
+      failedNoTx: 15, // Card declined
+      hybridFailed: 5, // Stripe success → Mint failed
     },
   },
 };
@@ -146,6 +147,7 @@ const defaultSeedConfig: SeedConfig = {
 ### Users
 
 **KYC Status Distribution**:
+
 - 30% `None` (ID: 1) - New users who haven't started KYC
 - 20% `Pending` (ID: 2) - Documents submitted, awaiting review
 - 40% `Verified` (ID: 3) - KYC approved, full access
@@ -153,6 +155,7 @@ const defaultSeedConfig: SeedConfig = {
 - 2% `Expired` (ID: 5) - KYC verification expired
 
 **Deposit Limits by KYC Status**:
+
 - None/Rejected/Expired: $100-$500 (1,000-5,000 cents)
 - Pending: $500-$1,000 (5,000-10,000 cents)
 - Verified: $1,000-$10,000 (10,000-100,000 cents)
@@ -164,18 +167,22 @@ const defaultSeedConfig: SeedConfig = {
 **Quantity**: 1-2 wallets per user (random)
 
 **Type Distribution**:
+
 - 80% `EXTERNAL` (MetaMask, WalletConnect, etc.)
 - 20% `CUSTODIAL` (platform-managed)
 
 **Network**:
+
 - 100% Sepolia (network_id: 1, chain_id: 11155111)
 - Primary wallet flag: 1st wallet is primary
 
 **Wallet Labels**:
+
 - Primary: "Main Wallet", "Trading Wallet"
 - Secondary: "Savings", "Backup", "DApp Wallet"
 
 **Providers** (for EXTERNAL):
+
 - MetaMask (70%)
 - WalletConnect (20%)
 - Coinbase Wallet (10%)
@@ -185,10 +192,12 @@ const defaultSeedConfig: SeedConfig = {
 **Quantity**: 1-3 sessions per user
 
 **Status Distribution**:
+
 - 40% Active (expires_at > now + 7 days)
 - 60% Expired (expires_at < now)
 
 **Data**:
+
 - Realistic user agents (Chrome, Firefox, Safari)
 - Random IP addresses
 - Created dates within user registration date
@@ -196,6 +205,7 @@ const defaultSeedConfig: SeedConfig = {
 ### User Roles
 
 **Distribution**:
+
 - 95% `user` role (ID: 1)
 - 2% `admin` role (ID: 2)
 - 1% `compliance` role (ID: 3)
@@ -206,16 +216,19 @@ const defaultSeedConfig: SeedConfig = {
 ### Blockchain Transactions
 
 **Type Distribution**:
+
 - 70% `Mint` (token minting from deposits)
 - 20% `Transfer` (user-to-user transfers)
 - 10% `Burn` (token redemption)
 
 **Status Logic**:
+
 - For completed deposits: `is_confirmed: true`, `confirmations: 1-50`
 - For hybrid-failed: `is_confirmed: false`, `confirmations: 0`, `gas_used: 0`
 - For failed/pending deposits: No blockchain transaction
 
 **Realistic Values**:
+
 - Gas price: 10-100 gwei
 - Gas used: 21,000-150,000
 - Block numbers: Recent Sepolia blocks
@@ -250,6 +263,7 @@ const defaultSeedConfig: SeedConfig = {
    - Blockchain tx: `is_confirmed: false`, `gas_used: 0`
 
 **Amount Distribution**:
+
 - 60% Small: $10-$100 (1,000-10,000 cents)
 - 30% Medium: $100-$1,000 (10,000-100,000 cents)
 - 10% Large: $1,000-$5,000 (100,000-500,000 cents)
@@ -261,11 +275,13 @@ const defaultSeedConfig: SeedConfig = {
 **Quantity**: ~50 codes
 
 **Types**:
+
 - Email verification (60%)
 - Password reset (30%)
 - 2FA setup (10%)
 
 **Status**:
+
 - 70% Expired
 - 30% Active (recently created)
 
@@ -274,12 +290,14 @@ const defaultSeedConfig: SeedConfig = {
 **Quantity**: ~10 addresses
 
 **Reasons**:
+
 - "OFAC sanctioned entity" (40%)
 - "Suspicious activity detected" (30%)
 - "Fraudulent transaction pattern" (20%)
 - "Internal compliance flag" (10%)
 
 **Sources**:
+
 - OFAC (50%)
 - Chainalysis (30%)
 - Internal (20%)
@@ -291,6 +309,7 @@ const defaultSeedConfig: SeedConfig = {
 **Quantity**: ~100 events
 
 **Event Types**:
+
 - `checkout.session.completed` (60%)
 - `payment_intent.created` (15%)
 - `payment_intent.succeeded` (10%)
@@ -298,6 +317,7 @@ const defaultSeedConfig: SeedConfig = {
 - `charge.dispute.created` (5%)
 
 **Processing Status**:
+
 - 80% Processed successfully
 - 15% Unprocessed (pending)
 - 5% Failed with error
@@ -308,10 +328,10 @@ const defaultSeedConfig: SeedConfig = {
 
 ```typescript
 // Ethereum Address (40 hex chars + 0x prefix)
-const address = `0x${faker.string.hexadecimal({ length: 40, casing: 'lower' })}`;
+const address = `0x${faker.string.hexadecimal({ length: 40, casing: "lower" })}`;
 
 // Transaction Hash (64 hex chars + 0x prefix)
-const txHash = `0x${faker.string.hexadecimal({ length: 64, casing: 'lower' })}`;
+const txHash = `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
 
 // Stripe Session ID
 const stripeSessionId = `cs_test_${faker.string.alphanumeric(56)}`;
@@ -323,7 +343,7 @@ const stripeCustomerId = `cus_${faker.string.alphanumeric(14)}`;
 const stripePaymentIntentId = `pi_${faker.string.alphanumeric(24)}`;
 
 // Block Hash
-const blockHash = `0x${faker.string.hexadecimal({ length: 64, casing: 'lower' })}`;
+const blockHash = `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
 ```
 
 ### Date Generation
@@ -336,9 +356,10 @@ const createdAt = faker.date.past({ years: 0.5 });
 const sessionCreatedAt = faker.date.between(createdAt, new Date());
 
 // Deposits: after user creation, recent ones for pending status
-const depositCreatedAt = status === 'pending'
-  ? faker.date.recent({ days: 1 })
-  : faker.date.between(createdAt, new Date());
+const depositCreatedAt =
+  status === "pending"
+    ? faker.date.recent({ days: 1 })
+    : faker.date.between(createdAt, new Date());
 ```
 
 ## Batch Insert Strategy
@@ -351,7 +372,7 @@ const BATCH_SIZE = 50;
 async function batchInsert<T>(
   table: PgTable,
   records: T[],
-  batchSize = BATCH_SIZE
+  batchSize = BATCH_SIZE,
 ): Promise<void> {
   for (let i = 0; i < records.length; i += batchSize) {
     const batch = records.slice(i, i + batchSize);
@@ -363,6 +384,7 @@ async function batchInsert<T>(
 ## Special Users
 
 ### Admin User
+
 - **Email**: `admin@onecurrency.com`
 - **Password**: `Admin123!` (pre-hashed)
 - **Role**: `admin` (full permissions)
@@ -370,8 +392,9 @@ async function batchInsert<T>(
 - **Deposit Limit**: $10,000
 
 ### Test User
-- **Email**: `test@onecurrency.com`
-- **Password**: `Test123!` (pre-hashed)
+
+- **Email**: `user@onecurrency.com`
+- **Password**: `User123!` (pre-hashed)
 - **Role**: `user` (standard permissions)
 - **KYC**: Verified
 - **Deposit Limit**: $1,000
@@ -396,7 +419,7 @@ const passwordHash = await bcrypt.hash("Admin123!", 10);
 
 ## File Structure
 
-```
+```text
 backend/src/db/seed/
 ├── index.ts                    # Main orchestrator & export
 ├── config.ts                   # Default configurations
@@ -439,6 +462,7 @@ async function main() {
 ## Audit Logs Note
 
 Audit logs are automatically created by database triggers for:
+
 - INSERT/UPDATE on `users`
 - INSERT/UPDATE on `wallets`
 - INSERT/UPDATE on `deposits`
@@ -468,5 +492,5 @@ When implementing deferred tables:
 
 ---
 
-*Last Updated: February 2026*
-*Schema Version: 1.1*
+_Last Updated: February 2026_
+_Schema Version: 1.1_
