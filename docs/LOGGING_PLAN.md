@@ -25,10 +25,10 @@ This document establishes a centralized, security-focused logging system for One
 │   │ User-safe    │          │  neverthrow  │                          │
 │   │   Errors     │          │  Pino→stdout │                          │
 │   └──────────────┘          └──────┬───────┘                          │
-│                                    │                                  │
-│                     ┌──────────────┼─────────────────┐                │
-│                     │              │                 │                │
-│                     ▼              ▼                 ▼                │
+│                                    │              TCP / Drizzle       │
+│                     ┌──────────────│─────────────────┐                │
+│                     │                                │                │
+│                     ▼                                ▼                │
 │               ┌──────────┐   ┌─────────────┐   ┌────────────┐         │
 │               │ Docker   │   │ BetterStack │   │ PostgreSQL │         │
 │               │ Log      │──►│ (7 days)    │   │ (Permanent)│         │
@@ -310,14 +310,14 @@ deposit.blockchain.failed (FAILURE)
 
 ### MASKING RULES
 
-| Data Type          | Original              | Production           | Staging              | Development          |
-| ------------------ | --------------------- | -------------------- | -------------------- | -------------------- |
-| **Email**          | `john@example.com`    | `joh***@example.com` | `joh***@example.com` | `joh***@example.com` |
-| **Wallet Address** | 0x1234567890abcdef... | Not logged           | `0x1234...cdef`      | `0x1234...cdef`      |
-| **TX Hash**        | 0xabc123def456...     | Not logged           | `0xabc1...f456`      | `0xabc1...f456`      |
-| **IP Address**     | 192.168.1.1           | `US` (country only)  | `192.168.x.x`        | Full                 |
-| **User Agent**     | Mozilla/5.0...        | Not logged           | Browser/OS only      | Full                 |
-| **Error Messages** | Full stack trace      | Error code only      | Sanitized            | Full                 |
+| Data Type          | Original                | Production           | Staging              | Development          |
+| ------------------ | ----------------------- | -------------------- | -------------------- | -------------------- |
+| **Email**          | `john@example.com`      | `joh***@example.com` | `joh***@example.com` | `joh***@example.com` |
+| **Wallet Address** | `0x1234567890abcdef...` | Not logged           | `0x1234...cdef`      | `0x1234...cdef`      |
+| **TX Hash**        | `0xabc123def456...`     | Not logged           | `0xabc1...f456`      | `0xabc1...f456`      |
+| **IP Address**     | `192.168.1.1`           | `US` (country only)  | `192.168.x.x`        | Full                 |
+| **User Agent**     | Mozilla/5.0...          | Not logged           | Browser/OS only      | Full                 |
+| **Error Messages** | Full stack trace        | Error code only      | Sanitized            | Full                 |
 
 ### TOKENIZATION (For Internal Reference)
 
