@@ -47,6 +47,7 @@ services:
     environment:
       # Pass the token so Vector can authenticate with BetterStack
       - BETTERSTACK_SOURCE_TOKEN=${BETTERSTACK_SOURCE_TOKEN}
+      - BETTERSTACK_INGESTING_HOST=${BETTERSTACK_INGESTING_HOST}
     depends_on:
       - api
     networks:
