@@ -6,7 +6,7 @@ const PORT_NUMBER: number = 3030 as const;
 export const env = createEnv({
   server: {
     NODE_ENV: z
-      .enum(["development", "production", "test"])
+      .enum(["development", "testing", "staging", "production"])
       .default("development"),
     API_PORT: z.coerce.number().int().min(1).default(PORT_NUMBER),
 
@@ -37,6 +37,9 @@ export const env = createEnv({
       .optional(),
 
     CORS_ORIGIN: z.string().default("http://localhost:3000"),
+
+    BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
+    BETTERSTACK_INGESTING_HOST: z.url(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
