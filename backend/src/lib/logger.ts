@@ -97,7 +97,7 @@ if (isDev) {
 }
 
 // Create the logger instance
-const logger = pino(loggerConfig);
+export const logger = pino(loggerConfig);
 
 // Sampling utility for production
 export const shouldLog = (category: string): boolean => {

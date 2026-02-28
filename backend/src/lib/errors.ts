@@ -1,232 +1,208 @@
-// import { err, ok, type Result } from "neverthrow";
-// import { logger } from "./logger";
+// Error type definitions
+export type AppError =
+  | {
+      type: "STRIPE_CARD_DECLINED";
+      code: string;
+      declineCode?: string;
+      userMessage: string;
+    }
+  | {
+      type: "BLOCKCHAIN_MINT_FAILED";
+      txHash?: string;
+      reason: string;
+      userMessage: string;
+    }
+  | {
+      type: "BLOCKCHAIN_CONFIRMATION_FAILED";
+      txHash: string;
+      attempts: number;
+      userMessage: string;
+    }
+  | {
+      type: "KYC_REQUIRED";
+      currentStatus: string;
+      requiredTier: string;
+      userMessage: string;
+    }
+  | {
+      type: "VALIDATION_FAILED";
+      field: string;
+      constraint: string;
+      userMessage: string;
+    }
+  | {
+      type: "RATE_LIMIT_EXCEEDED";
+      limit: number;
+      window: string;
+      retryAfter: number;
+      userMessage: string;
+    }
+  | {
+      type: "INTERNAL_ERROR";
+      reference: string;
+      userMessage: string;
+    };
 
-// export type ErrorSeverity = "warn" | "error" | "fatal";
-
-// export type AppError = {
-//   type: string;
-//   code: string;
-//   userMessage: string;
-//   internalMessage: string;
-//   severity: ErrorSeverity;
-//   context?: Record<string, unknown>;
+// User-friendly error messages
+// const ERROR_MESSAGES: Record<AppError["type"], string> = {
+//   STRIPE_CARD_DECLINED:
+//     "Your payment was declined. Please check your card details or try a different payment method.",
+//   BLOCKCHAIN_MINT_FAILED:
+//     "We're experiencing technical difficulties processing your deposit. Our team has been notified and will resolve this shortly.",
+//   BLOCKCHAIN_CONFIRMATION_FAILED:
+//     "Your deposit is taking longer than expected to confirm. Please check back in a few minutes.",
+//   KYC_REQUIRED:
+//     "Please complete identity verification to proceed with deposits over $1,000.",
+//   VALIDATION_FAILED: "Please check your input and try again.",
+//   RATE_LIMIT_EXCEEDED: "Too many requests. Please try again in a few minutes.",
+//   INTERNAL_ERROR:
+//     "Something went wrong. Please try again later or contact support if the issue persists.",
 // };
 
-// export const CRITICAL_EVENTS = [
-//   "system.startup",
-//   "system.crash",
-//   "system.shutdown",
-//   "db.connection.failed",
-//   "deposit.blockchain.failed",
-//   "deposit.stripe.failed",
-//   "encryption.key.error",
-//   "webhook.processing.failed",
-//   "auth.system.error",
-//   "rate.limit.hit",
-// ] as const;
+// Generate unique error reference for tracking
+// const generateReference = (): string =>
+//   `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-// export type CriticalEventType = (typeof CRITICAL_EVENTS)[number];
-
-// type CreateErrorOptions = {
-//   type: string;
-//   code: string;
-//   userMessage: string;
-//   internalMessage: string;
-//   severity?: ErrorSeverity;
-//   context?: Record<string, unknown>;
-// };
-
-// export function createError(options: CreateErrorOptions): AppError {
-//   return {
-//     type: options.type,
-//     code: options.code,
-//     userMessage: options.userMessage,
-//     internalMessage: options.internalMessage,
-//     // severity: options.severity ?? "error",
-//     // context: options.context,
-//   };
-// }
-
-// export function logError(
-//   error: AppError,
-//   correlationId?: string,
-//   actor?: { user_id?: string; user_type?: string }
-// ): void {
-//   const isCritical = CRITICAL_EVENTS.includes(error.type as CriticalEventType);
-
-//   const logData = {
-//     event: {
-//       type: error.type,
-//       category: "system" as const,
-//       severity: isCritical ? ("error" as const) : error.severity,
-//       outcome: "failure" as const,
-//       correlation_id: correlationId,
-//     },
-//     actor: actor || { user_type: "system" as const },
-//     error: {
-//       type: error.type,
-//       code: error.code,
-//       user_message: error.userMessage,
-//       internal_message: error.internalMessage,
-//     },
-//     context: error.context,
-//   };
-
-//   if (error.severity === "fatal" || isCritical) {
-//     logger.fatal(error.internalMessage, logData);
-//   } else if (error.severity === "error") {
-//     logger.error(error.internalMessage, logData);
-//   } else {
-//     logger.warn(error.internalMessage, logData);
+// Extract source information from stack trace (BetterStack best practice)
+// const getSourceInfo = (): { file?: string; line?: string } => {
+//   try {
+//     const stack = new Error().stack;
+//     if (!stack) {
+//       return {};
+//     }
+//     // Parse stack to get caller location (skip this function and createError)
+//     const lines = stack.split("\n");
+//     const callerLine = lines[3]; // 0: Error, 1: getSourceInfo, 2: createError, 3: caller
+//     const match = callerLine?.match(/\((.+):(\d+):(\d+)\)$/);
+//     if (match) {
+//       return {
+//         file: match[1].split("/").pop(), // Just filename
+//         line: match[2],
+//       };
+//     }
+//     return {};
+//   } catch {
+//     return {};
 //   }
-// }
-
-// type CreateLoggedErrorOptions = {
-//   type: string;
-//   code: string;
-//   userMessage: string;
-//   internalMessage: string;
-//   severity?: ErrorSeverity;
-//   context?: Record<string, unknown>;
-//   correlationId?: string;
-//   actor?: { user_id?: string; user_type?: string };
 // };
 
-// export function createLoggedError(
-//   options: CreateLoggedErrorOptions
+// Error factory with automatic logging
+// export function createError<T extends AppError["type"]>(
+//   type: T,
+//   context: Omit<Extract<AppError, { type: T }>, "type" | "userMessage">,
+//   internalDetails?: Record<string, unknown>
 // ): Result<never, AppError> {
-//   const error = createError(options);
-//   logError(error, options.correlationId, options.actor);
+//   const userMessage = ERROR_MESSAGES[type] || "An unexpected error occurred.";
+//   const reference = generateReference();
+//   const sourceInfo = getSourceInfo();
+//   // Create the error object
+//   const error = {
+//     type,
+//     ...context,
+//     userMessage,
+//   } as AppError;
+//   // Log the error immediately (BetterStack best practice: include context)
+//   logger.error({
+//     event: {
+//       type: `error.${type.toLowerCase()}`,
+//       category: "error",
+//       severity: getSeverity(type),
+//       outcome: "failure",
+//     },
+//     error: {
+//       type,
+//       reference,
+//       code: "code" in context ? context.code : undefined,
+//       user_message: userMessage,
+//       internal_details: sanitizeInternalDetails(internalDetails),
+//     },
+//     // BetterStack best practice: include source information
+//     source: {
+//       file: sourceInfo.file,
+//       line: sourceInfo.line,
+//     },
+//   });
 //   return err(error);
 // }
 
-// type OkWithLogOptions = {
-//   value: unknown;
-//   eventType: string;
-//   correlationId?: string;
-//   actor?: { user_id?: string; user_type?: string };
-//   context?: Record<string, unknown>;
-// };
-
-// export function okWithLog(options: OkWithLogOptions): Result<unknown, never> {
-//   logger.info(`Operation succeeded: ${options.eventType}`, {
-//     event: {
-//       type: options.eventType,
-//       category: "business" as const,
-//       severity: "info" as const,
-//       outcome: "success" as const,
-//       correlation_id: options.correlationId,
-//     },
-//     actor: options.actor || { user_type: "system" as const },
-//     context: options.context,
-//   });
-//   return ok(options.value);
-// }
-
-// type TryCatchOptions = {
-//   fn: () => unknown;
-//   errorType: string;
-//   errorCode: string;
-//   userMessage: string;
-//   correlationId?: string;
-//   actor?: { user_id?: string; user_type?: string };
-// };
-
-// export function tryCatch(options: TryCatchOptions): Result<unknown, AppError> {
-//   try {
-//     const result = options.fn();
-//     return ok(result);
-//   } catch (error) {
-//     const internalMessage =
-//       error instanceof Error ? error.message : String(error);
-//     const appError = createError({
-//       type: options.errorType,
-//       code: options.errorCode,
-//       userMessage: options.userMessage,
-//       internalMessage,
-//       severity: "error",
-//       context: {
-//         original_error: error instanceof Error ? error.name : "Unknown",
-//       },
-//     });
-//     logError(appError, options.correlationId, options.actor);
-//     return err(appError);
+// Helper to determine severity based on error type
+// function getSeverity(type: AppError["type"]): string {
+//   switch (type) {
+//     case "BLOCKCHAIN_MINT_FAILED":
+//     case "INTERNAL_ERROR":
+//       return "error";
+//     case "RATE_LIMIT_EXCEEDED":
+//       return "warn";
+//     default:
+//       return "warn";
 //   }
 // }
 
-// type AsyncTryCatchOptions = {
-//   fn: () => Promise<unknown>;
-//   errorType: string;
-//   errorCode: string;
-//   userMessage: string;
-//   correlationId?: string;
-//   actor?: { user_id?: string; user_type?: string };
-// };
+// // Sanitize internal details before logging
+// function sanitizeInternalDetails(
+//   details?: Record<string, unknown>
+// ): Record<string, unknown> | undefined {
+//   if (!details) return;
+//   const sensitiveKeys = [
+//     "password",
+//     "token",
+//     "secret",
+//     "privateKey",
+//     "apiKey",
+//     "creditCard",
+//   ];
+//   return Object.entries(details).reduce(
+//     (acc, [key, value]) => {
+//       if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk))) {
+//         acc[key] = "[REDACTED]";
+//       } else {
+//         acc[key] = value;
+//       }
+//       return acc;
+//     },
+//     {} as Record<string, unknown>
+//   );
+// }
 
-// export async function asyncTryCatch(
-//   options: AsyncTryCatchOptions
-// ): Promise<Result<unknown, AppError>> {
+// // Success logging helper for consistency
+// export function logSuccess<T>(
+//   eventType: string,
+//   data: T,
+//   context: Record<string, unknown>
+// ): Result<T, never> {
+//   logger.info({
+//     event: {
+//       type: eventType,
+//       category: "business",
+//       severity: "info",
+//       outcome: "success",
+//     },
+//     context: {
+//       ...context,
+//     },
+//   });
+//   return ok(data);
+// }
+
+// // Async wrapper for Promise-based functions
+// export async function fromPromise<T>(
+//   promise: Promise<T>,
+//   errorFn: (e: unknown) => AppError
+// ): Promise<Result<T, AppError>> {
 //   try {
-//     const result = await options.fn();
+//     const result = await promise;
 //     return ok(result);
-//   } catch (error) {
-//     const internalMessage =
-//       error instanceof Error ? error.message : String(error);
-//     const appError = createError({
-//       type: options.errorType,
-//       code: options.errorCode,
-//       userMessage: options.userMessage,
-//       internalMessage,
-//       severity: "error",
-//       context: {
-//         original_error: error instanceof Error ? error.name : "Unknown",
-//       },
-//     });
-//     logError(appError, options.correlationId, options.actor);
-//     return err(appError);
+//   } catch (e) {
+//     return err(errorFn(e));
 //   }
 // }
 
-// export function logSystemStartup(): void {
-//   logger.info("System startup completed", {
-//     event: {
-//       type: "system.startup" as const,
-//       category: "system" as const,
-//       severity: "info" as const,
-//       outcome: "success" as const,
-//     },
-//     actor: { user_type: "system" as const },
-//   });
-// }
-
-// export function logSystemShutdown(signal: string): void {
-//   logger.warn(`System shutdown initiated via ${signal}`, {
-//     event: {
-//       type: "system.shutdown" as const,
-//       category: "system" as const,
-//       severity: "warn" as const,
-//       outcome: "success" as const,
-//     },
-//     actor: { user_type: "system" as const },
-//     context: { signal },
-//   });
-// }
-
-// export function logSystemCrash(error: unknown): void {
-//   const message = error instanceof Error ? error.message : String(error);
-//   logger.fatal(`System crash: ${message}`, {
-//     event: {
-//       type: "system.crash" as const,
-//       category: "system" as const,
-//       severity: "fatal" as const,
-//       outcome: "failure" as const,
-//     },
-//     actor: { user_type: "system" as const },
-//     error: {
-//       type: "system.crash",
-//       code: "UNHANDLED_EXCEPTION",
-//       user_message: "An unexpected error occurred. Please try again later.",
-//       internal_message: message,
-//     },
-//   });
+// // Type guard for error checking
+// export function isAppError(error: unknown): error is AppError {
+//   return (
+//     typeof error === "object" &&
+//     error !== null &&
+//     "type" in error &&
+//     "userMessage" in error
+//   );
 // }

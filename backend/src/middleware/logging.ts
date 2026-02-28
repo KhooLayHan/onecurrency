@@ -1,243 +1,143 @@
-// import type { MiddlewareHandler } from "hono";
-// import { env } from "../env";
-// import { logger } from "../lib/logger";
+// import type { Context, Next } from "hono";
+// import { logger, shouldLog } from "../lib/logger";
 
-// const RADIX_BASE = 36;
-// const RANDOM_START_INDEX = 2;
-// const RANDOM_LENGTH = 6;
-
-// const CLIENT_ERROR_THRESHOLD = 400;
-// const SERVER_ERROR_THRESHOLD = 500;
-
-// const MILLISECONDS_PER_SECOND = 1000;
-
-// function generateCorrelationId(): string {
-//   const timestamp = Date.now().toString(RADIX_BASE);
-//   const random = Math.random()
-//     .toString(RADIX_BASE)
-//     .substring(RANDOM_START_INDEX, RANDOM_START_INDEX + RANDOM_LENGTH);
-//   return `req_${timestamp}_${random}`;
+// // Extend Hono context types
+// declare module "hono" {
+//   interface ContextVariableMap {
+//     requestId: string;
+//     startTime: number;
+//     userId?: string;
+//   }
 // }
 
-// function extractClientInfo(c: {
-//   req: {
-//     header: (name: string) => string | undefined;
-//   };
-// }): { country?: string; city?: string } {
-//   const cfIPCountry = c.req.header("CF-IPCountry");
-//   if (cfIPCountry) {
-//     return { country: cfIPCountry };
+// // Extract country from various sources (headers, CF, etc.)
+// const extractCountry = (c: Context): string => {
+//   // Try Cloudflare header first
+//   const cfCountry = c.req.header("CF-IPCountry");
+//   if (cfCountry) {
+//     return cfCountry;
+//   }
+//   // Try custom header
+//   const customCountry = c.req.header("X-Country-Code");
+//   if (customCountry) {
+//     return customCountry;
+//   }
+//   // Default
+//   return "unknown";
+// };
+// // Generate correlation ID
+// const generateRequestId = (): string => `req_${crypto.randomUUID()}`;
+
+// export async function loggingMiddleware(c: Context, next: Next) {
+//   const startTime = Date.now();
+//   const requestId = generateRequestId();
+
+//   // Store in context for correlation
+//   c.set("requestId", requestId);
+//   c.set("startTime", startTime);
+//   // Add to response headers
+//   c.header("X-Request-ID", requestId);
+//   // Execute request
+
+//   await next();
+
+//   // Calculate duration
+//   const duration = Date.now() - startTime;
+//   const statusCode = c.res.status;
+
+//   // Determine log level based on status
+//   let severity = "info";
+//   if (statusCode >= 500) {
+//     severity = "error";
+//   } else if (statusCode >= 400) {
+//     severity = "warn";
 //   }
 
-//   return {};
-// }
+//   // Determine category for sampling
+//   const category = c.req.path.includes("/deposits")
+//     ? "deposit"
+//     : c.req.path.includes("/auth")
+//       ? "security"
+//       : "api";
 
-// function getSeverityFromStatusCode(statusCode: number): string {
-//   if (statusCode >= SERVER_ERROR_THRESHOLD) {
-//     return "error";
-//   }
-//   if (statusCode >= CLIENT_ERROR_THRESHOLD) {
-//     return "warn";
-//   }
-//   return "info";
-// }
+//   // Check sampling
+//   if (!shouldLog(category)) return;
 
-// export const requestLoggingMiddleware: MiddlewareHandler = async (c, next) => {
-//   const startTime = performance.now();
-//   const correlationId =
-//     c.req.header("x-correlation-id") || generateCorrelationId();
-
-//   c.header("x-correlation-id", correlationId);
-
-//   const requestId = generateCorrelationId();
-//   const clientInfo = extractClientInfo(c);
-
-//   const requestLogger = logger.child({
-//     request: {
-//       request_id: requestId,
-//       correlation_id: correlationId,
-//       method: c.req.method,
-//       path: c.req.path,
+//   // Build log entry (canonical log line, BetterStack best practice)
+//   const logEntry = {
+//     "@timestamp": new Date().toISOString(),
+//     event: {
+//       type: "http.request",
+//       category,
+//       severity,
+//       outcome: statusCode < 400 ? "success" : "failure",
+//       correlation_id: requestId,
 //     },
 //     actor: {
-//       user_type: "",
-//       ip_country: clientInfo.country,
-//       ip_city: clientInfo.city,
+//       user_id: c.get("userId") || null,
+//       user_type: c.get("userId") ? "authenticated" : "anonymous",
+//       ip_country: extractCountry(c),
+//       // ip_city: skipped for MVP (requires GeoIP database)
 //     },
-//   });
-
-//   requestLogger.info(`Request started: ${c.req.method} ${c.req.path}`, {
-//     event: {
-//       type: "request.started",
-//       category: "system",
-//       severity: "debug",
-//       outcome: "success",
-//       correlation_id: correlationId,
+//     request: {
+//       method: c.req.method,
+//       path: c.req.path,
+//       status_code: statusCode,
+//       duration_ms: duration,
+//       request_id: requestId,
 //     },
-//   });
-
-//   try {
-//     await next();
-
-//     const duration = Math.round(performance.now() - startTime);
-//     const statusCode = c.res.status;
-
-//     const outcome =
-//       statusCode >= CLIENT_ERROR_THRESHOLD ? "failure" : "success";
-//     const severity = getSeverityFromStatusCode(statusCode);
-
-//     requestLogger.info(`Request completed: ${statusCode}`, {
-//       event: {
-//         type: "request.completed",
-//         category: "system" as const,
-//         severity,
-//         outcome,
-//         correlation_id: correlationId,
-//       },
-//       request: {
-//         method: c.req.method,
-//         path: c.req.path,
-//         status_code: statusCode,
-//         duration_ms: duration,
-//         request_id: requestId,
-//       },
-//     });
-//   } catch (error) {
-//     const duration = Math.round(performance.now() - startTime);
-//     const errorMessage = error instanceof Error ? error.message : String(error);
-
-//     logger.error(`Request failed: ${errorMessage}`, {
-//       event: {
-//         type: "request.failed",
-//         category: "system" as const,
-//         severity: "error" as const,
-//         outcome: "failure" as const,
-//         correlation_id: correlationId,
-//       },
-//       request: {
-//         method: c.req.method,
-//         path: c.req.path,
-//         status_code: 500,
-//         duration_ms: duration,
-//         request_id: requestId,
-//       },
-//       error: {
-//         type: "request.failed",
-//         code: "INTERNAL_ERROR",
-//         user_message: "An unexpected error occurred. Please try again later.",
-//         internal_message: errorMessage,
-//       },
-//       actor: {
-//         user_type: "anonymous",
-//         ip_country: "",
-//         // ip_country: clientInfo.country,
-//         // ip_city: clientInfo.city,
-//       },
-//     });
-
-//     throw error;
-//   }
-// };
-
-// export const correlationIdMiddleware: MiddlewareHandler = async (c, next) => {
-//   const correlationId =
-//     c.req.header("x-correlation-id") || generateCorrelationId();
-//   c.set("correlationId", correlationId);
-//   c.header("x-correlation-id", correlationId);
-//   await next();
-// };
-
-// export const errorLoggingMiddleware: MiddlewareHandler = async (c, next) => {
-//   try {
-//     await next();
-//   } catch (error) {
-//     const correlationId = c.get("correlationId") || "unknown";
-
-//     const errorMessage = error instanceof Error ? error.message : String(error);
-//     const stack =
-//       env.NODE_ENV === "development" && error instanceof Error
-//         ? error.stack
-//         : undefined;
-
-//     logger.error(`Unhandled error: ${errorMessage}`, {
-//       event: {
-//         type: "system.error",
-//         category: "system" as const,
-//         severity: "error" as const,
-//         outcome: "failure" as const,
-//         correlation_id: correlationId,
-//       },
-//       error: {
-//         type: "unhandled_error",
-//         code: "INTERNAL_SERVER_ERROR",
-//         user_message: "An unexpected error occurred. Please try again later.",
-//         internal_message: errorMessage,
-//       },
-//       request: {
-//         correlation_id: correlationId,
-//         method: c.req.method,
-//         path: c.req.path,
-//       },
-//       context: env.NODE_ENV === "development" ? { stack } : undefined,
-//     });
-
-//     if (error instanceof Error) {
-//       throw error;
-//     }
-//     throw new Error(String(error));
-//   }
-// };
-
-// export const rateLimitLoggingMiddleware = (
-//   limit: number,
-//   windowMs: number
-// ): MiddlewareHandler => {
-//   const requests = new Map<string, number[]>();
-
-//   return async (c, next) => {
-//     const clientId = c.req.header("x-forwarded-for") || "unknown";
-//     const now = Date.now();
-
-//     const clientRequests = requests.get(clientId) || [];
-//     const recentRequests = clientRequests.filter(
-//       (time) => now - time < windowMs
-//     );
-
-//     if (recentRequests.length >= limit) {
-//       const correlationId = c.get("correlationId") || "unknown";
-
-//       logger.warn(`Rate limit hit for client: ${clientId}`, {
-//         event: {
-//           type: "rate.limit.hit",
-//           category: "compliance" as const,
-//           severity: "warn" as const,
-//           outcome: "failure" as const,
-//           correlation_id: correlationId,
-//         },
-//         actor: {
-//           user_type: "anonymous" as const,
-//         },
-//         context: {
-//           client_id: clientId,
-//           limit,
-//           window_ms: windowMs,
-//           request_count: recentRequests.length,
-//         },
-//       });
-
-//       return c.json(
-//         {
-//           error: "Too many requests",
-//           code: "RATE_LIMIT_EXCEEDED",
-//           retry_after: Math.ceil(windowMs / MILLISECONDS_PER_SECOND),
-//         },
-//         429
-//       );
-//     }
-
-//     recentRequests.push(now);
-//     requests.set(clientId, recentRequests);
-
-//     await next();
+//     http: {
+//       // Additional HTTP context
+//       content_length: c.res.headers.get("content-length"),
+//       content_type: c.res.headers.get("content-type"),
+//     },
 //   };
-// };
+
+//   // Log at appropriate level
+//   if (severity === "error") {
+//     logger.error(logEntry);
+//   } else if (severity === "warn") {
+//     logger.warn(logEntry);
+//   } else {
+//     logger.info(logEntry);
+//   }
+// }
+
+// // Error logging middleware (captures uncaught errors)
+// export function errorLoggingMiddleware(err: Error, c: Context): Response {
+//   const requestId = c.get("requestId") || "unknown";
+//   logger.error({
+//     event: {
+//       type: "http.error",
+//       category: "system",
+//       severity: "error",
+//       outcome: "failure",
+//       correlation_id: requestId,
+//     },
+//     error: {
+//       type: err.name,
+//       message: err.message,
+//       // Stack trace only in development
+//       stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+//     },
+//     request: {
+//       method: c.req.method,
+//       path: c.req.path,
+//       request_id: requestId,
+//     },
+//   });
+//   // Return safe error response to client
+//   return c.json(
+//     {
+//       error: {
+//         message: "Internal server error",
+//         reference: generateReference(),
+//       },
+//     },
+//     500
+//   );
+// }
+
+// function generateReference(): string {
+//   return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+// }
