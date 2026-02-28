@@ -79,7 +79,7 @@ const loggerConfig: pino.LoggerOptions = {
           },
         };
       }
-      return method.apply(this, inputArgs as [string, ...unknown[]]);
+      return method.apply(this, inputArgs);
     },
   },
 };
@@ -113,8 +113,10 @@ export const shouldLog = (category: string): boolean => {
   ) {
     return true;
   }
+
   // Sample other categories at 10% in production
-  return Math.random() < 0.1;
+  const SAMPLING_RATE = 0.1;
+  return Math.random() < SAMPLING_RATE;
 };
 
 // Child logger factory with bound context
