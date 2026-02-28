@@ -16,7 +16,7 @@ source = '''
   
   if err == null {
     # If successful, merge the Pino JSON into the root of the event
-    . = merge(., parsed_json)
+    ., err = merge(., parsed_json)
     # Delete the original raw string to save space
     del(.message)
   }
