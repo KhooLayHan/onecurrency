@@ -53,7 +53,7 @@ This document establishes a centralized, security-focused logging system for One
 
 | Component          | Technology            | Purpose                                         |
 | ------------------ | --------------------- | ----------------------------------------------- |
-| **Logger**         | Pino 9.x              | High-performance structured JSON logging        |
+| **Logger**         | Pino 10.x             | High-performance structured JSON logging        |
 | **HTTP Logger**    | pino-http             | Hono middleware for request logging             |
 | **Error Handling** | neverthrow            | Railway-oriented programming, functional errors |
 | **Log Shipper**    | Vector 0.40.x         | Log transformation, routing, buffering          |

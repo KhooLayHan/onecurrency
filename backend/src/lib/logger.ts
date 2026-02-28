@@ -67,7 +67,7 @@ const loggerConfig: pino.LoggerOptions = {
     remove: true, // Completely remove instead of [Redacted]
   },
   hooks: {
-    logMethod(inputArgs, method) {
+    logMethod(inputArgs, method, level) {
       // Ensure errors are properly serialized
       if (inputArgs[0] instanceof Error) {
         const err = inputArgs[0];
@@ -79,7 +79,7 @@ const loggerConfig: pino.LoggerOptions = {
           },
         };
       }
-      return method.apply(this, inputArgs);
+      method.apply(this, inputArgs);
     },
   },
 };
