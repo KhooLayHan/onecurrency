@@ -9,10 +9,12 @@ export default function Home() {
   const [password, setPassword] = useState("password123");
 
   const handleLogin = async () => {
-    await signIn.email({
+    const { data, error } = await signIn.email({
       email,
       password,
     });
+
+    // console.log(data, error);
   };
 
   if (isPending) {

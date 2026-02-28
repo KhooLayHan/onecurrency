@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    API_URL: z.httpUrl(),
+    // API_URL: z.httpUrl(),
     // NODE_ENV: z.enum(["development", "production", "testing", "staging"]),
   },
   client: {
@@ -15,7 +15,6 @@ export const env = createEnv({
     NEXT_PUBLIC_BETTER_AUTH_URL: z.url(),
   },
   runtimeEnv: {
-    API_URL: process.env.API_URL,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
