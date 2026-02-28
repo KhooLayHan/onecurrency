@@ -28,7 +28,7 @@ export const auth = betterAuth({
   user: {
     modelName: "users",
     additionalFields: {
-      publicId: { type: "string", required: true },
+      publicId: { type: "string", required: false, input: false },
       kycStatusId: { type: "number", required: false, input: false },
       depositLimitCents: {
         type: "number",

@@ -27,7 +27,7 @@ export default function Home() {
         <div className="rounded border bg-green-50 p-4">
           <p>Welcome back, {session.user.name}</p>
           <p>Email: {session.user.email}</p>
-          <p>Email: {session.user.emailVerified}</p>
+          <p>Email Verified: {session.user.emailVerified ? "Yes" : "No"}</p>
           <button
             className="mt-4 rounded bg-red-500 px-4 py-2 text-white"
             onClick={() => signOut()}
@@ -38,14 +38,22 @@ export default function Home() {
         </div>
       ) : (
         <div className="flex max-w-xs flex-col gap-2">
+          <label className="font-medium text-sm" htmlFor="email">
+            Email
+          </label>
           <input
             className="border p-2"
+            id="email"
             onChange={(e) => setEmail(e.target.value)}
             type="email"
             value={email}
           />
+          <label className="font-medium text-sm" htmlFor="password">
+            Password
+          </label>
           <input
             className="border p-2"
+            id="password"
             onChange={(e) => setPassword(e.target.value)}
             type="password"
             value={password}

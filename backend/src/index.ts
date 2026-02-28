@@ -9,7 +9,12 @@ app.use(
   "/api/*",
   cors({
     origin: env.CORS_ORIGIN,
-    allowHeaders: ["X-Custom-Header", "Upgrade-Insecure-Requests"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Custom-Header",
+      "Upgrade-Insecure-Requests",
+    ],
     allowMethods: ["POST", "GET", "OPTIONS"],
     exposeHeaders: ["Content-Length", "X-Kuma-Revision"],
     maxAge: 600,
