@@ -343,7 +343,7 @@ function tokenizeWallet(address: string): string {
 **Dependencies:**
 
 ```bash
-cd backend && pnpm add pino pino-http neverthrow
+cd backend && bun add pino pino-http neverthrow
 ```
 
 **Acceptance Criteria:**
