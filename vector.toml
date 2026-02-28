@@ -1,0 +1,39 @@
+# vector.toml (in root directory)
+
+# 1. INPUT: Read logs directly from the Docker socket
+[sources.docker_logs]
+type = "docker_logs"
+# Only capture logs from our API, not the Postgres database
+include_containers = ["onecurrency_api"] 
+
+# 2. TRANSFORM: Parse the raw text into actual JSON
+[transforms.parse_pino]
+type = "remap"
+inputs =["docker_logs"]
+source = '''
+  # Docker wraps the log in a "message" field. We parse our Pino JSON out of it.
+  parsed_json, err = parse_json(.message)
+  
+  if err == null {
+    # If successful, merge the Pino JSON into the root of the event
+    . = merge(., parsed_json)
+    # Delete the original raw string to save space
+    del(.message)
+  }
+'''
+
+# 3. OUTPUT: Send to BetterStack
+[sinks.betterstack]
+type = "http"
+inputs = ["parse_pino"]
+uri = "https://in.logs.betterstack.com"
+encoding.codec = "json"
+auth.strategy = "bearer"
+# This reads from the environment variable we passed in docker-compose.yml
+auth.token = "${BETTERSTACK_SOURCE_TOKEN}"
+
+# (Optional) Local debugging output: un-comment to see Vector's output in your terminal
+# [sinks.console]
+# type = "console"
+# inputs = ["parse_pino"]
+# encoding.codec = "json"

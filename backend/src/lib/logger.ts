@@ -1,9 +1,10 @@
 import pino from "pino";
+import { env } from "../env";
 
 // Environment detection
-const env = process.env.NODE_ENV || "development";
-const isDev = env === "development";
-const isStaging = env === "staging";
+const environment = env.NODE_ENV || "development";
+const isDev = env.NODE_ENV === "development";
+const isStaging = env.NODE_ENV === "staging";
 
 function maskEmail(email: string): string {
   const MAX_LENGTH = 3;
@@ -38,7 +39,7 @@ const getRedactionPaths = (): string[] => {
   ];
 
   // Production: aggressive redaction
-  if (env === "production") {
+  if (environment === "production") {
     return [
       ...basePaths,
       "actor.ip_address", // Country only
@@ -81,7 +82,6 @@ const loggerConfig: pino.LoggerOptions = {
   },
   redact: {
     paths: getRedactionPaths(),
-    remove: true, // Completely remove instead of [Redacted]
     censor: (value: unknown, path: string[]) => {
       const pathStr = path.join(".");
 
@@ -131,7 +131,7 @@ export const logger = pino(loggerConfig);
 
 // Sampling utility for production
 export const shouldLog = (category: string): boolean => {
-  if (env !== "production") {
+  if (environment !== "production") {
     return true;
   }
 
