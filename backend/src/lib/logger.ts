@@ -5,6 +5,23 @@ const env = process.env.NODE_ENV || "development";
 const isDev = env === "development";
 const isStaging = env === "staging";
 
+function maskEmail(email: string): string {
+  const MAX_LENGTH = 3;
+
+  if (!email.includes("@")) {
+    return "***";
+  }
+
+  const [local, domain] = email.split("@");
+  if (!(local && domain)) {
+    return "***";
+  }
+
+  const maskedLocal =
+    local.length > MAX_LENGTH ? `${local.slice(0, MAX_LENGTH)}***` : "***";
+  return `${maskedLocal}@${domain}`;
+}
+
 // Environment-specific redaction paths
 const getRedactionPaths = (): string[] => {
   const basePaths = [
@@ -65,6 +82,19 @@ const loggerConfig: pino.LoggerOptions = {
   redact: {
     paths: getRedactionPaths(),
     remove: true, // Completely remove instead of [Redacted]
+    censor: (value: unknown, path: string[]) => {
+      const pathStr = path.join(".");
+
+      if (
+        pathStr.includes("email") &&
+        typeof value === "string" &&
+        value.includes("@")
+      ) {
+        return maskEmail(value);
+      }
+
+      return "[REDACTED]";
+    },
   },
   hooks: {
     logMethod(inputArgs, method, level) {
