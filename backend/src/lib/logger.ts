@@ -1,178 +1,123 @@
 import pino from "pino";
-import { env } from "../env";
 
-const REDACTION_PATHS = [
-  "*.password",
-  "*.token",
-  "*.secret",
-  "*.api_key",
-  "*.apiKey",
-  "headers.authorization",
-  "headers.cookie",
-  "*.privateKey",
-  "*.private_key",
-  "*.mnemonic",
-  "*.seedPhrase",
-  "*.seed_phrase",
-  "*.creditCard",
-  "*.credit_card",
-  "*.cvv",
-  "*.bankAccount",
-  "*.bank_account",
-  "*.ssn",
-  "*.socialSecurity",
-  "*.encryption_key",
-  "*.master_key",
-  "*.jwt",
-  "*.session_token",
-  "*.access_token",
-  "*.refresh_token",
-  "context.password",
-  "context.credit_card",
-  "context.cvv",
-  "context.bank_account",
-  "context.ssn",
-  "actor.ip_address",
-  "actor.user_agent",
-];
+// Environment detection
+const env = process.env.NODE_ENV || "development";
+const isDev = env === "development";
+const isStaging = env === "staging";
 
-const LOG_LEVELS = {
-  trace: 10,
-  debug: 20,
-  info: 30,
-  warn: 40,
-  error: 50,
-  fatal: 60,
-} as const;
+// Environment-specific redaction paths
+const getRedactionPaths = (): string[] => {
+  const basePaths = [
+    "*.password",
+    "*.secret",
+    "*.privateKey",
+    "*.apiKey",
+    "*.mnemonic",
+    "*.seedPhrase",
+    "*.creditCard",
+    "*.cvv",
+    "headers.authorization",
+    "headers.cookie",
+  ];
 
-const SERVICE_INFO = {
-  name: "onecurrency-backend",
-  version: "1.0.0",
-  environment: env.NODE_ENV,
-  component: "api",
-} as const;
-
-function maskEmail(email: string): string {
-  const MAX_LENGTH = 3;
-
-  if (!email.includes("@")) {
-    return "***";
+  // Production: aggressive redaction
+  if (env === "production") {
+    return [
+      ...basePaths,
+      "actor.ip_address", // Country only
+      "actor.user_agent", // Not logged
+      "actor.email", // Not logged (use user_id)
+      "context.wallet_address", // Not logged
+      "context.email", // Not logged
+      "*.internal_details", // Not exposed
+    ];
   }
 
-  const [local, domain] = email.split("@");
-  if (!(local && domain)) {
-    return "***";
+  // Staging: standard redaction
+  if (isStaging) {
+    return [
+      ...basePaths,
+      "actor.ip_address", // Masked
+      "context.wallet_address", // Masked
+    ];
   }
 
-  const maskedLocal =
-    local.length > MAX_LENGTH ? `${local.slice(0, MAX_LENGTH)}***` : "***";
-  return `${maskedLocal}@${domain}`;
-}
+  // Development: minimal redaction (only credentials)
+  return basePaths;
+};
 
-const baseLogger = pino({
-  level: env.NODE_ENV === "development" ? "debug" : "info",
+const loggerConfig: pino.LoggerOptions = {
+  level: isDev ? "debug" : "info",
+  base: {
+    service: "onecurrency-backend",
+    version: process.env.npm_package_version || "1.0.0",
+    environment: env,
+  },
   timestamp: pino.stdTimeFunctions.isoTime,
   formatters: {
-    level: (label: string) => ({ severity: label }),
-    log: (obj: Record<string, unknown>) => ({
-      service: SERVICE_INFO,
-      ...obj,
+    level: (label: string) => ({ level: label.toUpperCase() }),
+    // Add binding formatter for consistent structure
+    bindings: (bindings: pino.Bindings) => ({
+      pid: bindings.pid,
+      hostname: bindings.hostname,
     }),
   },
   redact: {
-    paths: REDACTION_PATHS,
-    censor: (value: unknown, path: string[]) => {
-      const pathStr = path.join(".");
-
-      if (
-        pathStr.includes("email") &&
-        typeof value === "string" &&
-        value.includes("@")
-      ) {
-        return maskEmail(value);
+    paths: getRedactionPaths(),
+    remove: true, // Completely remove instead of [Redacted]
+  },
+  hooks: {
+    logMethod(inputArgs, method) {
+      // Ensure errors are properly serialized
+      if (inputArgs[0] instanceof Error) {
+        const err = inputArgs[0];
+        inputArgs[0] = {
+          err: {
+            type: err.name,
+            message: err.message,
+            stack: isDev ? err.stack : undefined,
+          },
+        };
       }
-
-      return "[REDACTED]";
+      return method.apply(this, inputArgs as [string, ...unknown[]]);
     },
   },
-  base: null,
-});
-
-export type LogLevel = keyof typeof LOG_LEVELS;
-
-export type LogContext = {
-  [key: string]: unknown;
 };
 
-export type LogEvent = {
-  type: string;
-  category?: "authentication" | "business" | "compliance" | "system";
-  severity?: "trace" | "debug" | "info" | "warn" | "error" | "fatal";
-  outcome?: "success" | "failure";
-  correlation_id?: string;
+// Add pretty printing for development
+if (isDev) {
+  loggerConfig.transport = {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
+    },
+  };
+}
+
+// Create the logger instance
+const logger = pino(loggerConfig);
+
+// Sampling utility for production
+export const shouldLog = (category: string): boolean => {
+  if (env !== "production") {
+    return true;
+  }
+
+  // Always log deposits and critical events
+  if (
+    category === "deposit" ||
+    category === "security" ||
+    category === "compliance"
+  ) {
+    return true;
+  }
+  // Sample other categories at 10% in production
+  return Math.random() < 0.1;
 };
 
-export type LogActor = {
-  user_id?: string | null;
-  user_type?: "anonymous" | "authenticated" | "admin" | "system";
-  ip_country?: string;
-  ip_city?: string;
-};
-
-export type LogRequest = {
-  method?: string;
-  path?: string;
-  status_code?: number;
-  duration_ms?: number;
-  request_id?: string;
-};
-
-export type LogError = {
-  type?: string;
-  code?: string;
-  user_message?: string;
-  internal_message?: string;
-};
-
-export type LogMetadata = {
-  event?: LogEvent;
-  actor?: LogActor;
-  request?: LogRequest;
-  error?: LogError;
-  context?: LogContext;
-};
-
-export const logger = {
-  trace: (msg: string, meta?: LogMetadata) =>
-    baseLogger.trace({ ...meta, message: msg }),
-  debug: (msg: string, meta?: LogMetadata) =>
-    baseLogger.debug({ ...meta, message: msg }),
-  info: (msg: string, meta?: LogMetadata) =>
-    baseLogger.info({ ...meta, message: msg }),
-  warn: (msg: string, meta?: LogMetadata) =>
-    baseLogger.warn({ ...meta, message: msg }),
-  error: (msg: string, meta?: LogMetadata) =>
-    baseLogger.error({ ...meta, message: msg }),
-  fatal: (msg: string, meta?: LogMetadata) =>
-    baseLogger.fatal({ ...meta, message: msg }),
-
-  child: (bindings: Record<string, unknown>) => {
-    const childLogger = baseLogger.child(bindings);
-    return {
-      trace: (msg: string, meta?: LogMetadata) =>
-        childLogger.trace({ ...meta, message: msg }),
-      debug: (msg: string, meta?: LogMetadata) =>
-        childLogger.debug({ ...meta, message: msg }),
-      info: (msg: string, meta?: LogMetadata) =>
-        childLogger.info({ ...meta, message: msg }),
-      warn: (msg: string, meta?: LogMetadata) =>
-        childLogger.warn({ ...meta, message: msg }),
-      error: (msg: string, meta?: LogMetadata) =>
-        childLogger.error({ ...meta, message: msg }),
-      fatal: (msg: string, meta?: LogMetadata) =>
-        childLogger.fatal({ ...meta, message: msg }),
-    };
-  },
-};
-
-export type Logger = typeof logger;
+// Child logger factory with bound context
+export const createChildLogger = (
+  bindings: Record<string, unknown>
+): pino.Logger => logger.child(bindings);
