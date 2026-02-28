@@ -34,6 +34,7 @@ export const auth = betterAuth({
         type: "number",
         required: false,
         defaultValue: 100_000,
+        input: false,
       },
       kycVerifiedAt: { type: "date", required: false, input: false },
       deletedAt: { type: "date", required: false, input: false },
