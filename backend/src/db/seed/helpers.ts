@@ -63,12 +63,12 @@ export function weightedRandom<T>(items: { value: T; weight: number }[]) {
 
 export function distributeByPercentage(
   total: number,
-  distribution: Record<number, number>
+  distribution: Record<number, number>,
 ): Map<number, number> {
   const result = new Map<number, number>();
   const totalPercentage = Object.values(distribution).reduce(
     (sum, p) => sum + p,
-    0
+    0,
   );
 
   let remaining = total;
@@ -130,13 +130,25 @@ export function generateDepositAmount(kycStatusId: number): bigint {
   let amount: number;
   if (amountDistribution <= 60) {
     // 60% small amounts: $10-$100
-    amount = faker.number.float({ min: minDollars, max: smallMax, fractionDigits: 2 });
+    amount = faker.number.float({
+      min: minDollars,
+      max: smallMax,
+      fractionDigits: 2,
+    });
   } else if (amountDistribution <= 90) {
     // 30% medium amounts: $100-$1000
-    amount = faker.number.float({ min: smallMax, max: mediumMax, fractionDigits: 2 });
+    amount = faker.number.float({
+      min: smallMax,
+      max: mediumMax,
+      fractionDigits: 2,
+    });
   } else {
     // 10% large amounts: $1000-$5000
-    amount = faker.number.float({ min: mediumMax, max: maxDollars, fractionDigits: 2 });
+    amount = faker.number.float({
+      min: mediumMax,
+      max: maxDollars,
+      fractionDigits: 2,
+    });
   }
 
   amount = Math.min(Math.max(amount, minDollars), maxDollars);
@@ -183,7 +195,7 @@ export function generateProviderName(walletType: string): string | undefined {
   ];
 
   return weightedRandom(
-    providers.map((p) => ({ value: p.value, weight: p.weight }))
+    providers.map((p) => ({ value: p.value, weight: p.weight })),
   );
 }
 

@@ -8,7 +8,7 @@ import { generateUserAgent, randomBetween } from "./helpers";
 
 export async function seedSessions(
   users: Array<{ id: bigint; createdAt: Date }>,
-  config: SessionSeedConfig
+  config: SessionSeedConfig,
 ): Promise<
   Array<{
     id: bigint;

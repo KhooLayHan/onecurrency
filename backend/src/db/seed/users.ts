@@ -12,7 +12,7 @@ import { batchInsert } from "./types";
 
 export async function seedRegularUsers(
   config: UserSeedConfig,
-  specialUserCount: number
+  specialUserCount: number,
 ): Promise<
   Array<{
     id: bigint;
@@ -29,7 +29,7 @@ export async function seedRegularUsers(
 
   const kycDistribution = distributeByPercentage(
     regularUserCount,
-    config.kycDistribution
+    config.kycDistribution,
   );
 
   const userRecords: NewUser[] = [];
@@ -55,17 +55,17 @@ export async function seedRegularUsers(
         case 4: // Rejected
         case 5: // Expired
           depositLimitCents = BigInt(
-            faker.number.int({ min: 1000, max: 50000 })
+            faker.number.int({ min: 1000, max: 50000 }),
           );
           break;
         case 2: // Pending
           depositLimitCents = BigInt(
-            faker.number.int({ min: 5000, max: 100000 })
+            faker.number.int({ min: 5000, max: 100000 }),
           );
           break;
         case 3: // Verified
           depositLimitCents = BigInt(
-            faker.number.int({ min: 10000, max: 1000000 })
+            faker.number.int({ min: 10000, max: 1000000 }),
           );
           break;
         default:
@@ -97,7 +97,7 @@ export async function seedRegularUsers(
 
     const current = userRecords[i];
     const target = userRecords[j];
-    
+
     if (current === undefined || target === undefined) {
       continue;
     }

@@ -15,7 +15,7 @@ async function hashPassword(password: string): Promise<string> {
     });
   } catch {
     logger.error(
-      "Password hashing failed - Bun.password.hash is required for seeding"
+      "Password hashing failed - Bun.password.hash is required for seeding",
     );
     throw new Error("Password hashing not available");
   }
@@ -70,7 +70,7 @@ async function createSpecialUser(config: SpecialUserConfig): Promise<{
 }
 
 export async function seedSpecialUsers(
-  specialUsers: SpecialUserConfig[]
+  specialUsers: SpecialUserConfig[],
 ): Promise<
   Array<{
     id: bigint;
@@ -84,13 +84,14 @@ export async function seedSpecialUsers(
   for (const userConfig of specialUsers) {
     // const existingUser = await db.select().from(users).where(eq(users.email, userConfig.email)).limit(1).then(r => r[0]);
 
+    // * NOTE: For some unknown reason, `db.query.users` is not working, have to relegate back to `_query`, then only does it work?
     const existingUser = await db._query.users.findFirst({
       where: (users, { eq }) => eq(users.email, userConfig.email),
     });
 
     if (existingUser) {
       logger.info(
-        `Special user ${userConfig.email} already exists, skipping...`
+        `Special user ${userConfig.email} already exists, skipping...`,
       );
       createdUsers.push({
         id: existingUser.id,

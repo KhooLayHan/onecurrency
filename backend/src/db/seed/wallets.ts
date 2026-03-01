@@ -13,7 +13,7 @@ import {
 export async function seedWallets(
   users: Array<{ id: bigint; createdAt: Date }>,
   config: WalletSeedConfig,
-  networkId: number = 1 // Sepolia default
+  networkId: number = 1, // Sepolia default
 ): Promise<
   Array<{
     id: bigint;
@@ -31,7 +31,10 @@ export async function seedWallets(
       const isPrimary = i === 0;
       const walletType = faker.datatype.boolean(0.2) ? "CUSTODIAL" : "EXTERNAL";
       const address = generateEthereumAddress();
-      const walletCreatedAt = faker.date.between({ from: user.createdAt, to: new Date() });
+      const walletCreatedAt = faker.date.between({
+        from: user.createdAt,
+        to: new Date(),
+      });
 
       walletRecords.push({
         userId: user.id,
