@@ -9,15 +9,7 @@ export default function Home() {
   const [password, setPassword] = useState("password123");
 
   const handleLogin = async () => {
-    // const { data, error } = await authClient.signIn.email({
-    //   email,
-    //   password,
-    // });
-    try {
-      await authClient.signOut();
-    } catch (error) {
-      console.error("Sign-out failed:", error);
-    }
+    await authClient.signOut();
   };
 
   if (isPending) {
