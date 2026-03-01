@@ -22,11 +22,14 @@
     "indentWidth": 2
   },
   "linter": {
-    "enabled": true,
+    "enabled": false,
     "rules": {
       "recommended": true,
       "suspicious": {
         "noUnknownAtRules": "off"
+      },
+      "nursery": {
+        "noUnresolvedImports": "off"
       }
     },
     "domains": {

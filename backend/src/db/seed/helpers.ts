@@ -41,7 +41,7 @@ export function generateIdempotencyKey(): string {
 export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
   if (!items || items.length === 0) {
     throw new Error("Array cannot be empty");
-  }   
+  }
 
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
   if (totalWeight <= 0) {
@@ -58,17 +58,17 @@ export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
   }
 
   // Fallback should be unreachable with positive weights, but TypeScript needs this
-  return items[items.length - 1]!.value;
+  // return items[items.length - 1]!.value;
 }
 
 export function distributeByPercentage(
   total: number,
-  distribution: Record<number, number>
+  distribution: Record<number, number>,
 ): Map<number, number> {
   const result = new Map<number, number>();
   const totalPercentage = Object.values(distribution).reduce(
     (sum, p) => sum + p,
-    0
+    0,
   );
 
   let remaining = total;
@@ -179,7 +179,7 @@ export function generateProviderName(walletType: string): string | undefined {
   ];
 
   return weightedRandom(
-    providers.map((p) => ({ value: p.value, weight: p.weight }))
+    providers.map((p) => ({ value: p.value, weight: p.weight })),
   );
 }
 

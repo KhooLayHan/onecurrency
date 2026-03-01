@@ -1,22 +1,22 @@
 import { faker } from "@faker-js/faker";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/neon-serverless";
 import { db } from "@/src/db";
+import { logger } from "@/src/lib/logger";
 import { accounts } from "../schema/accounts";
+import { relations } from "../schema/relations";
 import { users } from "../schema/users";
 import type { SpecialUserConfig } from "./config";
-import { logger } from "@/src/lib/logger";
-import { drizzle } from "drizzle-orm/neon-serverless";
 
-import { relations } from "../schema/relations";
-import { eq } from "drizzle-orm";
-
-
-async function hashPassword(password: string): Promise<string> {  
+async function hashPassword(password: string): Promise<string> {
   try {
     return Bun.password.hash(password, {
-      algorithm: "argon2id",     
+      algorithm: "argon2id",
     });
   } catch {
-    logger.error("Password hashing failed - Bun.password.hash is required for seeding");
+    logger.error(
+      "Password hashing failed - Bun.password.hash is required for seeding",
+    );
     throw new Error("Password hashing not available");
   }
 }
@@ -70,7 +70,7 @@ async function createSpecialUser(config: SpecialUserConfig): Promise<{
 }
 
 export async function seedSpecialUsers(
-  specialUsers: SpecialUserConfig[]
+  specialUsers: SpecialUserConfig[],
 ): Promise<
   Array<{
     id: bigint;
@@ -82,23 +82,22 @@ export async function seedSpecialUsers(
 > {
   const createdUsers = [];
   for (const userConfig of specialUsers) {
-
     // const existingUser = await db.select().from(users).where(eq(users.email, userConfig.email)).limit(1).then(r => r[0]);
 
-    const existingUser = await db._query.users.findFirst({    
+    const existingUser = await db._query.users.findFirst({
       where: (users, { eq }) => eq(users.email, userConfig.email),
     });
 
     if (existingUser) {
       logger.info(
-        `Special user ${userConfig.email} already exists, skipping...`
+        `Special user ${userConfig.email} already exists, skipping...`,
       );
       createdUsers.push({
-        id: existingUser.id, 
-        email: existingUser.email, 
-        name: existingUser.name, 
-        roleId: userConfig.roleId, 
-        kycStatusId: existingUser.kycStatusId, 
+        id: existingUser.id,
+        email: existingUser.email,
+        name: existingUser.name,
+        roleId: userConfig.roleId,
+        kycStatusId: existingUser.kycStatusId,
       });
       continue;
     }

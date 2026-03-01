@@ -1,19 +1,19 @@
 import { faker } from "@faker-js/faker";
 import { db } from "@/src/db";
+import type { NewWallet } from "../schema/wallets";
 import { wallets } from "../schema/wallets";
+import type { WalletSeedConfig } from "./config";
 import {
-  randomBetween,
   generateEthereumAddress,
   generateProviderName,
   generateWalletLabel,
+  randomBetween,
 } from "./helpers";
-import type { WalletSeedConfig } from "./config";
-import type { NewWallet } from "../schema/wallets";
 
 export async function seedWallets(
   users: Array<{ id: bigint; createdAt: Date }>,
   config: WalletSeedConfig,
-  networkId: number = 1 // Sepolia default
+  networkId: number = 1, // Sepolia default
 ): Promise<
   Array<{
     id: bigint;
@@ -61,15 +61,12 @@ export async function seedWallets(
   for (let i = 0; i < walletRecords.length; i += 50) {
     const batch = walletRecords.slice(i, i + 50);
 
-    const result = await db
-      .insert(wallets)
-      .values(batch)
-      .returning({
-        id: wallets.id,
-        userId: wallets.userId,
-        address: wallets.address,
-        isPrimary: wallets.isPrimary,
-      });
+    const result = await db.insert(wallets).values(batch).returning({
+      id: wallets.id,
+      userId: wallets.userId,
+      address: wallets.address,
+      isPrimary: wallets.isPrimary,
+    });
 
     createdWallets.push(...result);
   }
