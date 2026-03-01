@@ -110,7 +110,7 @@ const defaultSeedConfig: SeedConfig = {
         emailVerified: true,
       },
       {
-        email: "test@onecurrency.com",
+        email: "user@onecurrency.com",
         password: "Test123!",
         name: "Test User",
         roleId: 1, // user
@@ -401,20 +401,12 @@ async function batchInsert<T>(
 
 ### Password Hashing
 
-Use Better-Auth's hash utility:
+Use Bun's password hashing utility:
 
 ```typescript
-import { hashPassword } from "better-auth";
-
-const passwordHash = await hashPassword("Admin123!");
-```
-
-Or use bcrypt if Better-Auth doesn't expose the function:
-
-```typescript
-import bcrypt from "bcrypt";
-
-const passwordHash = await bcrypt.hash("Admin123!", 10);
+const passwordHash = await Bun.password.hash(password, {
+  algorithm: "argon2id",
+});
 ```
 
 ## File Structure

@@ -44,6 +44,10 @@ export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
   }   
 
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+  if (totalWeight <= 0) {
+    throw new Error("Total weight must be positive");
+  }
+
   let random = faker.number.int({ min: 0, max: totalWeight - 1 });
 
   for (const item of items) {
@@ -53,7 +57,8 @@ export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
     }
   }
 
-  return (items[items.length - 1] as { value: T; weight: number; }).value; // How to fix..? "Object is possibly undefined"
+  // Fallback should be unreachable with positive weights, but TypeScript needs this
+  return items[items.length - 1]!.value;
 }
 
 export function distributeByPercentage(

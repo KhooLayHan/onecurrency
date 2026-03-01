@@ -16,8 +16,8 @@ async function hashPassword(password: string): Promise<string> {
       algorithm: "argon2id",     
     });
   } catch {
-    logger.warn("Password hashing not available, using placeholder hash  for seeding");
-    return `$2b$10$${faker.string.alphanumeric(53)}`;
+    logger.error("Password hashing failed - Bun.password.hash is required for seeding");
+    throw new Error("Password hashing not available");
   }
 }
 

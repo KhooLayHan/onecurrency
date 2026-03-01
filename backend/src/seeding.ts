@@ -8,8 +8,12 @@ import { seedTransactionTypes } from "./db/seed/transaction-types";
 import { env } from "./env";
 import { logger } from "./lib/logger";
 
-if (env.DB_SEEDING !== true) {
+if (env.NODE_ENV === "production") {
   logger.info("Seeding not allowed in production");
+  process.exit(0);
+}
+
+if (env.DB_SEEDING !== true) {
   logger.info("DB_SEEDING must be set to true");
   process.exit(0);
 }
