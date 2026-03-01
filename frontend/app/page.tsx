@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, signOut, useSession } from "@/lib/auth-client";
+import { authClient, signOut, useSession } from "@/lib/auth-client";
 
 export default function Home() {
   const { data: session, isPending } = useSession();
@@ -9,10 +9,15 @@ export default function Home() {
   const [password, setPassword] = useState("password123");
 
   const handleLogin = async () => {
-    await signIn.email({
-      email,
-      password,
-    });
+    // const { data, error } = await authClient.signIn.email({
+    //   email,
+    //   password,
+    // });
+    try {
+      await authClient.signOut();
+    } catch (error) {
+      console.error("Sign-out failed:", error);
+    }
   };
 
   if (isPending) {
