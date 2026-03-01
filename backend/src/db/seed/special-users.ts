@@ -15,7 +15,7 @@ async function hashPassword(password: string): Promise<string> {
     });
   } catch {
     logger.error(
-      "Password hashing failed - Bun.password.hash is required for seeding",
+      "Password hashing failed - Bun.password.hash is required for seeding"
     );
     throw new Error("Password hashing not available");
   }
@@ -70,7 +70,7 @@ async function createSpecialUser(config: SpecialUserConfig): Promise<{
 }
 
 export async function seedSpecialUsers(
-  specialUsers: SpecialUserConfig[],
+  specialUsers: SpecialUserConfig[]
 ): Promise<
   Array<{
     id: bigint;
@@ -90,7 +90,7 @@ export async function seedSpecialUsers(
 
     if (existingUser) {
       logger.info(
-        `Special user ${userConfig.email} already exists, skipping...`,
+        `Special user ${userConfig.email} already exists, skipping...`
       );
       createdUsers.push({
         id: existingUser.id,

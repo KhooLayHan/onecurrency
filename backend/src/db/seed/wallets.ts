@@ -13,7 +13,7 @@ import {
 export async function seedWallets(
   users: Array<{ id: bigint; createdAt: Date }>,
   config: WalletSeedConfig,
-  networkId: number = 1, // Sepolia default
+  networkId: number = 1 // Sepolia default
 ): Promise<
   Array<{
     id: bigint;

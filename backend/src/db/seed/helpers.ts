@@ -63,12 +63,12 @@ export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
 
 export function distributeByPercentage(
   total: number,
-  distribution: Record<number, number>,
+  distribution: Record<number, number>
 ): Map<number, number> {
   const result = new Map<number, number>();
   const totalPercentage = Object.values(distribution).reduce(
     (sum, p) => sum + p,
-    0,
+    0
   );
 
   let remaining = total;
@@ -179,7 +179,7 @@ export function generateProviderName(walletType: string): string | undefined {
   ];
 
   return weightedRandom(
-    providers.map((p) => ({ value: p.value, weight: p.weight })),
+    providers.map((p) => ({ value: p.value, weight: p.weight }))
   );
 }
 
