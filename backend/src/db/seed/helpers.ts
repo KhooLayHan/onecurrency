@@ -11,15 +11,15 @@ export function randomPercentage(): number {
 }
 
 export function generateEthereumAddress(): string {
-  return `0x${faker.string.hexadecimal({ length: 40, casing: "lower" })}`;
+  return `${faker.string.hexadecimal({ length: 40, casing: "lower", prefix: "Ox" })}`;
 }
 
 export function generateTransactionHash(): string {
-  return `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
+  return `${faker.string.hexadecimal({ length: 64, casing: "lower", prefix: "Ox" })}`;
 }
 
 export function generateBlockHash(): string {
-  return `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
+  return `${faker.string.hexadecimal({ length: 64, casing: "lower", prefix: "Ox" })}`;
 }
 
 export function generateStripeSessionId(): string {
@@ -38,7 +38,7 @@ export function generateIdempotencyKey(): string {
   return faker.string.uuid();
 }
 
-export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
+export function weightedRandom<T>(items: { value: T; weight: number }[]) {
   if (!items || items.length === 0) {
     throw new Error("Array cannot be empty");
   }
@@ -121,18 +121,22 @@ export function generateDepositAmount(kycStatusId: number): bigint {
       maxDollars = 500;
   }
 
+  const range = maxDollars - minDollars;
+  const smallMax = minDollars + range * 0.2;
+  const mediumMax = minDollars + range * 0.6;
+
   const amountDistribution = faker.number.int({ min: 1, max: 100 });
 
   let amount: number;
   if (amountDistribution <= 60) {
     // 60% small amounts: $10-$100
-    amount = faker.number.float({ min: 10, max: 100, fractionDigits: 2 });
+    amount = faker.number.float({ min: minDollars, max: smallMax, fractionDigits: 2 });
   } else if (amountDistribution <= 90) {
     // 30% medium amounts: $100-$1000
-    amount = faker.number.float({ min: 100, max: 1000, fractionDigits: 2 });
+    amount = faker.number.float({ min: smallMax, max: mediumMax, fractionDigits: 2 });
   } else {
     // 10% large amounts: $1000-$5000
-    amount = faker.number.float({ min: 1000, max: 5000, fractionDigits: 2 });
+    amount = faker.number.float({ min: mediumMax, max: maxDollars, fractionDigits: 2 });
   }
 
   amount = Math.min(Math.max(amount, minDollars), maxDollars);

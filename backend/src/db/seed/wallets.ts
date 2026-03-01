@@ -31,6 +31,7 @@ export async function seedWallets(
       const isPrimary = i === 0;
       const walletType = faker.datatype.boolean(0.2) ? "CUSTODIAL" : "EXTERNAL";
       const address = generateEthereumAddress();
+      const walletCreatedAt = faker.date.between({ from: user.createdAt, to: new Date() });
 
       walletRecords.push({
         userId: user.id,
@@ -44,7 +45,7 @@ export async function seedWallets(
           walletType === "CUSTODIAL"
             ? faker.string.alphanumeric(64) // Placeholder encrypted key
             : undefined,
-        createdAt: faker.date.between({ from: user.createdAt, to: new Date() }),
+        createdAt: walletCreatedAt,
         updatedAt: faker.date.between({ from: user.createdAt, to: new Date() }),
       });
     }

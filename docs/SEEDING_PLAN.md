@@ -25,7 +25,7 @@ This document outlines the strategy for generating realistic fake data for devel
 - **Faker.js**: `@faker-js/faker` v10.3.0
 - **ORM**: Drizzle ORM with PostgreSQL
 - **Batch Size**: 50 records per insert for performance
-- **Hashing**: Better-Auth password hashing for special users
+- **Hashing**: Bun.password.hash with argon2id for special users
 
 ## Seeding Order (Dependency Chain)
 

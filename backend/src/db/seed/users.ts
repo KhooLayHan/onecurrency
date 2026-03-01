@@ -23,13 +23,16 @@ export async function seedRegularUsers(
   }>
 > {
   const regularUserCount = config.count - specialUserCount;
+  if (regularUserCount < 0) {
+    throw new Error("specialUserCount cannot exceed config.count");
+  }
+
   const kycDistribution = distributeByPercentage(
     regularUserCount,
     config.kycDistribution
   );
 
   const userRecords: NewUser[] = [];
-  const userKycMap = new Map<number, number>();
 
   for (const [kycStatusId, count] of kycDistribution) {
     for (let i = 0; i < count; i++) {
@@ -85,8 +88,6 @@ export async function seedRegularUsers(
         kycVerifiedAt,
         depositLimitCents,
       });
-
-      userKycMap.set(userRecords.length - 1, kycStatusId);
     }
   }
 
@@ -94,30 +95,15 @@ export async function seedRegularUsers(
   for (let i = userRecords.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
 
-    if (userRecords[i] !== undefined) {
-      const temp = userRecords[i];
-      // userRecords[i] = userRecords[j];
-      // userRecords[j] = temp;
+    const current = userRecords[i];
+    const target = userRecords[j];
+    
+    if (current === undefined || target === undefined) {
+      continue;
     }
 
-    //[userRecords[i], userRecords[j]] = [userRecords[j], userRecords[i]];
-    //     const temp: {
-    //     name: string;
-    //     email: string;
-    //     createdAt?: Date | undefined;
-    //     publicId?: string | undefined;
-    //     emailVerified?: boolean | undefined;
-    //     image?: string | null | undefined;
-    //     updatedAt?: Date | undefined;
-    //     kycStatusId?: number | undefined;
-    //     kycVerifiedAt?: Date | null | undefined;
-    //     depositLimitCents?: bigint | undefined;
-    //     deletedAt?: Date | null | undefined;
-    // } | undefined
-
-    const tempKyc = userKycMap.get(i);
-    userKycMap.set(i, userKycMap.get(j)!);
-    userKycMap.set(j, tempKyc!);
+    userRecords[i] = target;
+    userRecords[j] = current;
   }
 
   // Insert in batches

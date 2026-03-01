@@ -22,7 +22,7 @@
     "indentWidth": 2
   },
   "linter": {
-    "enabled": false,
+    "enabled": true,
     "rules": {
       "recommended": true,
       "suspicious": {
