@@ -6,11 +6,11 @@ import { seedRoles } from "./db/seed/roles";
 import { seedTransactionStatuses } from "./db/seed/transaction-statuses";
 import { seedTransactionTypes } from "./db/seed/transaction-types";
 import { env } from "./env";
+import { logger } from "./lib/logger";
 
 if (env.DB_SEEDING !== true) {
-  // TODO: Will have to install pino logger dependencies
-  // logger.info("Seeding not allowed in production");
-  // logger.info("DB_SEEDING must be set to true");
+  logger.info("Seeding not allowed in production");
+  logger.info("DB_SEEDING must be set to true");
   process.exit(0);
 }
 

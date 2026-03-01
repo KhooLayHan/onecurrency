@@ -39,6 +39,10 @@ export function generateIdempotencyKey(): string {
 }
 
 export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
+  if (!items || items.length === 0) {
+    throw new Error("Array cannot be empty");
+  }   
+
   const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
   let random = faker.number.int({ min: 0, max: totalWeight - 1 });
 
@@ -49,7 +53,7 @@ export function weightedRandom<T>(items: { value: T; weight: number }[]): T {
     }
   }
 
-  return items[items.length - 1].value;
+  return (items[items.length - 1] as { value: T; weight: number; }).value; // How to fix..? "Object is possibly undefined"
 }
 
 export function distributeByPercentage(
@@ -65,11 +69,10 @@ export function distributeByPercentage(
   let remaining = total;
   const entries = Object.entries(distribution);
 
-  for (let i = 0; i < entries.length; i++) {
-    const [key, percentage] = entries[i];
+  for (const [key, percentage] of entries) {
     const keyNum = Number.parseInt(key, 10);
 
-    if (i === entries.length - 1) {
+    if (entries[entries.length - 1]?.[0] === key) {
       result.set(keyNum, remaining);
     } else {
       const count = Math.floor((total * percentage) / totalPercentage);

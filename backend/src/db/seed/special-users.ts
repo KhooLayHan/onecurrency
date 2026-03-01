@@ -3,19 +3,20 @@ import { db } from "@/src/db";
 import { accounts } from "../schema/accounts";
 import { users } from "../schema/users";
 import type { SpecialUserConfig } from "./config";
+import { logger } from "@/src/lib/logger";
+import { drizzle } from "drizzle-orm/neon-serverless";
 
-async function hashPassword(password: string): Promise<string> {
-  // TODO: Replace with Better-Auth's hashPassword when Better-Auth is installed
-  // For now, using a simple bcrypt hash (requires bcrypt package)
-  // Install with: bun add bcrypt
-  // For development seeding, you can also use: return password;
+import { relations } from "../schema/relations";
+import { eq } from "drizzle-orm";
+
+
+async function hashPassword(password: string): Promise<string> {  
   try {
-    const bcrypt = await import("bcrypt");
-    return bcrypt.hash(password, 10);
+    return Bun.password.hash(password, {
+      algorithm: "argon2id",     
+    });
   } catch {
-    // If bcrypt is not available, return a placeholder hash
-    // In production, always use proper hashing
-    console.warn("bcrypt not available, using placeholder hash for seeding");
+    logger.warn("Password hashing not available, using placeholder hash  for seeding");
     return `$2b$10$${faker.string.alphanumeric(53)}`;
   }
 }
@@ -80,29 +81,31 @@ export async function seedSpecialUsers(
   }>
 > {
   const createdUsers = [];
-
   for (const userConfig of specialUsers) {
-    const existingUser = await db.query.users.findFirst({
+
+    // const existingUser = await db.select().from(users).where(eq(users.email, userConfig.email)).limit(1).then(r => r[0]);
+
+    const existingUser = await db._query.users.findFirst({    
       where: (users, { eq }) => eq(users.email, userConfig.email),
     });
 
     if (existingUser) {
-      console.log(
+      logger.info(
         `Special user ${userConfig.email} already exists, skipping...`
       );
       createdUsers.push({
-        id: existingUser.id,
-        email: existingUser.email,
-        name: existingUser.name,
-        roleId: userConfig.roleId,
-        kycStatusId: existingUser.kycStatusId,
+        id: existingUser.id, 
+        email: existingUser.email, 
+        name: existingUser.name, 
+        roleId: userConfig.roleId, 
+        kycStatusId: existingUser.kycStatusId, 
       });
       continue;
     }
 
     const user = await createSpecialUser(userConfig);
     createdUsers.push(user);
-    console.log(`Created special user: ${userConfig.email} (ID: ${user.id})`);
+    logger.info(`Created special user: ${userConfig.email} (ID: ${user.id})`);
   }
 
   return createdUsers;

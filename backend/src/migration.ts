@@ -1,10 +1,10 @@
 import { migrate } from "drizzle-orm/neon-serverless/migrator";
 import { db, pool } from "./db";
 import { env } from "./env";
+import { logger } from "./lib/logger";
 
 if (env.DB_MIGRATION !== true) {
-  // TODO: Will have to install pino logger dependencies
-  // logger.info("DB_MIGRATION must be set to true");
+  logger.info("DB_MIGRATION must be set to true");
   process.exit(0);
 }
 
