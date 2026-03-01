@@ -25,12 +25,12 @@ const reset = async (): Promise<void> => {
         from information_schema.tables
         where table_schema = 'public' and table_type = 'BASE TABLE'
         and table_name not like '__drizzle%'
-    `,
+    `
   );
 
   for (const { table_name } of tables.rows) {
     await db.execute(
-      sql`truncate table ${sql.identifier(table_name)} restart identity cascade`,
+      sql`truncate table ${sql.identifier(table_name)} restart identity cascade`
     );
   }
 };

@@ -12,7 +12,7 @@ await migrate(
   db,
   env.NODE_ENV === "production"
     ? { migrationsFolder: "./src/db/migrations/prod" }
-    : { migrationsFolder: "./src/db/migrations/dev" },
+    : { migrationsFolder: "./src/db/migrations/dev" }
 )
   .then()
   .finally(() => pool.end());
