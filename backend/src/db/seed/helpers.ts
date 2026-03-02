@@ -158,24 +158,32 @@ export function generateDepositAmount(kycStatusId: number): bigint {
   let minDollars: number;
   let maxDollars: number;
 
+  const dollars = {
+    first: 10,
+    second: 50,
+    third: 500,
+    fourth: 1000,
+    fifth: 5000,
+  } satisfies Record<string, number>;
+
   switch (kycStatusId) {
     case 1: // None
     case 4: // Rejected
     case 5: // Expired
-      minDollars = 10;
-      maxDollars = 500;
+      minDollars = dollars.first;
+      maxDollars = dollars.third;
       break;
     case 2: // Pending
-      minDollars = 50;
-      maxDollars = 1_000;
+      minDollars = dollars.second;
+      maxDollars = dollars.fourth;
       break;
     case 3: // Verified
-      minDollars = 50;
-      maxDollars = 5_000;
+      minDollars = dollars.second;
+      maxDollars = dollars.fifth;
       break;
     default:
-      minDollars = 10;
-      maxDollars = 500;
+      minDollars = dollars.first;
+      maxDollars = dollars.third;
   }
 
   const range = maxDollars - minDollars;

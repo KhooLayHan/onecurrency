@@ -19,7 +19,9 @@ async function getKycStatusIds(): Promise<KycStatusIds> {
 
   const getId = (name: string): number => {
     const status = statuses.find((s) => s.name === name);
-    if (!status) throw new Error(`KYC status not found: ${name}`);
+    if (!status) {
+      throw new Error(`KYC status not found: ${name}`);
+    }
     return status.id;
   };
 
@@ -121,11 +123,11 @@ export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
 
   // Build distribution: 30 None, 20 Pending, 40 Verified, 8 Rejected, 2 Expired
   const kycDistribution = [
-    ...Array(30).fill(ids.none),
-    ...Array(20).fill(ids.pending),
-    ...Array(40).fill(ids.verified),
-    ...Array(8).fill(ids.rejected),
-    ...Array(2).fill(ids.expired),
+    ...new Array(30).fill(ids.none),
+    ...new Array(20).fill(ids.pending),
+    ...new Array(40).fill(ids.verified),
+    ...new Array(8).fill(ids.rejected),
+    ...new Array(2).fill(ids.expired),
   ];
 
   const shuffled = faker.helpers.shuffle(kycDistribution);
@@ -143,15 +145,17 @@ export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
     if (kycStatusId === ids.verified) {
       depositLimit = BigInt(faker.number.int({ min: 10_000, max: 1_000_000 }));
     } else if (kycStatusId === ids.pending) {
-      depositLimit = BigInt(faker.number.int({ min: 5_000, max: 100_000 }));
+      depositLimit = BigInt(faker.number.int({ min: 5000, max: 100_000 }));
     } else {
-      depositLimit = BigInt(faker.number.int({ min: 1_000, max: 50_000 }));
+      depositLimit = BigInt(faker.number.int({ min: 1000, max: 50_000 }));
     }
+
+    const EMAIL_VERIFIED_PERCENTAGE = 0.7;
 
     userRecords.push({
       name: `${firstName} ${lastName}`,
       email: `${username}+seed${index}@example.test`,
-      emailVerified: faker.datatype.boolean(0.7),
+      emailVerified: faker.datatype.boolean(EMAIL_VERIFIED_PERCENTAGE),
       kycStatusId,
       kycVerifiedAt:
         kycStatusId === ids.verified
