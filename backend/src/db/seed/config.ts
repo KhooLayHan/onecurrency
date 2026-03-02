@@ -1,6 +1,6 @@
 export const DEFAULT_BATCH_SIZE = 50;
 
-export interface SpecialUserConfig {
+export type SpecialUserConfig = {
   email: string;
   password: string;
   name: string;
@@ -10,51 +10,51 @@ export interface SpecialUserConfig {
   emailVerified: boolean;
 }
 
-export interface KycDistribution {
+export type KycDistribution = {
   [statusId: number]: number;
 }
 
-export interface RoleDistribution {
+export type RoleDistribution = {
   [roleId: number]: number;
 }
 
-export interface DepositStatusDistribution {
+export type DepositStatusDistribution = {
   completed: number;
   pending: number;
   failedNoTx: number;
   hybridFailed: number;
 }
 
-export interface PerUserRange {
+export type PerUserRange = {
   min: number;
   max: number;
 }
 
-export interface UserSeedConfig {
+export type UserSeedConfig = {
   count: number;
   kycDistribution: KycDistribution;
   dateRangeMonths: number;
   specialUsers: SpecialUserConfig[];
 }
 
-export interface WalletSeedConfig {
+export type WalletSeedConfig = {
   perUser: PerUserRange;
 }
 
-export interface SessionSeedConfig {
+export type SessionSeedConfig = {
   perUser: PerUserRange;
 }
 
-export interface UserRoleSeedConfig {
+export type UserRoleSeedConfig = {
   roleDistribution: RoleDistribution;
 }
 
-export interface DepositSeedConfig {
+export type DepositSeedConfig = {
   perUser: PerUserRange;
   statusDistribution: DepositStatusDistribution;
 }
 
-export interface SeedConfig {
+export type SeedConfig = {
   users: UserSeedConfig;
   wallets: WalletSeedConfig;
   sessions: SessionSeedConfig;
