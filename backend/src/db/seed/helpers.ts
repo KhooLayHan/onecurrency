@@ -221,7 +221,10 @@ export function calculateFee(amountCents: bigint): bigint {
   });
 
   const FEE_PERCENTAGE = 10_000n;
-  return (amountCents * BigInt(Math.round(feePercentage * CENTS_PERCENTAGE))) / FEE_PERCENTAGE;
+  return (
+    (amountCents * BigInt(Math.round(feePercentage * CENTS_PERCENTAGE))) /
+    FEE_PERCENTAGE
+  );
 }
 
 export function generateUserAgent(): string {
