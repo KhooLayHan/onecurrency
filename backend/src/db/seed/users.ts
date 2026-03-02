@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { eq } from "drizzle-orm";
 import { db } from "@/src/db";
-import { users } from "../schema/users";
+import { users, type NewUser } from "../schema/users";
 import { accounts } from "../schema/accounts";
 import { logger } from "@/src/lib/logger";
 import { defaultSeedConfig } from "./config";
@@ -12,6 +12,8 @@ import type {
   SeededRegularUser,
 } from "./types";
 import { userRoles } from "../schema/user-roles";
+
+import { password } from "bun";
 
 // Query KYC status IDs from database
 async function getKycStatusIds(): Promise<KycStatusIds> {
@@ -56,7 +58,7 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
       continue;
     }
 
-    const passwordHash = await Bun.password.hash(config.password, {
+    const passwordHash = await password.hash(config.password, {
       algorithm: "argon2id",
     });
 
@@ -122,16 +124,24 @@ export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
   const ids = await getKycStatusIds();
 
   // Build distribution: 30 None, 20 Pending, 40 Verified, 8 Rejected, 2 Expired
+  const kycDistributionRange = {
+    none: 30,
+    pending: 20,
+    verified: 40,
+    rejected: 8,
+    expired: 2,
+  } as const;
+
   const kycDistribution = [
-    ...new Array(30).fill(ids.none),
-    ...new Array(20).fill(ids.pending),
-    ...new Array(40).fill(ids.verified),
-    ...new Array(8).fill(ids.rejected),
-    ...new Array(2).fill(ids.expired),
+    ...new Array(kycDistributionRange.none).fill(ids.none),
+    ...new Array(kycDistributionRange.pending).fill(ids.pending),
+    ...new Array(kycDistributionRange.verified).fill(ids.verified),
+    ...new Array(kycDistributionRange.rejected).fill(ids.rejected),
+    ...new Array(kycDistributionRange.expired).fill(ids.expired),
   ];
 
   const shuffled = faker.helpers.shuffle(kycDistribution);
-  const userRecords = [];
+  const userRecords: NewUser[] = [];
 
   for (const [index, kycStatusId] of shuffled.entries()) {
     const firstName = faker.person.firstName();
