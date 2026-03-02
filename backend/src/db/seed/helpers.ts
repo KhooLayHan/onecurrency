@@ -2,9 +2,15 @@ import { faker } from "@faker-js/faker";
 import { db } from "@/src/db";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { DEFAULT_BATCH_SIZE } from "./config";
+import type { SeededRegularUser } from "./types";
+import type { SelectedFieldsFlat } from "drizzle-orm/pg-core";
 
 // Generator for batches (supports for...of)
 function* generateBatches<T>(items: T[], batchSize: number): Generator<T[]> {
+  if (!Number.isInteger(batchSize) || batchSize <= 0) {
+    throw new Error("batchSize must be a positive integer");
+  }
+  
   for (let i = 0; i < items.length; i += batchSize) {
     yield items.slice(i, i + batchSize);
   }
@@ -29,7 +35,7 @@ export async function batchInsertReturning(
   records: Record<string, unknown>[],
   options: {
     batchSize?: number;
-    returning: Record<string, unknown>;
+    returning: SelectedFieldsFlat;
   }
 ): Promise<unknown[]> {
   const { batchSize = DEFAULT_BATCH_SIZE, returning } = options;
@@ -114,6 +120,10 @@ export function distributeByPercentage(
     (sum, p) => sum + p,
     0
   );
+
+  if (totalPercentage <= 0) {
+    throw new Error("Distribution total percentage must be positive");
+  }
 
   let remaining = total;
   const entries = Object.entries(distribution);

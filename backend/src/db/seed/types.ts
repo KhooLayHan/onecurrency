@@ -29,5 +29,5 @@ export type BatchInsertOptions = {
 };
 
 export type BatchInsertReturningOptions<T> = BatchInsertOptions & {
-  returning: { [K in keyof T]: any };
+  returning: { [K in keyof T]: unknown };
 };

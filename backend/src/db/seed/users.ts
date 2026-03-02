@@ -126,10 +126,13 @@ export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
   const shuffled = faker.helpers.shuffle(kycDistribution);
   const userRecords = [];
 
-  for (const kycStatusId of shuffled) {
+  for (const [index, kycStatusId] of shuffled.entries()) {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const createdAt = faker.date.past({ years: 0.5 });
+    const username = faker.internet
+      .username({ firstName, lastName })
+      .toLowerCase();
 
     let depositLimit: bigint;
     if (kycStatusId === ids.verified) {
@@ -142,7 +145,7 @@ export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
 
     userRecords.push({
       name: `${firstName} ${lastName}`,
-      email: faker.internet.email({ firstName, lastName }).toLowerCase(),
+      email: `${username}+seed${index}@example.test`,
       emailVerified: faker.datatype.boolean(0.7),
       kycStatusId,
       kycVerifiedAt:
