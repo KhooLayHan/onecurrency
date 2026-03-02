@@ -166,18 +166,26 @@ export function generateDepositAmount(kycStatusId: number): bigint {
     fifth: 5000,
   } satisfies Record<string, number>;
 
+  const kycStatuses = {
+    none: 1,
+    pending: 2,
+    verified: 3,
+    rejected: 4,
+    expired: 5,
+  } as const;
+
   switch (kycStatusId) {
-    case 1: // None
-    case 4: // Rejected
-    case 5: // Expired
+    case kycStatuses.none: // None
+    case kycStatuses.rejected: // Rejected
+    case kycStatuses.expired: // Expired
       minDollars = dollars.first;
       maxDollars = dollars.third;
       break;
-    case 2: // Pending
+    case kycStatuses.pending: // Pending
       minDollars = dollars.second;
       maxDollars = dollars.fourth;
       break;
-    case 3: // Verified
+    case kycStatuses.verified: // Verified
       minDollars = dollars.second;
       maxDollars = dollars.fifth;
       break;
@@ -186,21 +194,26 @@ export function generateDepositAmount(kycStatusId: number): bigint {
       maxDollars = dollars.third;
   }
 
+  const SMALL_MAX_PERCENTAGE = 0.2;
+  const MEDIUM_MAX_PERCENTAGE = 0.6;
+
   const range = maxDollars - minDollars;
-  const smallMax = minDollars + range * 0.2;
-  const mediumMax = minDollars + range * 0.6;
+  const smallMax = minDollars + range * SMALL_MAX_PERCENTAGE;
+  const mediumMax = minDollars + range * MEDIUM_MAX_PERCENTAGE;
 
   const amountDistribution = faker.number.int({ min: 1, max: 100 });
 
+  const amountDistributionRange = { small: 60, medium: 90 } as const;
+
   let amount: number;
-  if (amountDistribution <= 60) {
+  if (amountDistribution <= amountDistributionRange.small) {
     // 60% small amounts: $10-$100
     amount = faker.number.float({
       min: minDollars,
       max: smallMax,
       fractionDigits: 2,
     });
-  } else if (amountDistribution <= 90) {
+  } else if (amountDistribution <= amountDistributionRange.medium) {
     // 30% medium amounts: $100-$1_000
     amount = faker.number.float({
       min: smallMax,
