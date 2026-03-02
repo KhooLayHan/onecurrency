@@ -72,15 +72,18 @@ export function generateBlockHash(): string {
 }
 
 export function generateStripeSessionId(): string {
-  return `cs_test_${faker.string.alphanumeric(56)}`;
+  const STRIPE_SESSION_ID_LENGTH = 56;
+  return `cs_test_${faker.string.alphanumeric(STRIPE_SESSION_ID_LENGTH)}`;
 }
 
 export function generateStripeCustomerId(): string {
-  return `cus_${faker.string.alphanumeric(14)}`;
+  const STRIPE_CUSTOMER_ID_LENGTH = 14;
+  return `cus_${faker.string.alphanumeric(STRIPE_CUSTOMER_ID_LENGTH)}`;
 }
 
 export function generateStripePaymentIntentId(): string {
-  return `pi_${faker.string.alphanumeric(24)}`;
+  const STRIPE_PAYMENT_INTENT_ID_LENGTH = 24;
+  return `pi_${faker.string.alphanumeric(STRIPE_PAYMENT_INTENT_ID_LENGTH)}`;
 }
 
 export function generateIdempotencyKey(): string {
@@ -130,7 +133,7 @@ export function distributeByPercentage(
   for (const [key, percentage] of entries) {
     const keyNum = Number.parseInt(key, 10);
 
-    if (entries[entries.length - 1]?.[0] === key) {
+    if (entries.at(entries.length - 1)?.[0] === key) {
       result.set(keyNum, remaining);
     } else {
       const count = Math.floor((total * percentage) / totalPercentage);
@@ -142,12 +145,14 @@ export function distributeByPercentage(
   return result;
 }
 
+const CENTS_PERCENTAGE = 100;
+
 export function centsToDollars(cents: bigint): string {
-  return (Number(cents) / 100).toFixed(2);
+  return (Number(cents) / CENTS_PERCENTAGE).toFixed(2);
 }
 
 export function dollarsToCents(dollars: number): bigint {
-  return BigInt(Math.round(dollars * 100));
+  return BigInt(Math.round(dollars * CENTS_PERCENTAGE));
 }
 
 export function generateDepositAmount(kycStatusId: number): bigint {
