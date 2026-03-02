@@ -6,11 +6,16 @@ import { seedRoles } from "./db/seed/roles";
 import { seedTransactionStatuses } from "./db/seed/transaction-statuses";
 import { seedTransactionTypes } from "./db/seed/transaction-types";
 import { env } from "./env";
+import { logger } from "./lib/logger";
+import { seedRegularUsers, seedSpecialUsers } from "./db/seed/users";
+
+if (env.NODE_ENV === "production") {
+  logger.info("Seeding not allowed in production");
+  process.exit(0);
+}
 
 if (env.DB_SEEDING !== true) {
-  // TODO: Will have to install pino logger dependencies
-  // logger.info("Seeding not allowed in production");
-  // logger.info("DB_SEEDING must be set to true");
+  logger.info("DB_SEEDING must be set to true");
   process.exit(0);
 }
 
@@ -38,5 +43,8 @@ await seedTransactionStatuses();
 await seedTransactionTypes();
 await seedNetworks();
 await seedRoles();
+
+await seedSpecialUsers();
+await seedRegularUsers();
 
 await pool.end();
