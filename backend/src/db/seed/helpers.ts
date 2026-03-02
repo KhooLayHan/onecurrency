@@ -10,7 +10,6 @@ function* generateBatches<T>(items: T[], batchSize: number): Generator<T[]> {
   if (!Number.isInteger(batchSize) || batchSize <= 0) {
     throw new Error("batchSize must be a positive integer");
   }
-  
   for (let i = 0; i < items.length; i += batchSize) {
     yield items.slice(i, i + batchSize);
   }
