@@ -12,6 +12,7 @@ import type {
   SeededSpecialUser,
   SeededRegularUser,
 } from "./types";
+import { userRoles } from "../schema/user-roles";
 
 // Query KYC status IDs from database
 async function getKycStatusIds(): Promise<KycStatusIds> {
@@ -89,6 +90,11 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
           password: passwordHash,
           createdAt,
           updatedAt: new Date(),
+        });
+
+        await tx.insert(userRoles).values({
+          userId: inserted.id,
+          roleId: 2,
         });
       }
 
