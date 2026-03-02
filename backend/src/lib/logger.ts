@@ -97,7 +97,7 @@ const loggerConfig: pino.LoggerOptions = {
     },
   },
   hooks: {
-    logMethod(inputArgs, method, level) {
+    logMethod(inputArgs, method, _level) {
       // Ensure errors are properly serialized
       if (inputArgs[0] instanceof Error) {
         const err = inputArgs[0];

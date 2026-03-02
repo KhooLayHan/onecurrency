@@ -2,7 +2,6 @@ import { faker } from "@faker-js/faker";
 import { db } from "@/src/db";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { DEFAULT_BATCH_SIZE } from "./config";
-import type { SeededRegularUser } from "./types";
 import type { SelectedFieldsFlat } from "drizzle-orm/pg-core";
 
 // Generator for batches (supports for...of)
@@ -220,7 +219,9 @@ export function calculateFee(amountCents: bigint): bigint {
     max: 3,
     fractionDigits: 2,
   });
-  return (amountCents * BigInt(Math.round(feePercentage * 100))) / 10_000n;
+
+  const FEE_PERCENTAGE = 10_000n;
+  return (amountCents * BigInt(Math.round(feePercentage * CENTS_PERCENTAGE))) / FEE_PERCENTAGE;
 }
 
 export function generateUserAgent(): string {

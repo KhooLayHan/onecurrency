@@ -2,7 +2,6 @@ import { faker } from "@faker-js/faker";
 import { eq } from "drizzle-orm";
 import { db } from "@/src/db";
 import { users } from "../schema/users";
-import { kycStatuses } from "../schema/kyc-statuses";
 import { accounts } from "../schema/accounts";
 import { logger } from "@/src/lib/logger";
 import { defaultSeedConfig } from "./config";
