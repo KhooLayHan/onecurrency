@@ -2,6 +2,9 @@
   "name": "onecurrency-backend",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+
     "db:generate": "drizzle-kit generate",
     "db:migrate": "DB_MIGRATION=true bun --env-file=.env run src/migration.ts",
     "db:push": "drizzle-kit push",
