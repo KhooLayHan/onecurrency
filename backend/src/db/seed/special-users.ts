@@ -31,33 +31,36 @@ async function createSpecialUser(config: SpecialUserConfig): Promise<{
   const passwordHash = await hashPassword(config.password);
   const now = new Date();
   const createdAt = faker.date.past({ years: 0.5 });
+  
+  const userId = await db.transaction(async (tx) => {
+    const userResult = await tx
+      .insert(users)
+      .values({
+        name: config.name,
+        email: config.email,
+        emailVerified: config.emailVerified,
+        kycStatusId: config.kycStatusId,
+        depositLimitCents: config.depositLimitCents,
+        createdAt,
+        updatedAt: now,
+      })
+      .returning({ id: users.id });
 
-  const userResult = await db
-    .insert(users)
-    .values({
-      name: config.name,
-      email: config.email,
-      emailVerified: config.emailVerified,
-      kycStatusId: config.kycStatusId,
-      depositLimitCents: config.depositLimitCents,
+    const id = userResult[0]?.id;
+    if (!id) {
+      throw new Error(`Failed to create special user: ${config.email}`);
+    }
+
+    await tx.insert(accounts).values({
+      userId: id,
+      accountId: config.email,
+      providerId: "credential",
+      password: passwordHash,
       createdAt,
       updatedAt: now,
-    })
-    .returning({ id: users.id });
+    });
 
-  const userId = userResult[0]?.id;
-  if (!userId) {
-    throw new Error(`Failed to create special user: ${config.email}`);
-  }
-
-  // Create credential account for Better-Auth
-  await db.insert(accounts).values({
-    userId,
-    accountId: config.email,
-    providerId: "credential",
-    password: passwordHash,
-    createdAt,
-    updatedAt: now,
+    return id;
   });
 
   return {
