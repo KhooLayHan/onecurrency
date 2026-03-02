@@ -8,51 +8,51 @@ export type SpecialUserConfig = {
   kycStatusId: number;
   depositLimitCents: bigint;
   emailVerified: boolean;
-}
+};
 
 export type KycDistribution = {
   [statusId: number]: number;
-}
+};
 
 export type RoleDistribution = {
   [roleId: number]: number;
-}
+};
 
 export type DepositStatusDistribution = {
   completed: number;
   pending: number;
   failedNoTx: number;
   hybridFailed: number;
-}
+};
 
 export type PerUserRange = {
   min: number;
   max: number;
-}
+};
 
 export type UserSeedConfig = {
   count: number;
   kycDistribution: KycDistribution;
   dateRangeMonths: number;
   specialUsers: SpecialUserConfig[];
-}
+};
 
 export type WalletSeedConfig = {
   perUser: PerUserRange;
-}
+};
 
 export type SessionSeedConfig = {
   perUser: PerUserRange;
-}
+};
 
 export type UserRoleSeedConfig = {
   roleDistribution: RoleDistribution;
-}
+};
 
 export type DepositSeedConfig = {
   perUser: PerUserRange;
   statusDistribution: DepositStatusDistribution;
-}
+};
 
 export type SeedConfig = {
   users: UserSeedConfig;
@@ -60,7 +60,7 @@ export type SeedConfig = {
   sessions: SessionSeedConfig;
   userRoles: UserRoleSeedConfig;
   deposits: DepositSeedConfig;
-}
+};
 
 export const defaultSeedConfig: SeedConfig = {
   users: {
