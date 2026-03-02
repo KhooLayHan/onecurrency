@@ -1,3 +1,5 @@
+export const DEFAULT_BATCH_SIZE = 50;
+
 export interface SpecialUserConfig {
   email: string;
   password: string;

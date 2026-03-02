@@ -1,133 +1,170 @@
 import { faker } from "@faker-js/faker";
+import { eq } from "drizzle-orm";
 import { db } from "@/src/db";
-import type { NewUser } from "../schema/users";
 import { users } from "../schema/users";
-import type { UserSeedConfig } from "./config";
-import {
-  distributeByPercentage,
-  generateUserAgent,
-  randomBetween,
-} from "./helpers";
-import { batchInsert } from "./types";
+import { kycStatuses } from "../schema/kyc-statuses";
+import { accounts } from "../schema/accounts";
+import { logger } from "@/src/lib/logger";
+import { defaultSeedConfig } from "./config";
+import { batchInsertReturning } from "./helpers";
+import type {
+  KycStatusIds,
+  SeededSpecialUser,
+  SeededRegularUser,
+} from "./types";
 
-export async function seedRegularUsers(
-  config: UserSeedConfig,
-  specialUserCount: number
-): Promise<
-  Array<{
-    id: bigint;
-    email: string;
-    name: string;
-    kycStatusId: number;
-    createdAt: Date;
-  }>
-> {
-  const regularUserCount = config.count - specialUserCount;
-  if (regularUserCount < 0) {
-    throw new Error("specialUserCount cannot exceed config.count");
-  }
+// Query KYC status IDs from database
+async function getKycStatusIds(): Promise<KycStatusIds> {
+  const statuses = await db._query.kycStatuses.findMany();
 
-  const kycDistribution = distributeByPercentage(
-    regularUserCount,
-    config.kycDistribution
-  );
+  const getId = (name: string): number => {
+    const status = statuses.find((s) => s.name === name);
+    if (!status) throw new Error(`KYC status not found: ${name}`);
+    return status.id;
+  };
 
-  const userRecords: NewUser[] = [];
+  return {
+    none: getId("None"),
+    pending: getId("Pending"),
+    verified: getId("Verified"),
+    rejected: getId("Rejected"),
+    expired: getId("Expired"),
+  };
+}
 
-  for (const [kycStatusId, count] of kycDistribution) {
-    for (let i = 0; i < count; i++) {
-      const createdAt = faker.date.past({ years: config.dateRangeMonths / 12 });
-      const firstName = faker.person.firstName();
-      const lastName = faker.person.lastName();
-      const name = `${firstName} ${lastName}`;
-      const email = faker.internet
-        .email({
-          firstName,
-          lastName,
-          provider: "gmail.com",
-        })
-        .toLowerCase();
+// Seed special users with their credential accounts
+export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
+  const ids = await getKycStatusIds();
+  const created: SeededSpecialUser[] = [];
 
-      // Calculate deposit limit based on KYC status
-      let depositLimitCents: bigint;
-      switch (kycStatusId) {
-        case 1: // None
-        case 4: // Rejected
-        case 5: // Expired
-          depositLimitCents = BigInt(
-            faker.number.int({ min: 1000, max: 50000 })
-          );
-          break;
-        case 2: // Pending
-          depositLimitCents = BigInt(
-            faker.number.int({ min: 5000, max: 100000 })
-          );
-          break;
-        case 3: // Verified
-          depositLimitCents = BigInt(
-            faker.number.int({ min: 10000, max: 1000000 })
-          );
-          break;
-        default:
-          depositLimitCents = 10000n;
-      }
+  for (const config of defaultSeedConfig.users.specialUsers) {
+    // Check if exists
+    const existing = await db._query.users.findFirst({
+      where: eq(users.email, config.email),
+    });
 
-      const kycVerifiedAt =
-        kycStatusId === 3
-          ? faker.date.between({ from: createdAt, to: new Date() })
-          : undefined;
-
-      userRecords.push({
-        name,
-        email,
-        emailVerified: faker.datatype.boolean(0.7), // 70% verified
-        image: faker.datatype.boolean(0.3) ? faker.image.avatar() : undefined,
-        createdAt,
-        updatedAt: faker.date.between({ from: createdAt, to: new Date() }),
-        kycStatusId,
-        kycVerifiedAt,
-        depositLimitCents,
+    if (existing) {
+      logger.info(`Special user ${config.email} already exists`);
+      created.push({
+        id: existing.id,
+        email: existing.email,
+        name: existing.name,
+        roleId: config.roleId,
       });
-    }
-  }
-
-  // Shuffle users to mix KYC statuses
-  for (let i = userRecords.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-
-    const current = userRecords[i];
-    const target = userRecords[j];
-
-    if (current === undefined || target === undefined) {
       continue;
     }
 
-    userRecords[i] = target;
-    userRecords[j] = current;
+    const passwordHash = await Bun.password.hash(config.password, {
+      algorithm: "argon2id",
+    });
+
+    const createdAt = faker.date.past({ years: 0.5 });
+
+    // Insert user + credential account in transaction
+    const [user] = await db.transaction(async (tx) => {
+      const [inserted] = await tx
+        .insert(users)
+        .values({
+          name: config.name,
+          email: config.email,
+          emailVerified: config.emailVerified,
+          kycStatusId: config.kycStatusId,
+          kycVerifiedAt:
+            config.kycStatusId === ids.verified ? createdAt : undefined,
+          depositLimitCents: config.depositLimitCents,
+          createdAt,
+          updatedAt: new Date(),
+        })
+        .returning({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+        });
+
+      if (inserted) {
+        await tx.insert(accounts).values({
+          userId: inserted.id,
+          accountId: config.email,
+          providerId: "credential",
+          password: passwordHash,
+          createdAt,
+          updatedAt: new Date(),
+        });
+      }
+
+      return [inserted];
+    });
+
+    if (user) {
+      created.push({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        roleId: config.roleId,
+      });
+    }
+
+    logger.info(`Created special user: ${config.email}`);
   }
 
-  // Insert in batches
-  const createdUsers: Array<{
-    id: bigint;
-    email: string;
-    name: string;
-    kycStatusId: number;
-    createdAt: Date;
-  }> = [];
+  return created;
+}
 
-  for (let i = 0; i < userRecords.length; i += 50) {
-    const batch = userRecords.slice(i, i + 50);
-    const result = await db.insert(users).values(batch).returning({
+// Seed regular fake users (no accounts needed for now)
+export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
+  const ids = await getKycStatusIds();
+
+  // Build distribution: 30 None, 20 Pending, 40 Verified, 8 Rejected, 2 Expired
+  const kycDistribution = [
+    ...Array(30).fill(ids.none),
+    ...Array(20).fill(ids.pending),
+    ...Array(40).fill(ids.verified),
+    ...Array(8).fill(ids.rejected),
+    ...Array(2).fill(ids.expired),
+  ];
+
+  const shuffled = faker.helpers.shuffle(kycDistribution);
+  const userRecords = [];
+
+  for (const kycStatusId of shuffled) {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const createdAt = faker.date.past({ years: 0.5 });
+
+    let depositLimit: bigint;
+    if (kycStatusId === ids.verified) {
+      depositLimit = BigInt(faker.number.int({ min: 10_000, max: 1_000_000 }));
+    } else if (kycStatusId === ids.pending) {
+      depositLimit = BigInt(faker.number.int({ min: 5_000, max: 100_000 }));
+    } else {
+      depositLimit = BigInt(faker.number.int({ min: 1_000, max: 50_000 }));
+    }
+
+    userRecords.push({
+      name: `${firstName} ${lastName}`,
+      email: faker.internet.email({ firstName, lastName }).toLowerCase(),
+      emailVerified: faker.datatype.boolean(0.7),
+      kycStatusId,
+      kycVerifiedAt:
+        kycStatusId === ids.verified
+          ? faker.date.between({ from: createdAt, to: new Date() })
+          : undefined,
+      depositLimitCents: depositLimit,
+      createdAt,
+      updatedAt: faker.date.between({ from: createdAt, to: new Date() }),
+    });
+  }
+
+  // Use batchInsertReturning
+  const created = await batchInsertReturning(users, userRecords, {
+    returning: {
       id: users.id,
       email: users.email,
       name: users.name,
       kycStatusId: users.kycStatusId,
-      createdAt: users.createdAt,
-    });
+    },
+  });
 
-    createdUsers.push(...result);
-  }
-
-  console.log(`Created ${createdUsers.length} regular users`);
-  return createdUsers;
+  logger.info(`Created ${created.length} regular users`);
+  return created as SeededRegularUser[];
 }

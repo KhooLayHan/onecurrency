@@ -1,6 +1,50 @@
 import { faker } from "@faker-js/faker";
+import { db } from "@/src/db";
+import type { PgTable } from "drizzle-orm/pg-core";
+import { DEFAULT_BATCH_SIZE } from "./config";
 
-export const BATCH_SIZE = 50;
+// Generator for batches (supports for...of)
+function* generateBatches<T>(items: T[], batchSize: number): Generator<T[]> {
+  for (let i = 0; i < items.length; i += batchSize) {
+    yield items.slice(i, i + batchSize);
+  }
+}
+
+// Simple batch insert without returning
+export async function batchInsert<T extends Record<string, unknown>>(
+  table: PgTable,
+  records: T[],
+  options: { batchSize?: number } = {}
+): Promise<void> {
+  const { batchSize = DEFAULT_BATCH_SIZE } = options;
+
+  for (const batch of generateBatches(records, batchSize)) {
+    await db.insert(table).values(batch);
+  }
+}
+
+// Batch insert with returning clause
+export async function batchInsertReturning(
+  table: PgTable,
+  records: Record<string, unknown>[],
+  options: {
+    batchSize?: number;
+    returning: Record<string, unknown>;
+  }
+): Promise<unknown[]> {
+  const { batchSize = DEFAULT_BATCH_SIZE, returning } = options;
+  const results: unknown[] = [];
+
+  for (const batch of generateBatches(records, batchSize)) {
+    const batchResult = await db
+      .insert(table)
+      .values(batch)
+      .returning(returning);
+    results.push(...batchResult);
+  }
+
+  return results;
+}
 
 export function randomBetween(min: number, max: number): number {
   return faker.number.int({ min, max });
@@ -11,15 +55,15 @@ export function randomPercentage(): number {
 }
 
 export function generateEthereumAddress(): string {
-  return `${faker.string.hexadecimal({ length: 40, casing: "lower", prefix: "Ox" })}`;
+  return `0x${faker.string.hexadecimal({ length: 40, casing: "lower" })}`;
 }
 
 export function generateTransactionHash(): string {
-  return `${faker.string.hexadecimal({ length: 64, casing: "lower", prefix: "Ox" })}`;
+  return `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
 }
 
 export function generateBlockHash(): string {
-  return `${faker.string.hexadecimal({ length: 64, casing: "lower", prefix: "Ox" })}`;
+  return `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
 }
 
 export function generateStripeSessionId(): string {
@@ -110,11 +154,11 @@ export function generateDepositAmount(kycStatusId: number): bigint {
       break;
     case 2: // Pending
       minDollars = 50;
-      maxDollars = 1000;
+      maxDollars = 1_000;
       break;
     case 3: // Verified
       minDollars = 50;
-      maxDollars = 5000;
+      maxDollars = 5_000;
       break;
     default:
       minDollars = 10;
@@ -136,14 +180,14 @@ export function generateDepositAmount(kycStatusId: number): bigint {
       fractionDigits: 2,
     });
   } else if (amountDistribution <= 90) {
-    // 30% medium amounts: $100-$1000
+    // 30% medium amounts: $100-$1_000
     amount = faker.number.float({
       min: smallMax,
       max: mediumMax,
       fractionDigits: 2,
     });
   } else {
-    // 10% large amounts: $1000-$5000
+    // 10% large amounts: $1_000-$5_000
     amount = faker.number.float({
       min: mediumMax,
       max: maxDollars,
@@ -162,7 +206,7 @@ export function calculateFee(amountCents: bigint): bigint {
     max: 3,
     fractionDigits: 2,
   });
-  return (amountCents * BigInt(Math.round(feePercentage * 100))) / 10000n;
+  return (amountCents * BigInt(Math.round(feePercentage * 100))) / 10_000n;
 }
 
 export function generateUserAgent(): string {

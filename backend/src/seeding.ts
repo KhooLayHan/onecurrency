@@ -7,6 +7,12 @@ import { seedTransactionStatuses } from "./db/seed/transaction-statuses";
 import { seedTransactionTypes } from "./db/seed/transaction-types";
 import { env } from "./env";
 import { logger } from "./lib/logger";
+// import { seedSpecialUsers } from "./db/seed/special-users";
+import { seedRegularUsers, seedSpecialUsers } from "./db/seed/users";
+// import { seedUserRoles } from "./db/seed/user-roles";
+// import { seedAccounts } from "./db/seed/accounts";
+import { defaultSeedConfig } from "./db/seed/config";
+// import { seedWallets } from "./db/seed/wallets";
 
 if (env.NODE_ENV === "production") {
   logger.info("Seeding not allowed in production");
@@ -42,5 +48,11 @@ await seedTransactionStatuses();
 await seedTransactionTypes();
 await seedNetworks();
 await seedRoles();
+
+await seedSpecialUsers();
+await seedRegularUsers();
+// await seedWallets();
+// await seedAccounts();
+// await seedUserRoles();
 
 await pool.end();
