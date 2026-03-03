@@ -1,4 +1,5 @@
-import { ethers } from "hardhat";
+// import { ethers } from "hardhat";
+const { ethers } = require("hardhat");
 
 async function main() {
   console.log("🚀 Starting OneCurrency Deployment...");
