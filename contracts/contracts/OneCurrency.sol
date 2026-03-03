@@ -35,6 +35,7 @@ contract OneCurrency is ERC20, ERC20Burnable, AccessControl {
      * and BLACKLIST_ROLE to the deployer.
      */
     constructor(address defaultAdmin) ERC20("OneCurrency", "ONE") {
+        require(defaultAdmin != address(0), "default admin cannot be zero");
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(MINTER_ROLE, defaultAdmin);
         _grantRole(BLACKLIST_ROLE, defaultAdmin);
@@ -53,6 +54,7 @@ contract OneCurrency is ERC20, ERC20Burnable, AccessControl {
      * Requirements: Caller must have the `BLACKLIST_ROLE`.
      */
     function blacklistAccount(address account) public onlyRole(BLACKLIST_ROLE) {
+        require(account != address(0), "cannot blacklist zero address");
         _blacklisted[account] = true;
         emit AccountBlacklisted(account);
     }
@@ -62,6 +64,7 @@ contract OneCurrency is ERC20, ERC20Burnable, AccessControl {
      * Requirements: Caller must have the `BLACKLIST_ROLE`.
      */
     function unblacklistAccount(address account) public onlyRole(BLACKLIST_ROLE) {
+        require(account != address(0), "cannot blacklist zero address");
         _blacklisted[account] = false;
         emit AccountUnblacklisted(account);
     }

@@ -1,9 +1,9 @@
 import { expect } from "chai";
-const ethers = require("hardhat");
+const{ ethers } = require("hardhat");
 
 // import ethers from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 
-const loadFixture = require("@nomicfoundation/hardhat-toolbox-mocha-ethers/network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-toolbox-mocha-ethers/network-helpers");
 
 describe("OneCurrency", () => {
     // Fixture to deploy the contract once and reuse the state
@@ -26,7 +26,7 @@ describe("OneCurrency", () => {
             const { token, admin } = await loadFixture(deployTokenFixture);
             const DEFAULT_ADMIN_ROLE = await token.DEFAULT_ADMIN_ROLE();
             
-            expect(await token.hsaRole(DEFAULT_ADMIN_ROLE, admin.address)).to.be.true;
+            expect(await token.hasRole(DEFAULT_ADMIN_ROLE, admin.address)).to.be.true;
         });
     });
     
@@ -43,9 +43,9 @@ describe("OneCurrency", () => {
             const { token, firstUser, MINTER_ROLE } = await loadFixture(deployTokenFixture);
             const mintAmount = ethers.parseUnits("100", 18); 
             
-            // await expect(
-            //     token.connect(firstUser).mint(firstUser.address, mintAmount)
-            // ).to.be.revertedWithCustomError(token, "AccessControlUnauthorizedAccount");
+            await expect(
+                token.connect(firstUser).mint(firstUser.address, mintAmount)
+            ).to.be.revertedWithCustomError(token, "AccessControlUnauthorizedAccount");
         });
     });
 
@@ -60,9 +60,9 @@ describe("OneCurrency", () => {
             // Minter tries to mint to firstUser, should fail with custom error
             const mintAmount = ethers.parseUnits("50", 18); 
             
-            // await expect(
-            //     token.connect(minter).mint(firstUser.address, mintAmount)
-            // ).to.be.revertedWithCustomError(token, "BlacklistedAccount").withArgs(firstUser.address);
+            await expect(
+                token.connect(minter).mint(firstUser.address, mintAmount)
+            ).to.be.revertedWithCustomError(token, "BlacklistedAccount").withArgs(firstUser.address);
 
         });
     });
