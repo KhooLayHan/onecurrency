@@ -1,5 +1,5 @@
 import pino from "pino";
-import { env } from "../env";
+import { env } from "../../../../backend/src/env";
 
 // Environment detection
 const environment = env.NODE_ENV || "development";
