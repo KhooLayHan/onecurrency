@@ -1,5 +1,5 @@
 import pino from "pino";
-import { env } from "../../../../backend/src/env";
+import { env } from "../env";
 
 // Environment detection
 const environment = env.NODE_ENV || "development";
@@ -68,7 +68,7 @@ const loggerConfig: pino.LoggerOptions = {
   level: isDev ? "debug" : "info",
   base: {
     service: "onecurrency-backend",
-    version: process.env.npm_package_version || "1.0.0",
+    version: process.env.npm_package_version || "1.0.0", // error here
     environment: env,
   },
   timestamp: pino.stdTimeFunctions.isoTime,
