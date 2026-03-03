@@ -1,6 +1,6 @@
-import { ethers } from "hardhat";
+// import { ethers } from "hardhat";
 
-// const ethers = require("hardhat");
+const ethers = require("hardhat");
 
 // import hre from "hardhat";
 // const { ethers } = hre;

@@ -6,9 +6,9 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     // "baseUrl": "./",
-    // "paths": {
-    //   "@/*": ["./*"]
-    // },
+    "paths": {
+      "@/*": ["./*"]
+    },
   },
   "include": ["./hardhat.config.ts", "./scripts/**/*.ts", "./test/**/*.ts"],
   // "files": [
