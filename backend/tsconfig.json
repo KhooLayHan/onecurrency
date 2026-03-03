@@ -7,7 +7,7 @@
     "jsxImportSource": "hono/jsx",
     "outDir": "dist",
     "noEmit": false,
-    "baseUrl": "src",
+    // "baseUrl": "src",
     "paths": {
       "@/*": ["./*"],
       "@/common/*": ["../../packages/common/*"]

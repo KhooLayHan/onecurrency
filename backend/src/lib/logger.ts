@@ -1,5 +1,5 @@
-import { createBaseLogger } from "@/common/src/lib/logger"
-import { env } from "@/env";
+import { createBaseLogger } from "../../../packages/common/src/lib/logger"
+import { env } from "@/src/env";
 
 export const logger = createBaseLogger({
   env: env.NODE_ENV,
