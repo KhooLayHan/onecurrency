@@ -73,11 +73,11 @@ export function createBaseLogger(config: LoggerConfig) {
   };
 
   const loggerConfig: pino.LoggerOptions = {
-    level: config.logLevel ? "debug" : "info",
+    level: isDev ? "debug" : "info",
     
     base: {
       service: config.serviceName,
-      version: process.env.npm_package_version || "1.0.0",
+      version: config.version,
       environment: config.env,
     },
     
