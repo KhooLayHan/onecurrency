@@ -7,10 +7,11 @@
     "jsxImportSource": "hono/jsx",
     "outDir": "dist",
     "noEmit": false,
-    "rootDir": "./src",
+    "baseUrl": "src",
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": ["./*"],
+      "@/common/*": ["../../packages/common/*"]
+    },
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules"]

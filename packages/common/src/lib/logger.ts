@@ -1,10 +1,12 @@
 import pino from "pino";
-import { env } from "../env";
 
-// Environment detection
-const environment = env.NODE_ENV || "development";
-const isDev = env.NODE_ENV === "development";
-const isStaging = env.NODE_ENV === "staging";
+export type LoggerConfig = {
+  env: "development" | "staging" | "production" | "testing";
+  version?: string;
+  logLevel: string;
+  serviceName: string;
+  betterStackToken?: string;
+};
 
 function maskEmail(email: string): string {
   const MAX_LENGTH = 3;
@@ -23,133 +25,144 @@ function maskEmail(email: string): string {
   return `${maskedLocal}@${domain}`;
 }
 
-// Environment-specific redaction paths
-const getRedactionPaths = (): string[] => {
-  const basePaths = [
-    "*.password",
-    "*.secret",
-    "*.privateKey",
-    "*.apiKey",
-    "*.mnemonic",
-    "*.seedPhrase",
-    "*.creditCard",
-    "*.cvv",
-    "headers.authorization",
-    "headers.cookie",
-  ];
-
-  // Production: aggressive redaction
-  if (environment === "production") {
-    return [
-      ...basePaths,
-      "actor.ip_address", // Country only
-      "actor.user_agent", // Not logged
-      "actor.email", // Not logged (use user_id)
-      "context.wallet_address", // Not logged
-      "context.email", // Not logged
-      "*.internal_details", // Not exposed
+export function createBaseLogger(config: LoggerConfig) {
+  // Environment detection
+  const environment = config.env || "development";
+  const isDev = config.env === "development";
+  const isStaging = config.env === "staging";
+  
+  // Environment-specific redaction paths
+  const getRedactionPaths = (): string[] => {
+    const basePaths = [
+      "*.password",
+      "*.secret",
+      "*.privateKey",
+      "*.apiKey",
+      "*.mnemonic",
+      "*.seedPhrase",
+      "*.creditCard",
+      "*.cvv",
+      "headers.authorization",
+      "headers.cookie",
     ];
-  }
 
-  // Staging: standard redaction
-  if (isStaging) {
-    return [
-      ...basePaths,
-      "actor.ip_address", // Masked
-      "context.wallet_address", // Masked
-    ];
-  }
+    // Production: aggressive redaction
+    if (environment === "production") {
+      return [
+        ...basePaths,
+        "actor.ip_address", // Country only
+        "actor.user_agent", // Not logged
+        "actor.email", // Not logged (use user_id)
+        "context.wallet_address", // Not logged
+        "context.email", // Not logged
+        "*.internal_details", // Not exposed
+      ];
+    }
 
-  // Development: minimal redaction (only credentials)
-  return basePaths;
-};
+    // Staging: standard redaction
+    if (isStaging) {
+      return [
+        ...basePaths,
+        "actor.ip_address", // Masked
+        "context.wallet_address", // Masked
+      ];
+    }
 
-const loggerConfig: pino.LoggerOptions = {
-  level: isDev ? "debug" : "info",
-  base: {
-    service: "onecurrency-backend",
-    version: process.env.npm_package_version || "1.0.0", // error here
-    environment: env,
-  },
-  timestamp: pino.stdTimeFunctions.isoTime,
-  formatters: {
-    level: (label: string) => ({ level: label.toUpperCase() }),
-    // Add binding formatter for consistent structure
-    bindings: (bindings: pino.Bindings) => ({
-      pid: bindings.pid,
-      hostname: bindings.hostname,
-    }),
-  },
-  redact: {
-    paths: getRedactionPaths(),
-    censor: (value: unknown, path: string[]) => {
-      const pathStr = path.join(".");
+    // Development: minimal redaction (only credentials)
+    return basePaths;
+  };
 
-      if (
-        pathStr.includes("email") &&
-        typeof value === "string" &&
-        value.includes("@")
-      ) {
-        return maskEmail(value);
-      }
-
-      return "[REDACTED]";
+  const loggerConfig: pino.LoggerOptions = {
+    level: config.logLevel ? "debug" : "info",
+    
+    base: {
+      service: config.serviceName,
+      version: process.env.npm_package_version || "1.0.0",
+      environment: config.env,
     },
-  },
-  hooks: {
-    logMethod(inputArgs, method, _level) {
-      // Ensure errors are properly serialized
-      if (inputArgs[0] instanceof Error) {
-        const err = inputArgs[0];
-        inputArgs[0] = {
-          err: {
-            type: err.name,
-            message: err.message,
-            stack: isDev ? err.stack : undefined,
-          },
-        };
-      }
-      method.apply(this, inputArgs);
+    
+    timestamp: pino.stdTimeFunctions.isoTime,
+    
+    formatters: {
+      level: (label: string) => ({ level: label.toUpperCase() }),
+      
+      bindings: (bindings: pino.Bindings) => ({
+        pid: bindings.pid,
+        hostname: bindings.hostname,
+      }),
     },
-  },
-};
+    
+    redact: {
+      paths: getRedactionPaths(),
+      
+      censor: (value: unknown, path: string[]) => {
+        const pathStr = path.join(".");
 
-// Add pretty printing for development
-if (isDev) {
-  loggerConfig.transport = {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: "SYS:standard",
-      ignore: "pid,hostname",
+        if (
+          pathStr.includes("email") &&
+          typeof value === "string" &&
+          value.includes("@")
+        ) {
+          return maskEmail(value);
+        }
+
+        return "[REDACTED]";
+      },
+    },
+    
+    hooks: {
+      logMethod(inputArgs, method, _level) {
+        // Ensure errors are properly serialized
+        if (inputArgs[0] instanceof Error) {
+          const err = inputArgs[0];
+          inputArgs[0] = {
+            err: {
+              type: err.name,
+              message: err.message,
+              stack: isDev ? err.stack : undefined,
+            },
+          };
+        }
+        method.apply(this, inputArgs);
+      },
     },
   };
-}
 
-// Create the logger instance
-export const logger = pino(loggerConfig);
-
-// Sampling utility for production
-export const shouldLog = (category: string): boolean => {
-  if (environment !== "production") {
-    return true;
+  if (config.env === "development") {
+    loggerConfig.transport = {
+      target: "pino-pretty",
+      options: {
+        colorize: true,
+        translateTime: "SYS:standard",
+        ignore: "pid,hostname",
+      },
+    };
   }
 
-  // Always log deposits and critical events
-  if (
-    category === "deposit" ||
-    category === "security" ||
-    category === "compliance"
-  ) {
-    return true;
-  }
-
-  // Sample other categories at 10% in production
-  const SAMPLING_RATE = 0.1;
-  return Math.random() < SAMPLING_RATE;
+  return pino(loggerConfig);
 };
 
-// Child logger factory with bound context
-export const createChildLogger = (
-  bindings: Record<string, unknown>
-): pino.Logger => logger.child(bindings);
+// Sampling utility for production
+// export const shouldLog = (category: string): boolean => {
+//   if (environment !== "production") {
+//     return true;
+//   }
+
+//   // Always log deposits and critical events
+//   if (
+//     category === "deposit" ||
+//     category === "security" ||
+//     category === "compliance"
+//   ) {
+//     return true;
+//   }
+
+//   // Sample other categories at 10% in production
+//   const SAMPLING_RATE = 0.1;
+//   return Math.random() < SAMPLING_RATE;
+// };
+
+// // Child logger factory with bound context
+// export const createChildLogger = (
+//   bindings: Record<string, unknown>
+// ): pino.Logger => logger.child(bindings);

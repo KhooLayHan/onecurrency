@@ -17,6 +17,12 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+
+    "rootDir": ".",
+    "paths": {
+      "@onecurrency/common": ["packages/common/src"],
+      "@onecurrency/backend": ["backend/src"],
+    }
   }
 }
