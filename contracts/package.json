@@ -2,10 +2,12 @@
   "name": "onecurrency-contracts",
   "type": "module",
   "scripts": {
-    "clean": "pnpm hardhat clean",
-    "build": "pnpm hardhat build",
-    "format": "biome format --write .",
-    "test": "pnpm hardhat test"
+    "hh:clean": "pnpm hardhat clean",
+    "hh:build": "pnpm hardhat build",
+    "hh:deploy": "pnpm hardhat run",
+    "hh:test": "pnpm hardhat test",
+    
+    "format": "biome format --write ."
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.5",

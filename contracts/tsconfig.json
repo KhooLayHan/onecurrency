@@ -7,7 +7,8 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/common/*": ["../packages/common/src/*"]
     }
   }
 }

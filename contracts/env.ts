@@ -13,7 +13,6 @@ export const env = createEnv({
     ETHERSCAN_API_KEY: z.string().optional(),
 
     BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
-    BETTERSTACK_INGESTING_HOST: z.string().min(1),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

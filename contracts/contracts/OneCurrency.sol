@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
@@ -64,7 +64,7 @@ contract OneCurrency is ERC20, ERC20Burnable, AccessControl {
      * Requirements: Caller must have the `BLACKLIST_ROLE`.
      */
     function unblacklistAccount(address account) public onlyRole(BLACKLIST_ROLE) {
-        require(account != address(0), "cannot blacklist zero address");
+        require(account != address(0), "cannot unblacklist zero address");
         _blacklisted[account] = false;
         emit AccountUnblacklisted(account);
     }
