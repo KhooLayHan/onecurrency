@@ -1,6 +1,8 @@
 {
   "extends": "../tsconfig.base.json",
 
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
@@ -10,8 +12,6 @@
     "paths": {
       "@/*": ["./*"],
       "@/common/*": ["../../packages/common/*"]
-    },
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules"]
+    }
+  }
 }

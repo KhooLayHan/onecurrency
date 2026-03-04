@@ -1,8 +1,7 @@
 import { network } from "hardhat";
+import { logger } from "../lib/logger";
 
 const { ethers } = await network.connect();
-
-import { logger } from "../lib/logger";
 
 async function main() {
   logger.info("Starting OneCurrency Deployment...");
