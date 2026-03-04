@@ -4,7 +4,6 @@
   "scripts": {
     "clean": "pnpm hardhat clean",
     "build": "pnpm hardhat build",
-    "lint": "biome lint .",
     "format": "biome format --write .",
     "test": "pnpm hardhat test"
   },
