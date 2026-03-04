@@ -7,7 +7,9 @@
   "declaration": true,
   "scripts": {
     "build": "tsc",
-    "dev": "tsx --watch src/index.ts"
+    "dev": "tsx --watch src/index.ts",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
   },
   "devDependencies": {
     "@types/node": "^25.3.3",

@@ -30,7 +30,7 @@ export function createBaseLogger(config: LoggerConfig) {
   const environment = config.env || "development";
   const isDev = config.env === "development";
   const isStaging = config.env === "staging";
-  
+
   // Environment-specific redaction paths
   const getRedactionPaths = (): string[] => {
     const basePaths = [
@@ -74,27 +74,27 @@ export function createBaseLogger(config: LoggerConfig) {
 
   const loggerConfig: pino.LoggerOptions = {
     level: isDev ? "debug" : "info",
-    
+
     base: {
       service: config.serviceName,
       version: config.version,
       environment: config.env,
     },
-    
+
     timestamp: pino.stdTimeFunctions.isoTime,
-    
+
     formatters: {
       level: (label: string) => ({ level: label.toUpperCase() }),
-      
+
       bindings: (bindings: pino.Bindings) => ({
         pid: bindings.pid,
         hostname: bindings.hostname,
       }),
     },
-    
+
     redact: {
       paths: getRedactionPaths(),
-      
+
       censor: (value: unknown, path: string[]) => {
         const pathStr = path.join(".");
 
@@ -109,7 +109,7 @@ export function createBaseLogger(config: LoggerConfig) {
         return "[REDACTED]";
       },
     },
-    
+
     hooks: {
       logMethod(inputArgs, method, _level) {
         // Ensure errors are properly serialized
@@ -140,7 +140,7 @@ export function createBaseLogger(config: LoggerConfig) {
   }
 
   return pino(loggerConfig);
-};
+}
 
 // Sampling utility for production
 // export const shouldLog = (category: string): boolean => {
