@@ -1,27 +1,30 @@
-// import { ethers } from "hardhat";
-const { ethers } = require("hardhat");
+import { network } from "hardhat";
+
+const { ethers } = await network.connect();
+
+import { logger } from "../lib/logger";
 
 async function main() {
-  console.log("🚀 Starting OneCurrency Deployment...");
+  logger.info("Starting OneCurrency Deployment...");
 
   const [deployer] = await ethers.getSigners();
-  console.log("Deploying contracts with the account:", deployer.address);
+  logger.info(`Deploying contracts with the account: ${deployer?.address}`);
 
   // Deploy the contract, passing the deployer as the initial Default Admin
-  const token = await ethers.deployContract("OneCurrency", [deployer.address]);
+  const token = await ethers.deployContract("OneCurrency", [deployer?.address]);
   await token.waitForDeployment();
 
   const contractAddress = await token.getAddress();
-  
-  console.log("✅ OneCurrency deployed successfully!");
-  console.log("📜 Contract Address:", contractAddress);
-  console.log("🔗 View on Etherscan: https://sepolia.etherscan.io/address/" + contractAddress);
-  
-  // NOTE: In the next milestone, you will copy this Contract Address and paste 
+
+  logger.info("OneCurrency deployed successfully!");
+  logger.info(`Contract Address: ${contractAddress}`);
+  logger.info(`View on Etherscan: https://sepolia.etherscan.io/address/${contractAddress}`);
+
+  // NOTE: In the next milestone, you will copy this Contract Address and paste
   // it into your backend/frontend environment variables!
 }
 
 main().catch((error) => {
-  console.error("❌ Deployment Failed:", error);
+  logger.error("Deployment Failed:", error);
   process.exitCode = 1;
 });
