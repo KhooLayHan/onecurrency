@@ -1,13 +1,13 @@
 {
   "extends": "../tsconfig.base.json",
 
+  "include": ["./hardhat.config.ts", "./scripts/**/*.ts", "./test/**/*.ts"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./*"]
-    },
-  },
-  "include": ["./hardhat.config.ts", "./scripts/**/*.ts", "./test/**/*.ts"],
-  "exclude": ["node_modules"]
+    }
+  }
 }
