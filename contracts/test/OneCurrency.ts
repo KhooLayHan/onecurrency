@@ -46,7 +46,7 @@ describe("OneCurrency", () => {
         await networkHelpers.loadFixture(deployTokenFixture);
       const mintAmount = ethers.parseUnits("100", 18); // 100 tokens
 
-      await token.connect(minter).mint(firstUser.address, mintAmount);
+      await token.connect(minter?).mint(firstUser?.address, mintAmount);
       expect(await token.balanceOf(firstUser.address)).to.equal(mintAmount);
     });
 
@@ -56,7 +56,7 @@ describe("OneCurrency", () => {
       const mintAmount = ethers.parseUnits("100", 18);
 
       await expect(
-        token.connect(firstUser).mint(firstUser.address, mintAmount)
+        token.connect(firstUser?).mint(firstUser?.address, mintAmount)
       ).to.be.revertedWithCustomError(
         token,
         "AccessControlUnauthorizedAccount"
@@ -70,15 +70,15 @@ describe("OneCurrency", () => {
         await networkHelpers.loadFixture(deployTokenFixture);
 
       // Admin blacklist firstUser
-      await token.connect(admin).blacklistAccount(firstUser.address);
-      expect(await token.isBlacklisted(firstUser.address)).to.be.true;
+      await token.connect(admin?).blacklistAccount(firstUser?.address);
+      expect(await token.isBlacklisted(firstUser?.address)).to.be.true;
 
       // Minter tries to mint to firstUser, should fail with custom error
       const mintAmount = ethers.parseUnits("50", 18);
 
-      await expect(token.connect(minter).mint(firstUser.address, mintAmount))
+      await expect(token.connect(minter?).mint(firstUser?.address, mintAmount))
         .to.be.revertedWithCustomError(token, "BlacklistedAccount")
-        .withArgs(firstUser.address);
+        .withArgs(firstUser?.address);
     });
   });
 });
