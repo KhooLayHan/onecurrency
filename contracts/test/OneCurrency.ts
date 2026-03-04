@@ -8,7 +8,8 @@ const { networkHelpers } = await network.connect();
 describe("OneCurrency", () => {
   // Fixture to deploy the contract once and reuse the state
   async function deployTokenFixture() {
-    const [admin, minter, firstUser, secondUser]: HardhatEthersSigner[] = await ethers.getSigners();
+    const [admin, minter, firstUser, secondUser]: HardhatEthersSigner[] =
+      await ethers.getSigners();
 
     const onecurrency = await ethers.getContractFactory("OneCurrency");
     const token = await onecurrency.deploy(admin?.address);
@@ -16,7 +17,7 @@ describe("OneCurrency", () => {
     const MINTER_ROLE = await token.MINTER_ROLE();
     await token.grantRole(MINTER_ROLE, minter?.address);
 
-    token
+    token;
 
     return {
       token,
@@ -34,7 +35,8 @@ describe("OneCurrency", () => {
         await networkHelpers.loadFixture(deployTokenFixture);
       const DEFAULT_ADMIN_ROLE = await token.DEFAULT_ADMIN_ROLE();
 
-      expect(await token.hasRole(DEFAULT_ADMIN_ROLE, admin?.address)).to.be.true;
+      expect(await token.hasRole(DEFAULT_ADMIN_ROLE, admin?.address)).to.be
+        .true;
     });
   });
 

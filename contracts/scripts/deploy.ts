@@ -18,7 +18,9 @@ async function main() {
 
   logger.info("OneCurrency deployed successfully!");
   logger.info(`Contract Address: ${contractAddress}`);
-  logger.info(`View on Etherscan: https://sepolia.etherscan.io/address/${contractAddress}`);
+  logger.info(
+    `View on Etherscan: https://sepolia.etherscan.io/address/${contractAddress}`
+  );
 
   // NOTE: In the next milestone, you will copy this Contract Address and paste
   // it into your backend/frontend environment variables!
