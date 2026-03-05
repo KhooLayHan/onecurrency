@@ -21,7 +21,7 @@
     "test": {
       "dependsOn": ["lint", "^build"],
       "inputs": ["**/*.tsx", "**/*.ts", "test/**/*.ts", "test/**/*.tsx"],
-      "outputs": []
+      "outputs": ["coverage/**"]
     },
     "clean": {
       "dependsOn": ["^clean"]
