@@ -3,7 +3,6 @@ import { logger } from "../lib/logger";
 
 async function main() {
   const { viem } = await network.connect();
-
   logger.info("Starting OneCurrency Deployment...");
 
   const [deployer] = await viem.getWalletClients();
@@ -15,7 +14,6 @@ async function main() {
   const token = await viem.deployContract("OneCurrency", [
     deployer?.account.address,
   ]);
-  // await token.waitForDeployment();
 
   const contractAddress = token.address;
 
