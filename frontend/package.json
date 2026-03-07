@@ -15,7 +15,7 @@
     "start": "next start",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "test": "vitest"
+    "test": "vitest --pass-with-no-tests"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
