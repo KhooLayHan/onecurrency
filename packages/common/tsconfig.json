@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "incremental": true,
+    "baseUrl": ".",
+    "rootDir": "./src",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
+}

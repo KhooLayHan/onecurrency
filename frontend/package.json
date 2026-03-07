@@ -15,7 +15,7 @@
     "start": "next start",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "test": "vitest"
+    "test": "vitest --pass-with-no-tests"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
@@ -23,6 +23,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }
