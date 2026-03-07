@@ -38,8 +38,8 @@ jobs:
       - name: Lint with Biome
         run: pnpm run lint
 
-      # - name: Run tests with Vitest
-      #   run: pnpm run test
+      - name: Run tests with Vitest
+        run: pnpm run test
 
       - name: Build project
         run: pnpm run build
