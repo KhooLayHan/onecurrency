@@ -1,0 +1,99 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!build",
+      "!backend/src/db/migrations/**/*",
+      "**/*",
+      "!**/_generated/**/*",
+      "!**/*.gen.*",
+      "!**/.next/**/*",
+      "!**/next-env.d.ts",
+      "!**/.nuxt/**/*",
+      "!**/.output/**/*",
+      "!**/.svelte-kit/**/*",
+      "!**/.vitepress/cache/**/*",
+      "!**/.vitepress/dist/**/*",
+      "!**/dist/**/*",
+      "!**/build/**/*",
+      "!**/out/**/*",
+      "!**/.turbo/**/*",
+      "!**/.vercel/**/*",
+      "!**/.netlify/**/*",
+      "!**/storybook-static/**/*",
+      "!**/.docusaurus/**/*",
+      "!**/.cache/**/*",
+      "!**/public/build/**/*",
+      "!**/.parcel-cache/**/*",
+      "!**/.vite/**/*",
+      "!**/.astro/**/*",
+      "!**/_astro/**/*",
+      "!**/coverage/**/*",
+      "!**/.nyc_output/**/*",
+      "!**/*.generated.*",
+      "!**/*.auto.*",
+      "!**/generated/**/*",
+      "!**/auto-generated/**/*",
+      "!**/codegen/**/*",
+      "!**/__generated__/**/*",
+      "!**/graphql-types.*",
+      "!**/schema.d.ts",
+      "!**/schema.graphql.d.ts",
+      "!**/*.d.ts.map",
+      "!**/.expo/**/*",
+      "!**/.expo-shared/**/*",
+      "!**/android/build/**/*",
+      "!**/ios/build/**/*",
+      "!**/DerivedData/**/*"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80,
+    "attributePosition": "auto",
+    "bracketSpacing": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noUnknownAtRules": "off"
+      },
+      "nursery": {
+        "noUnresolvedImports": "off"
+      }
+    },
+    "domains": {
+      "next": "recommended",
+      "react": "recommended"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        // Provides a code action to sort the imports and exports in the file using a built-in or custom order.
+        "organizeImports": "on",
+        // Enforce attribute sorting in JSX elements.
+        "useSortedAttributes": "on",
+        // Enforce ordering of a JS object properties.
+        "useSortedKeys": "off"
+      }
+    }
+  },
+  "extends": ["ultracite"]
+}
