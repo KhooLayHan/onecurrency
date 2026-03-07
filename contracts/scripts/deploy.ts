@@ -2,18 +2,22 @@ import { network } from "hardhat";
 import { logger } from "../lib/logger";
 
 async function main() {
-  const { ethers } = await network.connect();
+  const { viem } = await network.connect();
 
   logger.info("Starting OneCurrency Deployment...");
 
-  const [deployer] = await ethers.getSigners();
-  logger.info(`Deploying contracts with the account: ${deployer?.address}`);
+  const [deployer] = await viem.getWalletClients();
+  logger.info(
+    `Deploying contracts with the account: ${deployer?.account.address}`
+  );
 
   // Deploy the contract, passing the deployer as the initial Default Admin
-  const token = await ethers.deployContract("OneCurrency", [deployer?.address]);
-  await token.waitForDeployment();
+  const token = await viem.deployContract("OneCurrency", [
+    deployer?.account.address,
+  ]);
+  // await token.waitForDeployment();
 
-  const contractAddress = await token.getAddress();
+  const contractAddress = token.address;
 
   logger.info("OneCurrency deployed successfully!");
   logger.info(`Contract Address: ${contractAddress}`);
