@@ -4,9 +4,11 @@
   "scripts": {
     "hh:clean": "pnpm hardhat clean",
     "hh:build": "pnpm hardhat build",
-    "hh:deploy": "pnpm hardhat run",
+    "hh:deploy": "pnpm hardhat run --network sepolia",
     "hh:test": "pnpm hardhat test",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.0.8",
