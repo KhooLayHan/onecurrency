@@ -66,6 +66,9 @@ importers:
       hono:
         specifier: ^4.11.9
         version: 4.11.9
+      http-status-codes:
+        specifier: ^2.3.0
+        version: 2.3.0
       pino:
         specifier: ^10.3.1
         version: 10.3.1

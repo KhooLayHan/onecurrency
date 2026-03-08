@@ -6,7 +6,7 @@
   "types": "./dist/index.d.ts",
   "declaration": true,
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "dev": "tsx --watch src/index.ts",
     "lint": "biome lint .",
     "format": "biome format --write ."
