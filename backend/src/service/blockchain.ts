@@ -1,10 +1,10 @@
 import { ResultAsync } from "neverthrow";
 import { env } from "../env";
 import { logger } from "../lib/logger";
-// import { OneCurrencyABI, ONE_CURRENCY_ADDRESS } from "common"; 
+import { OneCurrencyABI, ONECURRENCY_ADDRESS } from "@/common/contracts/OneCurrency"; 
 
-import { createPublicClient, http } from "viem";
-import type { BlockchainError } from "../lib/errors";
+import { createPublicClient, createWalletClient, http, isAddress } from "viem";
+import { AppError, BlockchainError } from "../lib/errors";
 import { localhost, sepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -20,7 +20,6 @@ const publicClient = createPublicClient({
     transport: http(rpcUrl),
 })
 
-
 // 3. Initialize the Signer Acount (The "Relayer" Wallet)
 if (!env.SEPOLIA_PRIVATE_KEY) {
   logger.fatal("SEPOLIA_PRIVATE_KEY is missing from environment! Cannot initialize minter.");
@@ -33,68 +32,84 @@ const formattedPrivateKey = env.SEPOLIA_PRIVATE_KEY?.startsWith("0x")
 
 const account = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
 
-const minterWallet = new ethers.Wallet(formattedPrivateKey, provider);
+// 4. Initialize the Wallet Client (For signing and sending txs)
+const walletClient = createWalletClient({
+  account,
+  chain,
+  transport: http(rpcUrl),
+});
 
 /**
  * Mints ONE tokens to a specified user's wallet address.
  * 
  * @param toAddress The user's Ethereum address
  * @param amountWei The exact amount in Wei (string to avoid JS precision loss)
- * @returns ResultAsync containing the Transaction Hash OR a BlockchainError
+ * @returns ResultAsync containing the Transaction Hash or a BlockchainError
  */
 export function mintTokens(toAddress: string, amountWei: string): ResultAsync<string, BlockchainError> {
   return ResultAsync.fromPromise(
-    // The Promise we are wrapping
     (async () => {
-      // Input validation
-      if (!ethers.isAddress(toAddress)) {
-        throw new Error("INVALID_ADDRESS");
+      // 1. Input Validation (Viem's built-in isAddress)
+      if (!isAddress(toAddress)) {
+        throw new BlockchainError("INVALID_WALLET_ADDRESS", `The address ${toAddress} is not valid.`);
       }
 
       logger.info({ toAddress, amountWei }, "Initiating mint transaction...");
 
-      // 1. Broadcast the transaction
-      const tx = await oneCurrencyContract.mint(toAddress, amountWei);
+      // 2. Simulate (Saves gas. Will throw immediately if blacklisted or lacking roles)
+      const { request } = await publicClient.simulateContract({
+        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        abi: OneCurrencyABI,
+        functionName: "mint",
+        args: [toAddress as `0x${string}`, BigInt(amountWei)],
+        account,
+      })
+
+      logger.info("Simulation successful. Broadcasting transaction...");
       
-      logger.info({ txHash: tx.hash }, "Mint transaction broadcasted. Waiting for confirmation...");
+      // 3. Broadcast the transaction
+      const txHash = await walletClient.writeContract(request);
+      
+      logger.info({ txHash }, "Mint transaction broadcasted. Waiting for confirmation...");
 
-      // 2. Wait for confirmation (1 block for MVP speed)
-      const receipt = await tx.wait(1);
+      // 4. Wait for receipt (1 block for MVP speed)
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+      });
 
-      // Status 0 means the transaction reverted (e.g., address was blacklisted)
-      if (receipt.status === 0) {
-        throw new Error("TRANSACTION_REVERTED");
+      if (receipt.status === "reverted") {
+        throw new BlockchainError("TRANSACTION_REVERTED", "Transaction reverted on-chain after broadcast.");
       }
 
       logger.info(
-        { txHash: receipt.hash, blockNumber: receipt.blockNumber }, 
+        { txHash: receipt.transactionHash, blockNumber: receipt.blockNumber }, 
         "Mint transaction successfully confirmed!"
       );
       
-      return receipt.hash;
+      return receipt.transactionHash;
     })(),
 
     // The Error Mapper (Catching throws and turning them into typed objects)
-    (e: any): BlockchainError => {
-      logger.error({ err: e, toAddress, amountWei }, "Blockchain minting failed");
+    (e: any): AppError => {
+      // If we manually threw an AppError (like INVALID_WALLET_ADDRESS), pass it through
+      if (e instanceof AppError) return e;
 
-      if (e.message === "INVALID_ADDRESS") {
-        return { code: "INVALID_ADDRESS", message: `The address ${toAddress} is not a valid Ethereum address.` };
+      // Map specific Viem errors
+      const errorName = e.name || "";
+
+      // Handle RPC / Network failures
+      if (errorName.includes("HttpRequestError") || errorName.includes("TimeoutError")) {
+        return new BlockchainError("BLOCKCHAIN_NETWORK_ERROR", "Lost connection to the blockchain RPC node.", { originalError: e.message });
       }
       
-      // Ethers.js throws CALL_EXCEPTION when a smart contract `revert` occurs
-      if (e.message === "TRANSACTION_REVERTED" || e.code === "CALL_EXCEPTION") {
-        return { 
-          code: "TRANSACTION_REVERTED", 
-          message: "The smart contract reverted the transaction. The user might be blacklisted or the relayer lacks MINTER_ROLE." 
-        };
+      // Handle Smart Contract Reverts (Caught perfectly by simulateContract)
+      if (errorName.includes("ContractFunctionRevertedError")) {
+        return new BlockchainError("TRANSACTION_REVERTED", "The smart contract rejected the transaction. The user might be blacklisted.", { reason: e.message });
       }
       
-      if (e.code === "NETWORK_ERROR" || e.code === "TIMEOUT") {
-        return { code: "NETWORK_ERROR", message: "Lost connection to the blockchain RPC node." };
-      }
-      
-      return { code: "UNKNOWN_ERROR", message: e.message || "An unexpected blockchain error occurred." };
+      // Fallback for unknown errors
+      return new BlockchainError("INTERNAL_SERVER_ERROR", e.shortMessage || e.message || "Unexpected blockchain failure.");
     }
   );
 }
