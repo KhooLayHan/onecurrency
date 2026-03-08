@@ -31,9 +31,7 @@ export const env = createEnv({
 
     LOCAL_RPC_URL: z.httpUrl(),
     SEPOLIA_RPC_URL: z.httpUrl(),
-    SEPOLIA_PRIVATE_KEY: z
-      .string()
-      .regex(/^0x[0-9a-fA-F]{64}$/),
+    SEPOLIA_PRIVATE_KEY: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
     ETHERSCAN_API_KEY: z.string().min(1),
 
     CORS_ORIGIN: z.string().default("http://localhost:3000"),

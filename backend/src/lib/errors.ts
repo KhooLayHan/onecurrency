@@ -1,4 +1,4 @@
-// backend/src/lib/errors.ts
+import { StatusCodes } from "http-status-codes";
 
 // 1. Define every possible Error Code in the system
 // This gives you strict TypeScript autocomplete across your entire codebase.
@@ -23,14 +23,14 @@ export type ErrorCode =
 
 // 2. The Base Application Error Class
 export class AppError extends Error {
-  public readonly code: ErrorCode;
-  public readonly statusCode: number;
-  public readonly context?: Record<string, unknown>;
+  readonly code: ErrorCode;
+  readonly statusCode: number;
+  readonly context?: Record<string, unknown>;
 
   constructor(
     code: ErrorCode,
     message: string,
-    statusCode: number = 500,
+    statusCode = StatusCodes.INTERNAL_SERVER_ERROR,
     context?: Record<string, unknown>
   ) {
     super(message);
@@ -47,25 +47,37 @@ export class AppError extends Error {
 // 3. Domain-Specific Error Factories (Makes code cleaner to read)
 
 export class BlockchainError extends AppError {
-  constructor(code: ErrorCode, message: string, context?: Record<string, unknown>) {
-    super(code, message, 502, context); // 502 Bad Gateway is accurate for RPC failures
+  constructor(
+    code: ErrorCode,
+    message: string,
+    context?: Record<string, unknown>
+  ) {
+    super(code, message, StatusCodes.BAD_GATEWAY, context); // 502 Bad Gateway is accurate for RPC failures
   }
 }
 
 export class BusinessRuleError extends AppError {
-  constructor(code: ErrorCode, message: string, context?: Record<string, unknown>) {
-    super(code, message, 400, context); // 400 Bad Request
+  constructor(
+    code: ErrorCode,
+    message: string,
+    context?: Record<string, unknown>
+  ) {
+    super(code, message, StatusCodes.BAD_REQUEST, context); // 400 Bad Request
   }
 }
 
 export class ExternalServiceError extends AppError {
-  constructor(code: ErrorCode, message: string, context?: Record<string, unknown>) {
-    super(code, message, 502, context);
+  constructor(
+    code: ErrorCode,
+    message: string,
+    context?: Record<string, unknown>
+  ) {
+    super(code, message, StatusCodes.BAD_GATEWAY, context);
   }
 }
 
 export class NotFoundError extends AppError {
   constructor(resource: string) {
-    super("NOT_FOUND", `${resource} not found`, 404);
+    super("NOT_FOUND", `${resource} not found`, StatusCodes.NOT_FOUND);
   }
 }
