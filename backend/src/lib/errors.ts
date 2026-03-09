@@ -24,7 +24,7 @@ export type ErrorCode =
 // 2. The Base Application Error Class
 export class AppError extends Error {
   readonly code: ErrorCode;
-  readonly statusCode: number;
+  readonly statusCode: StatusCodes;
   readonly context?: Record<string, unknown>;
 
   constructor(
