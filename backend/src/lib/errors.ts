@@ -30,7 +30,7 @@ export class AppError extends Error {
   constructor(
     code: ErrorCode,
     message: string,
-    statusCode = StatusCodes.INTERNAL_SERVER_ERROR,
+    statusCode: StatusCodes,
     context?: Record<string, unknown>
   ) {
     super(message);
