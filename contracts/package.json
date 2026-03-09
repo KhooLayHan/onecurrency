@@ -7,7 +7,6 @@
     "hh:deploy": "pnpm hardhat run --network sepolia",
     "hh:test": "pnpm hardhat test",
     "format": "biome format --write .",
-    "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
