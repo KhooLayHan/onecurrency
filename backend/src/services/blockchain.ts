@@ -7,14 +7,13 @@ import {
   http,
   isAddress,
   TimeoutError,
-  toHex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { localhost, sepolia } from "viem/chains";
 import {
   ONECURRENCY_ADDRESS,
   OneCurrencyABI,
-} from "@/common/contracts/OneCurrency";
+} from "@/common/contracts/one-currency";
 import { env } from "../env";
 import { AppError, BlockchainError } from "../lib/errors";
 import { logger } from "../lib/logger";
@@ -35,6 +34,7 @@ if (!env.SEPOLIA_PRIVATE_KEY) {
   logger.fatal(
     "SEPOLIA_PRIVATE_KEY is missing from environment! Cannot initialize minter."
   );
+  throw new Error("SEPOLIA_PRIVATE_KEY is required for blockchain service");
 }
 
 // Ensure the private key has the 0x prefix for viem
@@ -42,7 +42,7 @@ const formattedPrivateKey = env.SEPOLIA_PRIVATE_KEY?.startsWith("0x")
   ? env.SEPOLIA_PRIVATE_KEY
   : `0x${env.SEPOLIA_PRIVATE_KEY}`;
 
-const account = privateKeyToAccount(toHex(formattedPrivateKey));
+const account = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
 
 // 4. Initialize the Wallet Client (For signing and sending txs)
 const walletClient = createWalletClient({
@@ -79,7 +79,7 @@ export function mintTokens(
         address: ONECURRENCY_ADDRESS as `0x${string}`,
         abi: OneCurrencyABI,
         functionName: "mint",
-        args: [toHex(toAddress), BigInt(amountWei)],
+        args: [toAddress as `0x${string}`, BigInt(amountWei)],
         account,
       });
 

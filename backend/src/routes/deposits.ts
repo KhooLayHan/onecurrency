@@ -19,3 +19,5 @@ app.post("/test-mint", async (c) => {
     },
   });
 });
+
+export const depositsRouter = app;
