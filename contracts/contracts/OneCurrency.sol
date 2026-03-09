@@ -91,4 +91,16 @@ contract OneCurrency is ERC20, ERC20Burnable, AccessControl {
 
         super._update(from, to, value);
     }
+
+    function getMinterRole() public pure returns (bytes32) {
+        return MINTER_ROLE;
+    }
+
+    function getDefaultAdminRole() public pure returns (bytes32) {
+        return DEFAULT_ADMIN_ROLE;
+    }
+
+    function getBlacklistRole() public pure returns (bytes32) {
+        return BLACKLIST_ROLE;
+    }
 }
