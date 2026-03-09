@@ -6,6 +6,7 @@ async function main() {
   logger.info("Starting OneCurrency Deployment...");
 
   const [deployer] = await viem.getWalletClients();
+
   logger.info(
     `Deploying contracts with the account: ${deployer?.account.address}`
   );
