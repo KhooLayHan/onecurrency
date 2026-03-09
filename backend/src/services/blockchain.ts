@@ -1,3 +1,4 @@
+import { StatusCodes } from "http-status-codes";
 import { ResultAsync } from "neverthrow";
 import {
   ContractFunctionRevertedError,
@@ -102,7 +103,8 @@ export function mintTokens(
       if (receipt.status === "reverted") {
         throw new BlockchainError(
           "TRANSACTION_REVERTED",
-          "Transaction reverted on-chain after broadcast."
+          "Transaction reverted on-chain after broadcast.",
+          StatusCodes.BAD_REQUEST
         );
       }
 
@@ -148,6 +150,7 @@ const handleNetworkError = (e: unknown): BlockchainError =>
   new BlockchainError(
     "BLOCKCHAIN_NETWORK_ERROR",
     "Lost connection to the blockchain RPC node.",
+    StatusCodes.BAD_GATEWAY,
     {
       originalError: isErrorMessage(e) ? e.message : "Unknown error occurred.",
     }
@@ -157,6 +160,7 @@ const handleContractRevert = (e: unknown): BlockchainError =>
   new BlockchainError(
     "TRANSACTION_REVERTED",
     "The smart contract rejected the transaction. The user might be blacklisted.",
+    StatusCodes.BAD_GATEWAY,
     {
       reason: isErrorMessage(e) ? e.message : "Unknown error occurred.",
     }

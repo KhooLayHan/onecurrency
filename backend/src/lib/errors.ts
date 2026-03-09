@@ -50,9 +50,10 @@ export class BlockchainError extends AppError {
   constructor(
     code: ErrorCode,
     message: string,
+    statusCode: number = StatusCodes.BAD_GATEWAY, // Default to 502
     context?: Record<string, unknown>
   ) {
-    super(code, message, StatusCodes.BAD_GATEWAY, context); // 502 Bad Gateway is accurate for RPC failures
+    super(code, message, statusCode, context); // 502 Bad Gateway is accurate for RPC failures
   }
 }
 
