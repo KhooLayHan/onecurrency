@@ -37,6 +37,10 @@ export const env = createEnv({
       .optional(),
     ETHERSCAN_API_KEY: z.string().min(1).optional(),
 
+    STRIPE_SECRET_KEY: z.string().startsWith("sk_test"),
+    STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_test"),
+    STRIPE_WEBHOOK_SECRET: z.string().optional(),
+
     CORS_ORIGIN: z.string().default("http://localhost:3000"),
 
     BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
