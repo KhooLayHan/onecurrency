@@ -3,15 +3,16 @@ import { DatabaseError } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
-import type Stripe from "stripe";
+import Stripe from "stripe";
 import z from "zod";
 import { db } from "../db";
+import { blockchainTransactions } from "../db/schema/blockchain-transactions";
 import { deposits } from "../db/schema/deposits";
 import { wallets } from "../db/schema/wallets";
 import { webhookEvents } from "../db/schema/webhook-events";
 import { env } from "../env";
 import { handleApiError } from "../lib/api-response";
-import { BusinessRuleError, ExternalServiceError } from "../lib/errors";
+import { ExternalServiceError } from "../lib/errors";
 import { logger } from "../lib/logger";
 import { mintTokens } from "../services/blockchain";
 import { calculateTokenAmountWei, stripe } from "../services/stripe.service";
@@ -55,6 +56,25 @@ app.post(
 
     const session = c.get("session");
     const userId = session.userId;
+
+    if (!session?.userId) {
+      return c.json(
+        { success: false, error: "Unauthorized" },
+        StatusCodes.UNAUTHORIZED
+      );
+    }
+
+    // Verify wallet belongs to user
+    const walletRecord = await db._query.wallets.findFirst({
+      where: eq(wallets.id, BigInt(walletId)),
+    });
+
+    if (!walletRecord || walletRecord.userId !== BigInt(userId)) {
+      return c.json(
+        { success: false, error: "Wallet not found or not owned by user" },
+        StatusCodes.FORBIDDEN
+      );
+    }
 
     try {
       const session_ = await stripe.checkout.sessions.create({
@@ -129,7 +149,7 @@ app.post("/webhook", async (c) => {
       payload: event,
     });
   } catch (err) {
-    if (err instanceof BusinessRuleError) {
+    if (err instanceof Stripe.errors.StripeSignatureVerificationError) {
       logger.error({ err }, "Webhook signature verification failed!");
       return c.text(`Webhook Error: ${err.message}`, StatusCodes.BAD_REQUEST);
     }
@@ -186,7 +206,6 @@ app.post("/webhook", async (c) => {
       })
       .returning();
 
-    // 🚀 FIRE THE BLOCKCHAIN MINT TRANSACTION 🚀
     const mintResult = await mintTokens(walletRecord.address, tokenAmountWei);
 
     if (mintResult.isErr()) {
@@ -211,14 +230,28 @@ app.post("/webhook", async (c) => {
     }
 
     // Success! Update the database to reflect the completed bridge.
-    const txHash = BigInt(mintResult.value);
+    const txHash = mintResult.value;
+
+    const [insertedBlockchainTx] = await db
+      .insert(blockchainTransactions)
+      .values({
+        networkId: walletRecord.networkId,
+        transactionTypeId: 1,
+        fromAddress: "0x0000000000000000000000000000000000000000", // Mints technically come from the zero address
+        toAddress: walletRecord.address,
+        txHash,
+        amount: tokenAmountWei,
+        isConfirmed: true, // We wait for 1 confirmation in blockchain.service.ts
+        confirmations: 1,
+      })
+      .returning({ id: blockchainTransactions.id });
 
     if (deposit) {
       await db
         .update(deposits)
         .set({
           statusId: 3,
-          blockchainTxId: txHash,
+          blockchainTxId: insertedBlockchainTx?.id,
           completedAt: new Date(),
         })
         .where(eq(deposits.id, deposit.id));

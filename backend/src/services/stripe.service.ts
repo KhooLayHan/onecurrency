@@ -12,9 +12,8 @@ export const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
  * 100 USD = 10_000 cents = 100 * 10^18 Wei
  */
 export function calculateTokenAmountWei(amountCents: number): string {
-  const BASE_MULTIPLIER = 100;
-  const WEI_MULTIPLER = 1e18;
+  const POWER_OF_16 = 16;
 
-  const dollars = amountCents / BASE_MULTIPLIER;
-  return BigInt(dollars * WEI_MULTIPLER).toString(); // Multiply by 10^18 for exact Wei amount
+  const WEI_PER_CENT = BigInt(10) ** BigInt(POWER_OF_16); // 1e18 / 100
+  return (BigInt(amountCents) * WEI_PER_CENT).toString();
 }
