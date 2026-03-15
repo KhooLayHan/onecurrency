@@ -23,4 +23,4 @@ export const OneCurrencyABI: Abi = parseAbi([
 ]);
 
 export const ONECURRENCY_ADDRESS: string =
-  "0x5fbdb2315678afecb367f032d93f642f64180aa3";
+  "0x5fbdb2315678afecb367f032d93f642f64180aa3"; // contract address from `pnpm hardhat run scripts/deploy.ts`

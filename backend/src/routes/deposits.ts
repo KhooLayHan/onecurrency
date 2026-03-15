@@ -25,6 +25,8 @@ app.post("/test-mint", async (c) => {
   const { address, amountWei } = await c.req.json();
   const mintResult = await mintTokens(address, amountWei);
 
+  logger.warn(mintResult);
+
   if (mintResult.isErr()) {
     return handleApiError(c, mintResult.error);
   }

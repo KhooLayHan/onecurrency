@@ -10,7 +10,7 @@ import {
   TimeoutError,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { localhost, sepolia } from "viem/chains";
+import { hardhat, sepolia } from "viem/chains";
 import {
   ONECURRENCY_ADDRESS,
   OneCurrencyABI,
@@ -21,7 +21,7 @@ import { logger } from "../lib/logger";
 
 // 1. Determine the correct chain and RPC Provider
 const isProd = env.NODE_ENV === "production";
-const chain = isProd ? sepolia : localhost;
+const chain = isProd ? sepolia : hardhat;
 const rpcUrl = isProd ? env.SEPOLIA_RPC_URL : env.LOCAL_RPC_URL;
 
 // 2. Initialize the Public Client (For reading data and simulating txs)
@@ -81,13 +81,18 @@ export function mintTokens(
         abi: OneCurrencyABI,
         functionName: "mint",
         args: [toAddress as `0x${string}`, BigInt(amountWei)],
+        chain,
         account,
       });
 
       logger.info("Simulation successful. Broadcasting transaction...");
 
+      logger.info(request);
+
       // 3. Broadcast the transaction
       const txHash = await walletClient.writeContract(request);
+
+      // logger.info(walletClient.writeContract(request)); // Seems like walletClient.writeContract is not working?
 
       logger.info(
         { txHash },
@@ -99,6 +104,8 @@ export function mintTokens(
         hash: txHash,
         confirmations: 1,
       });
+
+      logger.info(txHash);
 
       if (receipt.status === "reverted") {
         throw new BlockchainError(
