@@ -4,8 +4,12 @@ import { logger } from "@/src/lib/logger";
 import type { NewWallet } from "../schema/wallets";
 import { wallets } from "../schema/wallets";
 import { defaultSeedConfig } from "./config";
-import { generateEthereumAddress, randomBetween } from "./helpers";
-import type { SeededWallet } from "./types";
+import {
+  generateBatches,
+  generateEthereumAddress,
+  randomBetween,
+} from "./helpers";
+import type { SeededWallet, SeededWalletsByUser } from "./types";
 
 // Query Sepolia network ID
 async function getSepoliaNetworkId(): Promise<number> {
@@ -47,25 +51,32 @@ function generateProviderName(): string {
 // Check if user already has wallets
 async function userHasWallets(userId: bigint): Promise<boolean> {
   const existing = await db._query.wallets.findFirst({
+    // biome-ignore lint/nursery/noShadow: false positive?
     where: (wallets, { eq }) => eq(wallets.userId, userId),
+    // where: {
+    //   wallets,
+    // },
   });
   return !!existing;
 }
 
 // Seed wallets for users
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ignore for now, will fix
 export async function seedWallets(
   users: Array<{ id: bigint; createdAt: Date }>
-): Promise<
-  Array<{ id: bigint; userId: bigint; address: string; isPrimary: boolean }>
-> {
+): Promise<SeededWalletsByUser> {
   const networkId = await getSepoliaNetworkId();
   const { min, max } = defaultSeedConfig.wallets.perUser;
 
   const walletRecords: NewWallet[] = [];
   const skippedUsers: bigint[] = [];
 
+  // Format: IV:AuthTag:EncryptedPayload
+  const mockEncryptedKey = () =>
+    `${faker.string.hexadecimal({ length: 24, casing: "lower", prefix: "" })}:${faker.string.hexadecimal({ length: 128, casing: "lower", prefix: "" })}`;
+
   const EXTERNAL_80_PERCENT = 0.8;
-  const CUSTODIAL_ENCRYPTED_PRIVATE_KEY_LENGTH = 64;
+  //   const CUSTODIAL_ENCRYPTED_PRIVATE_KEY_LENGTH = 64;
 
   for (const user of users) {
     // Skip users that already have wallets
@@ -93,9 +104,7 @@ export async function seedWallets(
         isPrimary,
         walletType,
         providerName: isExternal ? generateProviderName() : undefined,
-        encryptedPrivateKey: isExternal
-          ? undefined
-          : faker.string.alphanumeric(CUSTODIAL_ENCRYPTED_PRIVATE_KEY_LENGTH),
+        encryptedPrivateKey: isExternal ? undefined : mockEncryptedKey(),
         createdAt,
         updatedAt: faker.date.between({ from: createdAt, to: new Date() }),
       });
@@ -116,16 +125,18 @@ export async function seedWallets(
   const created: SeededWallet[] = [];
 
   // Batch insert with returning
-  //   const created = await batchInsertReturning(wallets, walletRecords, {
+  //   const created = (await batchInsertReturning(wallets, walletRecords, {
   //     returning: {
   //       id: wallets.id,
   //       userId: wallets.userId,
   //       address: wallets.address,
   //       isPrimary: wallets.isPrimary,
   //     },
-  //   });
+  //   })) as SeededWallet[];
 
-  for (const batch of generateBatches(walletRecords, 50)) {
+  const BATCH_COUNT = 50;
+
+  for (const batch of generateBatches(walletRecords, BATCH_COUNT)) {
     const batchResult = await db
       .insert(wallets)
       .values(batch)
@@ -139,8 +150,9 @@ export async function seedWallets(
 
     created.push(...(batchResult as SeededWallet[]));
   }
+
   // Group by user ID
-  const grouped = new Map<bigint, SeededWallet[]>();
+  const grouped: SeededWalletsByUser = new Map();
   for (const wallet of created) {
     const userWallets = grouped.get(wallet.userId) ?? [];
     userWallets.push(wallet);
@@ -148,11 +160,5 @@ export async function seedWallets(
   }
 
   logger.info(`Created ${created.length} wallets for ${users.length} users`);
-  //   return created as Array<{
-  //     id: bigint;
-  //     userId: bigint;
-  //     address: string;
-  //     isPrimary: boolean;
-  //   }>;
   return grouped;
 }
