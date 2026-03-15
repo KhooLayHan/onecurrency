@@ -87,12 +87,8 @@ export function mintTokens(
 
       logger.info("Simulation successful. Broadcasting transaction...");
 
-      logger.info(request);
-
       // 3. Broadcast the transaction
       const txHash = await walletClient.writeContract(request);
-
-      // logger.info(walletClient.writeContract(request)); // Seems like walletClient.writeContract is not working?
 
       logger.info(
         { txHash },

@@ -48,13 +48,18 @@ function generateProviderName(): string {
 }
 
 // Check if user already has wallets
-async function userHasWallets(userId: bigint): Promise<boolean> {
+async function userHasWallets(
+  userId: bigint,
+  networkId: number
+): Promise<boolean> {
   const existing = await db._query.wallets.findFirst({
     // biome-ignore lint/nursery/noShadow: false positive?
-    where: (wallets, { eq }) => eq(wallets.userId, userId),
-    // where: {
-    //   wallets,
-    // },
+    where: (wallets, { and, eq, isNull }) =>
+      and(
+        eq(wallets.userId, userId),
+        eq(wallets.networkId, networkId),
+        isNull(wallets.deletedAt)
+      ),
   });
   return !!existing;
 }
@@ -70,16 +75,16 @@ export async function seedWallets(
   const walletRecords: NewWallet[] = [];
   const skippedUsers: bigint[] = [];
 
-  // Format: IV:AuthTag:EncryptedPayload
+  // Format: IV:AuthTag:EncryptedPayload (mock values for seeding)
   const mockEncryptedKey = () =>
-    `${faker.string.hexadecimal({ length: 24, casing: "lower", prefix: "" })}:${faker.string.hexadecimal({ length: 128, casing: "lower", prefix: "" })}`;
+    `${faker.string.hexadecimal({ length: 24, casing: "lower", prefix: "" })}:${faker.string.hexadecimal({ length: 32, casing: "lower", prefix: "" })}:${faker.string.hexadecimal({ length: 128, casing: "lower", prefix: "" })}`;
 
   const EXTERNAL_80_PERCENT = 0.8;
   //   const CUSTODIAL_ENCRYPTED_PRIVATE_KEY_LENGTH = 64;
 
   for (const user of users) {
     // Skip users that already have wallets
-    if (await userHasWallets(user.id)) {
+    if (await userHasWallets(user.id, networkId)) {
       skippedUsers.push(user.id);
       continue;
     }
@@ -120,20 +125,8 @@ export async function seedWallets(
     return new Map();
   }
 
-  logger.info("HERE");
-
   // Batch insert with onConflictDoNothing to handle any duplicate addresses
   const created: SeededWallet[] = [];
-
-  // Batch insert with returning
-  //   const created = (await batchInsertReturning(wallets, walletRecords, {
-  //     returning: {
-  //       id: wallets.id,
-  //       userId: wallets.userId,
-  //       address: wallets.address,
-  //       isPrimary: wallets.isPrimary,
-  //     },
-  //   })) as SeededWallet[];
 
   const BATCH_COUNT = 50;
 
@@ -155,8 +148,6 @@ export async function seedWallets(
     created.push(...(createdWallets as SeededWallet[]));
   }
 
-  logger.info("HERE v2");
-
   // Group by user ID
   const grouped: SeededWalletsByUser = new Map();
   for (const wallet of created) {
@@ -164,30 +155,6 @@ export async function seedWallets(
     userWallets.push(wallet);
     grouped.set(wallet.userId, userWallets);
   }
-
-  //   logger.info("HERE v2");
-
-  //   const created = (await batchInsertReturning(wallets, walletRecords, {
-  //     returning: {
-  //       id: wallets.id,
-  //       userId: wallets.userId,
-  //       address: wallets.address,
-  //       isPrimary: wallets.isPrimary,
-  //     },
-  //   })) as SeededWallet[];
-
-  //   // GROUP BY USER ID for downstream efficiency
-  //   const grouped: SeededWalletsByUser = new Map();
-
-  //   for (const wallet of created) {
-  //     // if (!walletsMap.has(wallet.userId)) {
-  //     //   walletsMap.set(wallet.userId, []);
-  //     // }
-  //     // walletsMap.get(wallet.userId)!.push(wallet);
-  //     const userWallets = grouped.get(wallet.userId) ?? [];
-  //     userWallets.push(wallet);
-  //     grouped.set(wallet.userId, userWallets);
-  //   }
 
   logger.info(`Created ${created.length} wallets for ${users.length} users`);
   return grouped;

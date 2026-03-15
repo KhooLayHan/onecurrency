@@ -25,7 +25,7 @@ app.post("/test-mint", async (c) => {
   const { address, amountWei } = await c.req.json();
   const mintResult = await mintTokens(address, amountWei);
 
-  logger.warn(mintResult);
+  logger.debug(mintResult, "Mint result received");
 
   if (mintResult.isErr()) {
     return handleApiError(c, mintResult.error);
@@ -65,6 +65,8 @@ app.post(
     }
 
     const userId = session.userId;
+
+    logger.info(session);
 
     // Verify wallet belongs to user
     const walletRecord = await db._query.wallets.findFirst({
@@ -125,6 +127,8 @@ app.post("/webhook", async (c) => {
   // const reqLogger = c.get("logger");
   const signature = c.req.header("stripe-signature");
 
+  logger.info(signature);
+
   if (!signature) {
     return c.text("Missing stripe-signature header", StatusCodes.BAD_REQUEST);
   }
@@ -134,11 +138,11 @@ app.post("/webhook", async (c) => {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = await stripe.webhooks.constructEventAsync(
       payload,
       signature,
       env.STRIPE_WEBHOOK_SECRET
-    );
+    ); // issue is here?
 
     // 1. Audit Log: Immediately save the webhook event to the database (Idempotency check)
     await db.insert(webhookEvents).values({

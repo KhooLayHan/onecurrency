@@ -55,7 +55,7 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
         email: existing.email,
         name: existing.name,
         roleId: config.roleId,
-        createdAt,
+        createdAt: existing.createdAt,
       });
       continue;
     }
