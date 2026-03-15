@@ -39,7 +39,7 @@ export const env = createEnv({
 
     STRIPE_SECRET_KEY: z.string().startsWith("sk_test"),
     STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_test"),
-    STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    STRIPE_WEBHOOK_SECRET: z.string(),
 
     CORS_ORIGIN: z.string().default("http://localhost:3000"),
 

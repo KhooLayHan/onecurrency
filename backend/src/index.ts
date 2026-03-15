@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { auth } from "./auth";
 import { env } from "./env";
+import { depositsRouter } from "./routes/deposits";
 
 const app = new Hono();
 
@@ -34,7 +35,7 @@ app.get("/api/health", (c) =>
 
 app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 
-// export default app;
+app.route("/api/deposits", depositsRouter);
 
 export default {
   port: env.API_PORT,

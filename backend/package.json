@@ -17,6 +17,7 @@
     "db:prod:seed": "NODE_ENV=production DB_SEEDING=true bun --env-file=.env.production run src/seeding.ts"
   },
   "dependencies": {
+    "@hono/standard-validator": "^0.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@t3-oss/env-core": "^0.13.10",
     "better-auth": "^1.4.20",
