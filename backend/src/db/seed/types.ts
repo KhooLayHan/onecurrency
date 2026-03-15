@@ -13,6 +13,7 @@ export type SeededSpecialUser = {
   email: string;
   name: string;
   roleId: number;
+  createdAt: Date;
 };
 
 // Regular user return type
@@ -21,7 +22,18 @@ export type SeededRegularUser = {
   email: string;
   name: string;
   kycStatusId: number;
+  createdAt: Date;
 };
+
+export type SeededWallet = {
+  id: bigint;
+  userId: bigint;
+  address: string;
+  isPrimary: boolean;
+};
+
+// Grouped by user ID
+export type SeededWalletsByUser = Map<bigint, SeededWallet[]>;
 
 // Batch insert options
 export type BatchInsertOptions = {
