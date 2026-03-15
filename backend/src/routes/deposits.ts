@@ -66,7 +66,7 @@ app.post(
 
     const userId = session.userId;
 
-    logger.info(session);
+    logger.info({ userId: session.userId }, "Processing checkout request");
 
     // Verify wallet belongs to user
     const walletRecord = await db._query.wallets.findFirst({
@@ -127,7 +127,7 @@ app.post("/webhook", async (c) => {
   // const reqLogger = c.get("logger");
   const signature = c.req.header("stripe-signature");
 
-  logger.info(signature);
+  logger.debug({ hasSignature: !!signature }, "Webhook signature check");
 
   if (!signature) {
     return c.text("Missing stripe-signature header", StatusCodes.BAD_REQUEST);
