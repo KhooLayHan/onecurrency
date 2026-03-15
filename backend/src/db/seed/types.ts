@@ -23,6 +23,16 @@ export type SeededRegularUser = {
   kycStatusId: number;
 };
 
+export type SeededWallet = {
+  id: bigint;
+  userId: bigint;
+  address: string;
+  isPrimary: boolean;
+};
+
+// Grouped by user ID
+export type SeededWalletsByUser = Map<bigint, SeededWallet[]>;
+
 // Batch insert options
 export type BatchInsertOptions = {
   batchSize?: number;

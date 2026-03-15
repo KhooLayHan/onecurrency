@@ -44,9 +44,10 @@ await seedTransactionStatuses();
 await seedTransactionTypes();
 await seedNetworks();
 await seedRoles();
-await seedWallets();
 
-await seedSpecialUsers();
-await seedRegularUsers();
+const specialUsers = await seedSpecialUsers();
+const regularUsers = await seedRegularUsers();
+
+await seedWallets([...specialUsers, ...regularUsers]);
 
 await pool.end();
