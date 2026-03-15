@@ -29,7 +29,7 @@ export const env = createEnv({
 
     ADMIN_SECRET: z.string().min(1).optional(),
 
-    LOCAL_RPC_URL: z.httpUrl().optional(),
+    LOCAL_RPC_URL: z.url(),
     SEPOLIA_RPC_URL: z.httpUrl().optional(),
     SEPOLIA_PRIVATE_KEY: z
       .string()
@@ -41,7 +41,7 @@ export const env = createEnv({
     // STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_test"),
     STRIPE_SECRET_KEY: z.string().regex(/^sk_(test|live)_/),
     STRIPE_PUBLISHABLE_KEY: z.string().regex(/^pk_(test|live)_/),
-    STRIPE_WEBHOOK_SECRET: z.string(),
+    STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
     CORS_ORIGIN: z.string().default("http://localhost:3000"),
 

@@ -4,7 +4,7 @@
   "scripts": {
     "hh:clean": "pnpm hardhat clean",
     "hh:build": "pnpm hardhat build",
-    "hh:deploy": "pnpm hardhat run --network sepolia",
+    "hh:deploy": "pnpm hardhat run --network localhost",
     "hh:prod-deploy": "pnpm hardhat run --network sepolia",
     "hh:test": "pnpm hardhat test",
     "format": "biome format --write .",
