@@ -8,7 +8,7 @@ import {
   generateEthereumAddress,
   randomBetween,
 } from "./helpers";
-import type { SeededWalletsByUser } from "./types";
+import type { SeededWallet, SeededWalletsByUser } from "./types";
 
 // Query Sepolia network ID
 async function getSepoliaNetworkId(): Promise<number> {
