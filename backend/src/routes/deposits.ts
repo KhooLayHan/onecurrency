@@ -55,14 +55,14 @@ app.post(
     const { amountCents, walletId } = c.req.valid("json");
 
     const session = c.get("session");
-    const userId = session.userId;
-
     if (!session?.userId) {
       return c.json(
         { success: false, error: "Unauthorized" },
         StatusCodes.UNAUTHORIZED
       );
     }
+
+    const userId = session.userId;
 
     // Verify wallet belongs to user
     const walletRecord = await db._query.wallets.findFirst({
@@ -131,10 +131,6 @@ app.post("/webhook", async (c) => {
   const payload = await c.req.text();
   let event: Stripe.Event;
 
-  if (!signature) {
-    return c.text("Missing stripe-signature header", StatusCodes.BAD_REQUEST);
-  }
-
   try {
     event = stripe.webhooks.constructEvent(
       payload,
@@ -170,9 +166,21 @@ app.post("/webhook", async (c) => {
     const session = event.data.object;
 
     // Extract the metadata we attached during step 1
-    const userId = session.metadata?.userId ?? "";
-    const walletId = session.metadata?.walletId ?? "";
-    const amountCents = session.amount_total || 0;
+    const userId = session.metadata?.userId;
+    const walletId = session.metadata?.walletId;
+    const amountCents = session.amount_total;
+
+    if (!(userId && walletId && amountCents)) {
+      logger.error(
+        { eventId: event.id, userId, walletId, amountCents },
+        "CRITICAL: Missing required metadata in checkout session"
+      );
+
+      return c.text(
+        "Missing required metadata",
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
 
     logger.info(
       { eventId: event.id, userId, amountCents },
