@@ -47,9 +47,8 @@ await seedNetworks();
 await seedRoles();
 
 const specialUsers: SeededSpecialUser[] = await seedSpecialUsers();
-const regularUsers = await seedRegularUsers();
+const _regularUsers = await seedRegularUsers();
 
-// await seedWallets([...specialUsers, ...regularUsers]);
 await seedWallets([...specialUsers]);
 
 await pool.end();
