@@ -13,6 +13,7 @@ export type SeededSpecialUser = {
   email: string;
   name: string;
   roleId: number;
+  createdAt: Date;
 };
 
 // Regular user return type
@@ -21,6 +22,7 @@ export type SeededRegularUser = {
   email: string;
   name: string;
   kycStatusId: number;
+  createdAt: Date; // Add this
 };
 
 export type SeededWallet = {
