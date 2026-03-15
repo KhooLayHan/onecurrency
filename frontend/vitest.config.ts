@@ -10,6 +10,9 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 const dirname = typeof import.meta.dirname !== "undefined" ? import.meta.dirname : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  resolve: {
+    tsconfigPaths: true,
+  },
   plugins: [tsconfigPaths(), react()],
   test: {
     projects: [{
