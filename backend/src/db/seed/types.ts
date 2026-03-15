@@ -22,7 +22,7 @@ export type SeededRegularUser = {
   email: string;
   name: string;
   kycStatusId: number;
-  createdAt: Date; // Add this
+  createdAt: Date;
 };
 
 export type SeededWallet = {

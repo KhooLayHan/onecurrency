@@ -1,15 +1,14 @@
 import { faker } from "@faker-js/faker";
 import { db } from "@/src/db";
 import { logger } from "@/src/lib/logger";
-import type { NewWallet } from "../schema/wallets";
-import { wallets } from "../schema/wallets";
+import { type NewWallet, wallets } from "../schema/wallets";
 import { defaultSeedConfig } from "./config";
 import {
   generateBatches,
   generateEthereumAddress,
   randomBetween,
 } from "./helpers";
-import type { SeededWallet, SeededWalletsByUser } from "./types";
+import type { SeededWalletsByUser } from "./types";
 
 // Query Sepolia network ID
 async function getSepoliaNetworkId(): Promise<number> {
@@ -121,6 +120,8 @@ export async function seedWallets(
     return new Map();
   }
 
+  logger.info("HERE");
+
   // Batch insert with onConflictDoNothing to handle any duplicate addresses
   const created: SeededWallet[] = [];
 
@@ -137,19 +138,24 @@ export async function seedWallets(
   const BATCH_COUNT = 50;
 
   for (const batch of generateBatches(walletRecords, BATCH_COUNT)) {
-    const batchResult = await db
-      .insert(wallets)
-      .values(batch)
-      .onConflictDoNothing()
-      .returning({
-        id: wallets.id,
-        userId: wallets.userId,
-        address: wallets.address,
-        isPrimary: wallets.isPrimary,
-      });
+    const createdWallets = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(wallets)
+        .values(batch)
+        .onConflictDoNothing()
+        .returning({
+          id: wallets.id,
+          userId: wallets.userId,
+          address: wallets.address,
+          isPrimary: wallets.isPrimary,
+        });
+      return inserted;
+    });
 
-    created.push(...(batchResult as SeededWallet[]));
+    created.push(...(createdWallets as SeededWallet[]));
   }
+
+  logger.info("HERE v2");
 
   // Group by user ID
   const grouped: SeededWalletsByUser = new Map();
@@ -158,6 +164,30 @@ export async function seedWallets(
     userWallets.push(wallet);
     grouped.set(wallet.userId, userWallets);
   }
+
+  //   logger.info("HERE v2");
+
+  //   const created = (await batchInsertReturning(wallets, walletRecords, {
+  //     returning: {
+  //       id: wallets.id,
+  //       userId: wallets.userId,
+  //       address: wallets.address,
+  //       isPrimary: wallets.isPrimary,
+  //     },
+  //   })) as SeededWallet[];
+
+  //   // GROUP BY USER ID for downstream efficiency
+  //   const grouped: SeededWalletsByUser = new Map();
+
+  //   for (const wallet of created) {
+  //     // if (!walletsMap.has(wallet.userId)) {
+  //     //   walletsMap.set(wallet.userId, []);
+  //     // }
+  //     // walletsMap.get(wallet.userId)!.push(wallet);
+  //     const userWallets = grouped.get(wallet.userId) ?? [];
+  //     userWallets.push(wallet);
+  //     grouped.set(wallet.userId, userWallets);
+  //   }
 
   logger.info(`Created ${created.length} wallets for ${users.length} users`);
   return grouped;
