@@ -13,9 +13,6 @@ const dirname =
     : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  resolve: {
-    tsconfigPaths: true,
-  },
   plugins: [tsconfigPaths(), react()],
   test: {
     projects: [
