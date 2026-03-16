@@ -24,6 +24,12 @@
     "neverthrow": "^8.2.0"
   },
   "overrides": {
-    "vite": "^8.0.0-beta.13"
+    "vite": "8.0.0",
+    "vitest": "4.1.0",
+    "@vitest/browser": "4.1.0",
+    "@vitest/browser-playwright": "4.1.0",
+    "@vitest/coverage-v8": "4.1.0",
+    "@vitest/ui": "4.1.0",
+    "@vitest/mocker": "4.1.0"
   }
 }
