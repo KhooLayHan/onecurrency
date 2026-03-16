@@ -1,8 +1,9 @@
 import { sValidator } from "@hono/standard-validator";
+import { DatabaseError } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
-import type Stripe from "stripe";
+import Stripe from "stripe";
 import z from "zod";
 import { db } from "../db";
 import { blockchainTransactions } from "../db/schema/blockchain-transactions";
