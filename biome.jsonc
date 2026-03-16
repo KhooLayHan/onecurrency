@@ -10,13 +10,14 @@
     "includes": [
       "backend/**",
       "contracts/**",
-      // "frontend/app/**",
+      "frontend/app/**",
       "packages/common/**",
       "!node_modules",
       "!.next",
       "!dist",
       "!build",
-      "!backend/src/db/migrations/**/*"
+      "!backend/src/db/migrations/**/*",
+      "!frontend/stories/**/*"
     ]
   },
   "formatter": {
