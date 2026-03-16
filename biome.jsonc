@@ -8,15 +8,24 @@
   "files": {
     "ignoreUnknown": true,
     "includes": [
+      "*",
       "backend/**",
       "contracts/**",
-      // "frontend/app/**",
+      "frontend/*",
+      "frontend/app/**",
+      "frontend/components/**",
+      "frontend/hooks/**",
+      "frontend/lib/**",
+      "frontend/public/**",
+      "frontend/styles/**",
       "packages/common/**",
       "!node_modules",
       "!.next",
       "!dist",
       "!build",
-      "!backend/src/db/migrations/**/*"
+      "!backend/src/db/migrations/**/*",
+      "!frontend/.storybook/**/*",
+      "!frontend/stories/**/*"
     ]
   },
   "formatter": {
