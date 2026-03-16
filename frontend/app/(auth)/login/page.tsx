@@ -6,33 +6,33 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+          <h1 className="font-bold text-2xl text-neutral-900 tracking-tight">
             OneCurrency
           </h1>
-          <p className="mt-1.5 text-sm text-neutral-500">
+          <p className="mt-1.5 text-neutral-500 text-sm">
             Sign in to your account
           </p>
         </div>
 
         {/* Card */}
         <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <form className="flex flex-col gap-4" action="#" method="post">
+          <form action="#" className="flex flex-col gap-4" method="post">
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label
+                className="font-medium text-neutral-900 text-sm"
                 htmlFor="email"
-                className="text-sm font-medium text-neutral-900"
               >
                 Email
               </label>
               <input
+                autoComplete="email"
+                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-transparent focus:ring-2 focus:ring-neutral-900"
                 id="email"
                 name="email"
-                type="email"
-                autoComplete="email"
                 placeholder="you@example.com"
                 required
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+                type="email"
               />
             </div>
 
@@ -40,33 +40,33 @@ export default function LoginPage() {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <label
+                  className="font-medium text-neutral-900 text-sm"
                   htmlFor="password"
-                  className="text-sm font-medium text-neutral-900"
                 >
                   Password
                 </label>
                 <a
-                  href="#"
-                  className="text-xs text-neutral-500 transition hover:text-neutral-900"
+                  className="text-neutral-500 text-xs transition hover:text-neutral-900"
+                  href="/"
                 >
                   Forgot password?
                 </a>
               </div>
               <input
+                autoComplete="current-password"
+                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-transparent focus:ring-2 focus:ring-neutral-900"
                 id="password"
                 name="password"
-                type="password"
-                autoComplete="current-password"
                 placeholder="••••••••"
                 required
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+                type="password"
               />
             </div>
 
             {/* Submit */}
             <button
+              className="mt-1 rounded-lg bg-neutral-900 py-2 font-medium text-sm text-white transition hover:bg-neutral-700 active:bg-neutral-800"
               type="submit"
-              className="mt-1 rounded-lg bg-neutral-900 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 active:bg-neutral-800"
             >
               Sign in
             </button>
@@ -74,11 +74,11 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="mt-4 text-center text-sm text-neutral-500">
+        <p className="mt-4 text-center text-neutral-500 text-sm">
           Don&apos;t have an account?{" "}
           <Link
-            href="/sign-up"
             className="font-medium text-neutral-900 hover:underline"
+            href="/sign-up"
           >
             Sign up
           </Link>

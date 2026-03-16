@@ -6,113 +6,113 @@ export default function SignUpPage() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
+          <h1 className="font-bold text-2xl text-neutral-900 tracking-tight">
             OneCurrency
           </h1>
-          <p className="mt-1.5 text-sm text-neutral-500">Create your account</p>
+          <p className="mt-1.5 text-neutral-500 text-sm">Create your account</p>
         </div>
 
         {/* Card */}
         <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <form className="flex flex-col gap-4" action="#" method="post">
+          <form action="#" className="flex flex-col gap-4" method="post">
             {/* Full name */}
             <div className="flex flex-col gap-1.5">
               <label
+                className="font-medium text-neutral-900 text-sm"
                 htmlFor="name"
-                className="text-sm font-medium text-neutral-900"
               >
                 Full name
               </label>
               <input
+                autoComplete="name"
+                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-transparent focus:ring-2 focus:ring-neutral-900"
                 id="name"
                 name="name"
-                type="text"
-                autoComplete="name"
                 placeholder="Jane Doe"
                 required
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+                type="text"
               />
             </div>
 
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label
+                className="font-medium text-neutral-900 text-sm"
                 htmlFor="email"
-                className="text-sm font-medium text-neutral-900"
               >
                 Email
               </label>
               <input
+                autoComplete="email"
+                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-transparent focus:ring-2 focus:ring-neutral-900"
                 id="email"
                 name="email"
-                type="email"
-                autoComplete="email"
                 placeholder="you@example.com"
                 required
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+                type="email"
               />
             </div>
 
             {/* Password */}
             <div className="flex flex-col gap-1.5">
               <label
+                className="font-medium text-neutral-900 text-sm"
                 htmlFor="password"
-                className="text-sm font-medium text-neutral-900"
               >
                 Password
               </label>
               <input
-                id="password"
-                name="password"
-                type="password"
                 autoComplete="new-password"
+                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-transparent focus:ring-2 focus:ring-neutral-900"
+                id="password"
+                minLength={8}
+                name="password"
                 placeholder="••••••••"
                 required
-                minLength={8}
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+                type="password"
               />
-              <p className="text-xs text-neutral-400">Minimum 8 characters</p>
+              <p className="text-neutral-400 text-xs">Minimum 8 characters</p>
             </div>
 
             {/* Confirm password */}
             <div className="flex flex-col gap-1.5">
               <label
+                className="font-medium text-neutral-900 text-sm"
                 htmlFor="confirm-password"
-                className="text-sm font-medium text-neutral-900"
               >
                 Confirm password
               </label>
               <input
+                autoComplete="new-password"
+                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-transparent focus:ring-2 focus:ring-neutral-900"
                 id="confirm-password"
                 name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
                 placeholder="••••••••"
                 required
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition focus:border-transparent focus:ring-2 focus:ring-neutral-900 placeholder:text-neutral-400"
+                type="password"
               />
             </div>
 
             {/* Terms */}
-            <label className="flex items-start gap-2.5 text-sm text-neutral-500">
+            <label className="flex items-start gap-2.5 text-neutral-500 text-sm">
               <input
-                type="checkbox"
+                className="mt-0.5 rounded border-neutral-300 accent-neutral-900"
                 name="terms"
                 required
-                className="mt-0.5 rounded border-neutral-300 accent-neutral-900"
+                type="checkbox"
               />
               <span>
                 I agree to the{" "}
                 <a
-                  href="#"
                   className="font-medium text-neutral-900 hover:underline"
+                  href="/"
                 >
                   Terms of Service
                 </a>{" "}
                 and{" "}
                 <a
-                  href="#"
                   className="font-medium text-neutral-900 hover:underline"
+                  href="/"
                 >
                   Privacy Policy
                 </a>
@@ -121,8 +121,8 @@ export default function SignUpPage() {
 
             {/* Submit */}
             <button
+              className="mt-1 rounded-lg bg-neutral-900 py-2 font-medium text-sm text-white transition hover:bg-neutral-700 active:bg-neutral-800"
               type="submit"
-              className="mt-1 rounded-lg bg-neutral-900 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 active:bg-neutral-800"
             >
               Create account
             </button>
@@ -130,11 +130,11 @@ export default function SignUpPage() {
         </div>
 
         {/* Footer */}
-        <p className="mt-4 text-center text-sm text-neutral-500">
+        <p className="mt-4 text-center text-neutral-500 text-sm">
           Already have an account?{" "}
           <Link
-            href="/login"
             className="font-medium text-neutral-900 hover:underline"
+            href="/login"
           >
             Sign in
           </Link>
