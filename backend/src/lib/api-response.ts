@@ -2,18 +2,19 @@ import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 import { AppError } from "./errors";
+import { logger } from "./logger";
 
 /**
  * Standardizes the JSON response for all API errors.
  * Safely hides internal error details in production.
  */
 export function handleApiError(c: Context, error: unknown) {
-  const reqLogger = c.get("logger");
+  // const reqLogger = c.get("logger");
 
   // 1. If it's our custom AppError
   if (error instanceof AppError) {
     // Log with the provided context
-    reqLogger.warn(
+    logger.warn(
       { err: error, errContext: error.context, code: error.code },
       error.message
     );
@@ -30,7 +31,7 @@ export function handleApiError(c: Context, error: unknown) {
 
   // 2. If it's a Zod Validation Error (From oRPC or zValidator)
   if (error instanceof z.ZodError) {
-    reqLogger.warn({ validationErrors: error.message }, "Validation Failed");
+    logger.warn({ validationErrors: error.message }, "Validation Failed");
     return c.json(
       {
         success: false,
@@ -43,7 +44,7 @@ export function handleApiError(c: Context, error: unknown) {
   }
 
   // 3. Fallback for unhandled exceptions (e.g., standard JS Errors)
-  reqLogger.error({ err: error }, "Unhandled Internal Server Error");
+  logger.error({ err: error }, "Unhandled Internal Server Error");
   return c.json(
     {
       success: false,

@@ -1,19 +1,18 @@
 import { faker } from "@faker-js/faker";
+import { password } from "bun";
 import { eq } from "drizzle-orm";
 import { db } from "@/src/db";
-import { users, type NewUser } from "../schema/users";
-import { accounts } from "../schema/accounts";
 import { logger } from "@/src/lib/logger";
+import { accounts } from "../schema/accounts";
+import { userRoles } from "../schema/user-roles";
+import { type NewUser, users } from "../schema/users";
 import { defaultSeedConfig } from "./config";
 import { batchInsertReturning } from "./helpers";
 import type {
   KycStatusIds,
-  SeededSpecialUser,
   SeededRegularUser,
+  SeededSpecialUser,
 } from "./types";
-import { userRoles } from "../schema/user-roles";
-
-import { password } from "bun";
 
 // Query KYC status IDs from database
 async function getKycStatusIds(): Promise<KycStatusIds> {
@@ -47,6 +46,8 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
       where: eq(users.email, config.email),
     });
 
+    const createdAt = faker.date.past({ years: 0.5 });
+
     if (existing) {
       logger.info(`Special user ${config.email} already exists`);
       created.push({
@@ -54,6 +55,7 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
         email: existing.email,
         name: existing.name,
         roleId: config.roleId,
+        createdAt: existing.createdAt,
       });
       continue;
     }
@@ -61,8 +63,6 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
     const passwordHash = await password.hash(config.password, {
       algorithm: "argon2id",
     });
-
-    const createdAt = faker.date.past({ years: 0.5 });
 
     // Insert user + credential account in transaction
     const [user] = await db.transaction(async (tx) => {
@@ -83,6 +83,7 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
           id: users.id,
           email: users.email,
           name: users.name,
+          createdAt: users.createdAt,
         });
 
       if (inserted) {
@@ -110,6 +111,7 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
         email: user.email,
         name: user.name,
         roleId: config.roleId,
+        createdAt: user.createdAt,
       });
     }
 
@@ -184,6 +186,7 @@ export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
       email: users.email,
       name: users.name,
       kycStatusId: users.kycStatusId,
+      createdAt: users.createdAt,
     },
   });
 

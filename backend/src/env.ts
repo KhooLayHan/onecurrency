@@ -29,13 +29,19 @@ export const env = createEnv({
 
     ADMIN_SECRET: z.string().min(1).optional(),
 
-    LOCAL_RPC_URL: z.httpUrl().optional(),
+    LOCAL_RPC_URL: z.url(),
     SEPOLIA_RPC_URL: z.httpUrl().optional(),
     SEPOLIA_PRIVATE_KEY: z
       .string()
       .regex(/^0x[0-9a-fA-F]{64}$/)
       .optional(),
     ETHERSCAN_API_KEY: z.string().min(1).optional(),
+
+    // STRIPE_SECRET_KEY: z.string().startsWith("sk_test"),
+    // STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_test"),
+    STRIPE_SECRET_KEY: z.string().regex(/^sk_(test|live)_/),
+    STRIPE_PUBLISHABLE_KEY: z.string().regex(/^pk_(test|live)_/),
+    STRIPE_WEBHOOK_SECRET: z.string(),
 
     CORS_ORIGIN: z.string().default("http://localhost:3000"),
 

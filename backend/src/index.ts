@@ -1,9 +1,23 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 import { auth } from "./auth";
 import { env } from "./env";
+// import { logger } from "./lib/logger";
+import { depositsRouter } from "./routes/deposits";
 
 const app = new Hono();
+
+app.use(
+  "*",
+  logger()
+  // logger({
+  //   pino: logger,
+  //   http: {
+  //     reqId: () => Bun.randomUUIDv7(),
+  //   },
+  // })
+);
 
 app.use(
   "/api/*",
@@ -34,7 +48,7 @@ app.get("/api/health", (c) =>
 
 app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 
-// export default app;
+app.route("/api/deposits", depositsRouter);
 
 export default {
   port: env.API_PORT,

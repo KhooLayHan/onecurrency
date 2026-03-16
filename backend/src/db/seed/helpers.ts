@@ -1,11 +1,13 @@
 import { faker } from "@faker-js/faker";
+import type { PgTable, SelectedFieldsFlat } from "drizzle-orm/pg-core";
 import { db } from "@/src/db";
-import type { PgTable } from "drizzle-orm/pg-core";
 import { DEFAULT_BATCH_SIZE } from "./config";
-import type { SelectedFieldsFlat } from "drizzle-orm/pg-core";
 
 // Generator for batches (supports for...of)
-function* generateBatches<T>(items: T[], batchSize: number): Generator<T[]> {
+export function* generateBatches<T>(
+  items: T[],
+  batchSize: number
+): Generator<T[]> {
   if (!Number.isInteger(batchSize) || batchSize <= 0) {
     throw new Error("batchSize must be a positive integer");
   }
@@ -34,16 +36,22 @@ export async function batchInsertReturning(
   options: {
     batchSize?: number;
     returning: SelectedFieldsFlat;
+    ignoreConflicts?: boolean;
   }
 ): Promise<unknown[]> {
-  const { batchSize = DEFAULT_BATCH_SIZE, returning } = options;
+  const {
+    batchSize = DEFAULT_BATCH_SIZE,
+    returning,
+    ignoreConflicts = false,
+  } = options;
   const results: unknown[] = [];
 
   for (const batch of generateBatches(records, batchSize)) {
-    const batchResult = await db
-      .insert(table)
-      .values(batch)
-      .returning(returning);
+    const insertQuery = ignoreConflicts
+      ? db.insert(table).values(batch).onConflictDoNothing()
+      : db.insert(table).values(batch);
+
+    const batchResult = await insertQuery.returning(returning);
     results.push(...batchResult);
   }
 
@@ -59,7 +67,7 @@ export function randomPercentage(): number {
 }
 
 export function generateEthereumAddress(): string {
-  return `0x${faker.string.hexadecimal({ length: 40, casing: "lower" })}`;
+  return `${faker.string.hexadecimal({ length: 40, casing: "lower" })}`;
 }
 
 export function generateTransactionHash(): string {
