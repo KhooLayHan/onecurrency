@@ -12,7 +12,7 @@
       "backend/**",
       "contracts/**",
       "frontend/*",
-      "frontend/app/**",
+      "frontend/app/**/*",
       "frontend/components/**",
       "frontend/hooks/**",
       "frontend/lib/**",
