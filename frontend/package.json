@@ -23,7 +23,7 @@
     "test": "vitest --project=unit --pass-with-no-tests",
     "coverage": "vitest run --coverage --project=unit",
     "test:ui": "vitest --ui",
-    "test:browser": "vitest --config=vitest.browser.config.ts"
+    "test:browser": "vitest --project=browser"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.1",
