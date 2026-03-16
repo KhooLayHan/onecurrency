@@ -258,9 +258,6 @@ importers:
       vitest:
         specifier: 4.0.18
         version: 4.0.18(@types/node@20.19.33)(@vitest/browser-playwright@4.0.18)(@vitest/ui@4.0.18)(jiti@2.6.1)(jsdom@29.0.0(@noble/hashes@2.0.1))(lightningcss@1.32.0)(tsx@4.21.0)
-      vitest-browser-react:
-        specifier: ^2.1.0
-        version: 2.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(vitest@4.0.18)
 
   packages/common:
     dependencies:
@@ -4393,20 +4390,6 @@ packages:
       tsx:
         optional: true
       yaml:
-        optional: true
-
-  vitest-browser-react@2.1.0:
-    resolution: {integrity: sha512-/cOVQ+dZojhavfsbHjcfzB3zrUxG39HIbGdvK9vSBdGc8b8HRu5Bql0p8aXtKw4sb8/E8n5XEncQxvqHtfjjag==}
-    peerDependencies:
-      '@types/react': ^18.0.0 || ^19.0.0
-      '@types/react-dom': ^18.0.0 || ^19.0.0
-      react: ^18.0.0 || ^19.0.0
-      react-dom: ^18.0.0 || ^19.0.0
-      vitest: ^4.0.0
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
         optional: true
 
   vitest@4.0.18:
@@ -8639,15 +8622,6 @@ snapshots:
       jiti: 2.6.1
       tsx: 4.21.0
     optional: true
-
-  vitest-browser-react@2.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(vitest@4.0.18):
-    dependencies:
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
-      vitest: 4.0.18(@types/node@20.19.33)(@vitest/browser-playwright@4.0.18)(@vitest/ui@4.0.18)(jiti@2.6.1)(jsdom@29.0.0(@noble/hashes@2.0.1))(lightningcss@1.32.0)(tsx@4.21.0)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
 
   vitest@4.0.18(@types/node@20.19.33)(@vitest/browser-playwright@4.0.18)(@vitest/ui@4.0.18)(jiti@2.6.1)(jsdom@29.0.0(@noble/hashes@2.0.1))(lightningcss@1.32.0)(tsx@4.21.0):
     dependencies:
