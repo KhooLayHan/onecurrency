@@ -105,14 +105,14 @@ export default function SignUpPage() {
                 I agree to the{" "}
                 <a
                   className="font-medium text-neutral-900 hover:underline"
-                  href="/"
+                  href="/terms"
                 >
                   Terms of Service
                 </a>{" "}
                 and{" "}
                 <a
                   className="font-medium text-neutral-900 hover:underline"
-                  href="/"
+                  href="/privacy"
                 >
                   Privacy Policy
                 </a>
