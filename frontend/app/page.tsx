@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { authClient, signOut, useSession } from "@/lib/auth-client";
 
@@ -19,6 +20,20 @@ export default function Home() {
   return (
     <div className="p-10">
       <h1 className="mb-4 font-bold text-2xl">OneCurrency</h1>
+      <div className="mb-6 flex gap-3">
+        <Link
+          href="/login"
+          className="rounded bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+        >
+          Login page →
+        </Link>
+        <Link
+          href="/sign-up"
+          className="rounded border border-neutral-300 px-4 py-2 text-sm hover:border-neutral-500"
+        >
+          Sign-up page →
+        </Link>
+      </div>
 
       {session ? (
         <div className="rounded border bg-green-50 p-4">

@@ -4,11 +4,11 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    API_URL: z.httpUrl(),
+    API_URL: z.url(),
     // NODE_ENV: z.enum(["development", "production", "testing", "staging"]),
   },
   client: {
-    NEXT_PUBLIC_API_URL: z.httpUrl(),
+    NEXT_PUBLIC_API_URL: z.url(),
     NEXT_PUBLIC_POSTHOG_HOST: z.httpUrl(),
     NEXT_PUBLIC_POSTHOG_KEY: z.string(),
     NEXT_PUBLIC_CHAIN_ID: z.enum(["31337", "11155111"]).default("11155111"), // Sepolia default
