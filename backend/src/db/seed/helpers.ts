@@ -67,7 +67,7 @@ export function randomPercentage(): number {
 }
 
 export function generateEthereumAddress(): string {
-  return `0x${faker.string.hexadecimal({ length: 40, casing: "lower" })}`;
+  return `${faker.string.hexadecimal({ length: 40, casing: "lower" })}`;
 }
 
 export function generateTransactionHash(): string {
