@@ -36,17 +36,22 @@ export async function batchInsertReturning(
   options: {
     batchSize?: number;
     returning: SelectedFieldsFlat;
+    ignoreConflicts?: boolean;
   }
 ): Promise<unknown[]> {
-  const { batchSize = DEFAULT_BATCH_SIZE, returning } = options;
+  const {
+    batchSize = DEFAULT_BATCH_SIZE,
+    returning,
+    ignoreConflicts = false,
+  } = options;
   const results: unknown[] = [];
 
   for (const batch of generateBatches(records, batchSize)) {
-    const batchResult = await db
-      .insert(table)
-      .values(batch)
-      .onConflictDoNothing()
-      .returning(returning);
+    const insertQuery = ignoreConflicts
+      ? db.insert(table).values(batch).onConflictDoNothing()
+      : db.insert(table).values(batch);
+
+    const batchResult = await insertQuery.returning(returning);
     results.push(...batchResult);
   }
 

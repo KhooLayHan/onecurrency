@@ -1,9 +1,8 @@
 import { sValidator } from "@hono/standard-validator";
-import { DatabaseError } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 import z from "zod";
 import { db } from "../db";
 import { blockchainTransactions } from "../db/schema/blockchain-transactions";
@@ -48,8 +47,8 @@ app.post(
   sValidator(
     "json",
     z.object({
-      amountCents: z.number().min(AMOUNT_CENTS), // Min $10.00
-      walletId: z.number(), // The ID of the wallet receiving the funds
+      amountCents: z.number().int().min(AMOUNT_CENTS), // Min $10.00
+      walletId: z.number().int().positive(), // The ID of the wallet receiving the funds
     })
   ),
   async (c) => {
@@ -150,6 +149,22 @@ app.post("/webhook", async (c) => {
       eventType: event.type,
       payload: event,
     });
+
+    // TODO: Idempotency handling currently drops legitimate Stripe retries after partial failure.
+    // const insertedEvent = await db.insert(webhookEvents).values({
+    //    stripeEventId: event.id,
+    //    eventType: event.type,
+    //    payload: event,
+    // });
+
+    // on conflict: do not mark as processed yet; decide based on processedAt
+    // if already processed -> return 200 duplicate
+    // if not processed -> continue processing this retry
+
+    // if (err instanceof DatabaseError && err.code === "23505") {
+    //   return c.text("Duplicate", StatusCodes.OK);
+    // }
+    // Do not blindly ack duplicates; only ack if already processed
   } catch (err) {
     if (err instanceof Stripe.errors.StripeSignatureVerificationError) {
       logger.error({ err }, "Webhook signature verification failed!");
