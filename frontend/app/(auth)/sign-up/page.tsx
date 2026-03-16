@@ -9,9 +9,7 @@ export default function SignUpPage() {
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
             OneCurrency
           </h1>
-          <p className="mt-1.5 text-sm text-neutral-500">
-            Create your account
-          </p>
+          <p className="mt-1.5 text-sm text-neutral-500">Create your account</p>
         </div>
 
         {/* Card */}
