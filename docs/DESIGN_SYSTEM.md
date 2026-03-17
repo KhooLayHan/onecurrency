@@ -10,46 +10,48 @@
 
 ### Color System (60-30-10 Rule)
 
-| Role | % | Palette | Semantic Token |
-|------|----|---------|----------------|
-| Neutrals | 60% | Cool Slate | `--color-background`, `--color-muted`, `--color-card`, `--color-border` |
-| Primary | 30% | Trust Blue | `--color-primary` (and scale `50`→`700`) |
-| Accents | 10% | Emerald · Amber · Red | `--color-success-*`, `--color-highlight-*`, `--color-destructive` |
+| Role     | %   | Palette               | Semantic Token                                                          |
+| -------- | --- | --------------------- | ----------------------------------------------------------------------- |
+| Neutrals | 60% | Cool Slate            | `--color-background`, `--color-muted`, `--color-card`, `--color-border` |
+| Primary  | 30% | Trust Blue            | `--color-primary` (and scale `50`→`700`)                                |
+| Accents  | 10% | Emerald · Amber · Red | `--color-success-*`, `--color-highlight-*`, `--color-destructive`       |
 
 **OKLCH palette (defined in `app/globals.css` via `@theme`):**
 
 ```css
 /* 60% — Neutrals */
---color-background:         oklch(1 0 0);
---color-muted:              oklch(0.97 0.002 260);
---color-card:               oklch(1 0 0);
---color-border:             oklch(0.90 0.005 260);
---color-foreground:         oklch(0.15 0.01 260);
---color-muted-foreground:   oklch(0.45 0.01 260);
+--color-background: oklch(1 0 0);
+--color-muted: oklch(0.97 0.002 260);
+--color-card: oklch(1 0 0);
+--color-border: oklch(0.9 0.005 260);
+--color-foreground: oklch(0.15 0.01 260);
+--color-muted-foreground: oklch(0.45 0.01 260);
 
 /* 30% — Primary Blue */
---color-primary-50:   oklch(0.97 0.02 255);
---color-primary-100:  oklch(0.93 0.04 255);
---color-primary-500:  oklch(0.62 0.17 255);
---color-primary-600:  oklch(0.55 0.19 255);   /* default primary */
---color-primary-700:  oklch(0.48 0.20 255);
+--color-primary-50: oklch(0.97 0.02 255);
+--color-primary-100: oklch(0.93 0.04 255);
+--color-primary-500: oklch(0.62 0.17 255);
+--color-primary-600: oklch(0.55 0.19 255); /* default primary */
+--color-primary-700: oklch(0.48 0.2 255);
 
 /* 10% — Accents */
---color-success-50:       oklch(0.97 0.03 155);
---color-success-500:      oklch(0.65 0.18 155);
---color-success-600:      oklch(0.58 0.20 155);
---color-highlight-50:     oklch(0.97 0.04 80);
---color-highlight-500:    oklch(0.72 0.17 80);
---color-highlight-600:    oklch(0.65 0.19 80);
---color-destructive:      oklch(0.58 0.22 25);
+--color-success-50: oklch(0.97 0.03 155);
+--color-success-500: oklch(0.65 0.18 155);
+--color-success-600: oklch(0.58 0.2 155);
+--color-highlight-50: oklch(0.97 0.04 80);
+--color-highlight-500: oklch(0.72 0.17 80);
+--color-highlight-600: oklch(0.65 0.19 80);
+--color-destructive: oklch(0.58 0.22 25);
 
 /* Dark mode overrides (applied on .dark class) */
---color-background-dark:        oklch(0.15 0.02 260);   /* #0f172a — rich, not pure black */
---color-muted-dark:             oklch(0.25 0.02 260);   /* #1e293b */
---color-card-dark:              oklch(0.25 0.02 260);
---color-border-dark:            oklch(0.35 0.02 260);
---color-foreground-dark:        oklch(0.97 0.01 260);
---color-muted-foreground-dark:  oklch(0.65 0.01 260);
+--color-background-dark: oklch(
+  0.15 0.02 260
+); /* #0f172a — rich, not pure black */
+--color-muted-dark: oklch(0.25 0.02 260); /* #1e293b */
+--color-card-dark: oklch(0.25 0.02 260);
+--color-border-dark: oklch(0.35 0.02 260);
+--color-foreground-dark: oklch(0.97 0.01 260);
+--color-muted-foreground-dark: oklch(0.65 0.01 260);
 ```
 
 > Colours are mapped to Tailwind utility classes via `@theme` (e.g. `bg-primary-600`,
@@ -61,17 +63,18 @@
 
 **Font family:** Geist (Vercel, sans-serif). Loaded via `next/font/google`.
 
-| Token | Size | Line-height | Usage |
-|-------|------|-------------|-------|
-| `text-xs` | 12px | 16px | Captions, timestamps, badge labels |
-| `text-sm` | 14px | 20px | Form labels, secondary info, button text |
-| `text-base` | 16px | 24px | Body copy, input values |
-| `text-lg` | 18px | 28px | Card headings |
-| `text-xl` | 20px | 28px | Section titles |
-| `text-2xl` | 24px | 32px | Page titles |
-| `text-3xl` | 30px | 36px | Hero balance amounts |
+| Token       | Size | Line-height | Usage                                    |
+| ----------- | ---- | ----------- | ---------------------------------------- |
+| `text-xs`   | 12px | 16px        | Captions, timestamps, badge labels       |
+| `text-sm`   | 14px | 20px        | Form labels, secondary info, button text |
+| `text-base` | 16px | 24px        | Body copy, input values                  |
+| `text-lg`   | 18px | 28px        | Card headings                            |
+| `text-xl`   | 20px | 28px        | Section titles                           |
+| `text-2xl`  | 24px | 32px        | Page titles                              |
+| `text-3xl`  | 30px | 36px        | Hero balance amounts                     |
 
 **Weights used:**
+
 - `font-normal` (400) — body copy
 - `font-medium` (500) — labels, secondary headings
 - `font-semibold` (600) — card headers, table column headers
@@ -87,13 +90,13 @@
 
 ### Spacing
 
-| Usage | Class | Value |
-|-------|-------|-------|
-| Page horizontal padding | `px-4 sm:px-6 lg:px-8` | 16 → 24 → 32px |
-| Card padding | `p-4 sm:p-6` | 16 → 24px |
-| Section vertical gap | `gap-6` | 24px |
-| Element gap (within card) | `gap-4` | 16px |
-| Tight element gap | `gap-2` | 8px |
+| Usage                     | Class                  | Value          |
+| ------------------------- | ---------------------- | -------------- |
+| Page horizontal padding   | `px-4 sm:px-6 lg:px-8` | 16 → 24 → 32px |
+| Card padding              | `p-4 sm:p-6`           | 16 → 24px      |
+| Section vertical gap      | `gap-6`                | 24px           |
+| Element gap (within card) | `gap-4`                | 16px           |
+| Tight element gap         | `gap-2`                | 8px            |
 
 **Touch target minimum:** `h-11` (44px) on mobile, `h-10` (40px) acceptable on desktop.
 
@@ -101,13 +104,13 @@
 
 ### Breakpoints
 
-| Name | Min-width | Usage |
-|------|-----------|-------|
-| *(default)* | — | Mobile: single column, full-width cards |
-| `sm` | 640px | 2-column grids start, wider padding |
-| `md` | 768px | Enhanced layouts, side-by-side actions |
-| `lg` | 1024px | Full dashboard, wider containers |
-| `xl` | 1280px | Max-width content containers |
+| Name        | Min-width | Usage                                   |
+| ----------- | --------- | --------------------------------------- |
+| _(default)_ | —         | Mobile: single column, full-width cards |
+| `sm`        | 640px     | 2-column grids start, wider padding     |
+| `md`        | 768px     | Enhanced layouts, side-by-side actions  |
+| `lg`        | 1024px    | Full dashboard, wider containers        |
+| `xl`        | 1280px    | Max-width content containers            |
 
 ---
 
@@ -120,16 +123,16 @@ crypto enthusiast. Every piece of copy must feel like it belongs in a banking ap
 
 **Terminology dictionary:**
 
-| Backend / Web3 Reality | ✅ Frontend UI copy | Psychology |
-|------------------------|---------------------|------------|
-| Wallet / Address | **Account** / **OneCurrency Balance** | "Wallet" sounds like MetaMask. "Account" sounds like a bank. |
-| Deposit / Fiat On-Ramp | **Add Money** / **Top Up** | Familiar to Southeast Asian e-wallet users (TNG, GrabPay). |
-| Withdraw / Burn | **Cash Out** / **Send to Bank** | Clear, action-oriented. |
-| Transaction Hash / Tx | **Receipt Reference** | Sounds auditable and trustworthy. |
-| Gas Fee / Network Fee | **Processing Fee** | Standard e-commerce terminology. |
-| Minting Tokens | **Processing your funds…** | Hides blockchain complexity entirely. |
-| Smart Contract | *(Never mention)* | It is infrastructure, not a user feature. |
-| Blockchain / Web3 / Crypto | *(Never mention)* | Same reason. |
+| Backend / Web3 Reality     | ✅ Frontend UI copy                   | Psychology                                                   |
+| -------------------------- | ------------------------------------- | ------------------------------------------------------------ |
+| Wallet / Address           | **Account** / **OneCurrency Balance** | "Wallet" sounds like MetaMask. "Account" sounds like a bank. |
+| Deposit / Fiat On-Ramp     | **Add Money** / **Top Up**            | Familiar to Southeast Asian e-wallet users (TNG, GrabPay).   |
+| Withdraw / Burn            | **Cash Out** / **Send to Bank**       | Clear, action-oriented.                                      |
+| Transaction Hash / Tx      | **Receipt Reference**                 | Sounds auditable and trustworthy.                            |
+| Gas Fee / Network Fee      | **Processing Fee**                    | Standard e-commerce terminology.                             |
+| Minting Tokens             | **Processing your funds…**            | Hides blockchain complexity entirely.                        |
+| Smart Contract             | _(Never mention)_                     | It is infrastructure, not a user feature.                    |
+| Blockchain / Web3 / Crypto | _(Never mention)_                     | Same reason.                                                 |
 
 ### 2. Low Floor, High Ceiling
 
@@ -143,14 +146,14 @@ crypto enthusiast. Every piece of copy must feel like it belongs in a banking ap
 
 Financial apps cause anxiety. Every action must produce an immediate, unambiguous response.
 
-| Trigger | Required Feedback |
-|---------|-------------------|
-| Button click | Loading state within 100ms |
-| API success | Toast notification + UI state update |
-| API error | Inline error message + toast |
-| Data loading | Skeleton loaders (never blank screens) |
+| Trigger       | Required Feedback                                  |
+| ------------- | -------------------------------------------------- |
+| Button click  | Loading state within 100ms                         |
+| API success   | Toast notification + UI state update               |
+| API error     | Inline error message + toast                       |
+| Data loading  | Skeleton loaders (never blank screens)             |
 | Status change | Badge updates instantly (optimistic UI where safe) |
-| KYC verified | Immediate green badge + unlocked actions |
+| KYC verified  | Immediate green badge + unlocked actions           |
 
 ---
 
@@ -192,23 +195,25 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary:   "bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800",
-        secondary: "border border-border bg-transparent hover:bg-muted active:bg-muted/80",
-        ghost:     "hover:bg-muted active:bg-muted/80",
-        danger:    "bg-destructive text-white hover:opacity-90",
+        primary:
+          "bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800",
+        secondary:
+          "border border-border bg-transparent hover:bg-muted active:bg-muted/80",
+        ghost: "hover:bg-muted active:bg-muted/80",
+        danger: "bg-destructive text-white hover:opacity-90",
       },
       size: {
-        sm:      "h-9 px-3 text-xs",
+        sm: "h-9 px-3 text-xs",
         default: "h-11 px-4 text-sm",
-        lg:      "h-12 px-6 text-base",
-        icon:    "h-11 w-11",
+        lg: "h-12 px-6 text-base",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {
       variant: "primary",
       size: "default",
     },
-  }
+  },
 );
 
 type ButtonProps = React.ComponentProps<"button"> &
@@ -244,19 +249,19 @@ const inputVariants = cva(
     variants: {
       inputSize: {
         default: "h-11",
-        sm:      "h-9 text-xs",
-        lg:      "h-12 text-base",
+        sm: "h-9 text-xs",
+        lg: "h-12 text-base",
       },
       state: {
         default: "border-border",
-        error:   "border-destructive focus-visible:ring-destructive",
+        error: "border-destructive focus-visible:ring-destructive",
       },
     },
     defaultVariants: {
       inputSize: "default",
       state: "default",
     },
-  }
+  },
 );
 
 type InputProps = React.ComponentProps<"input"> &
@@ -269,7 +274,7 @@ export function Input({ className, inputSize, error, ...props }: InputProps) {
     <input
       className={cn(
         inputVariants({ inputSize, state: error ? "error" : "default" }),
-        className
+        className,
       )}
       {...props}
     />
@@ -287,17 +292,17 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        success:   "bg-success-50 text-success-600",
-        warning:   "bg-highlight-50 text-highlight-600",
-        error:     "bg-red-50 text-destructive",
-        neutral:   "bg-muted text-muted-foreground",
-        primary:   "bg-primary-50 text-primary-600",
+        success: "bg-success-50 text-success-600",
+        warning: "bg-highlight-50 text-highlight-600",
+        error: "bg-red-50 text-destructive",
+        neutral: "bg-muted text-muted-foreground",
+        primary: "bg-primary-50 text-primary-600",
       },
     },
     defaultVariants: {
       variant: "neutral",
     },
-  }
+  },
 );
 
 type BadgeProps = React.ComponentProps<"span"> &
@@ -311,6 +316,7 @@ export function Badge({ className, variant, ...props }: BadgeProps) {
 ```
 
 Usage examples:
+
 ```tsx
 <Badge variant="success">Completed</Badge>
 <Badge variant="warning">Pending</Badge>
@@ -327,10 +333,10 @@ secondary, smaller, and prefixed with `≈`.
 
 ```tsx
 const AMOUNT_SIZE_CLASSES = {
-  sm: { primary: "text-lg font-semibold",   secondary: "text-xs" },
-  md: { primary: "text-xl font-semibold",   secondary: "text-sm" },
-  lg: { primary: "text-2xl font-bold",      secondary: "text-sm" },
-  xl: { primary: "text-3xl font-bold",      secondary: "text-base" },
+  sm: { primary: "text-lg font-semibold", secondary: "text-xs" },
+  md: { primary: "text-xl font-semibold", secondary: "text-sm" },
+  lg: { primary: "text-2xl font-bold", secondary: "text-sm" },
+  xl: { primary: "text-3xl font-bold", secondary: "text-base" },
 } as const;
 
 type AmountDisplayProps = {
@@ -359,9 +365,13 @@ export function AmountDisplay({
         }).format(usdAmount)}
       </span>
       {localCurrency && localAmount !== undefined && (
-        <span className={cn("tabular-nums text-muted-foreground", classes.secondary)}>
-          ≈ {localCurrency}{" "}
-          {new Intl.NumberFormat("en-MY").format(localAmount)}
+        <span
+          className={cn(
+            "tabular-nums text-muted-foreground",
+            classes.secondary,
+          )}
+        >
+          ≈ {localCurrency} {new Intl.NumberFormat("en-MY").format(localAmount)}
         </span>
       )}
     </div>
@@ -381,10 +391,15 @@ const TAB_BAR_HEIGHT_PX = 64;
 const TAB_ICON_SIZE_PX = 20;
 
 const TABS = [
-  { id: "home",     label: "Home",     href: "/dashboard", Icon: Home },
-  { id: "transfer", label: "Transfer", href: "/transfer",  Icon: ArrowLeftRight },
-  { id: "history",  label: "History",  href: "/history",   Icon: Receipt },
-  { id: "profile",  label: "Profile",  href: "/profile",   Icon: User },
+  { id: "home", label: "Home", href: "/dashboard", Icon: Home },
+  {
+    id: "transfer",
+    label: "Transfer",
+    href: "/transfer",
+    Icon: ArrowLeftRight,
+  },
+  { id: "history", label: "History", href: "/history", Icon: Receipt },
+  { id: "profile", label: "Profile", href: "/profile", Icon: User },
 ] as const;
 
 export function BottomTabBar() {
@@ -408,7 +423,7 @@ export function BottomTabBar() {
                 "flex min-w-[44px] flex-col items-center gap-1 rounded-lg px-3 py-2 transition-colors",
                 isActive
                   ? "text-primary-600"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Icon
@@ -487,13 +502,13 @@ when shared across multiple components.
 
 ### File & Folder Naming
 
-| Type | Convention | Example |
-|------|-----------|---------|
-| Components | PascalCase | `BalanceCard.tsx` |
-| Utilities / hooks | kebab-case | `use-kyc-status.ts` |
-| Constants files | kebab-case | `transaction-constants.ts` |
-| Stories | Same as component + `.stories` | `BalanceCard.stories.tsx` |
-| Types | PascalCase | `TransactionTypes.ts` |
+| Type              | Convention                     | Example                    |
+| ----------------- | ------------------------------ | -------------------------- |
+| Components        | PascalCase                     | `BalanceCard.tsx`          |
+| Utilities / hooks | kebab-case                     | `use-kyc-status.ts`        |
+| Constants files   | kebab-case                     | `transaction-constants.ts` |
+| Stories           | Same as component + `.stories` | `BalanceCard.stories.tsx`  |
+| Types             | PascalCase                     | `TransactionTypes.ts`      |
 
 ### Import Order
 
@@ -536,15 +551,15 @@ Storybook files are explicitly excluded from linting (`.storybook/**`, `stories/
 
 ### WCAG AA — Key Requirements
 
-| Rule | Implementation |
-|------|---------------|
-| Semantic HTML | Use `<button>`, `<nav>`, `<main>`, `<section>`, not `<div onClick>` |
-| Colour contrast | 4.5 : 1 minimum (OKLCH palette is calibrated for this) |
-| Focus states | `focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2` on all interactive elements |
-| Touch targets | `h-11` minimum (44px), spacing between targets ≥ 8px |
-| ARIA labels | Icon-only buttons must have `aria-label`; decorative icons get `aria-hidden="true"` |
-| Screen readers | Dynamic content updates (toasts, balance changes) announced via `role="alert"` or `aria-live` |
-| Keyboard nav | All interactive elements reachable via Tab; modals trap focus |
+| Rule            | Implementation                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------------- |
+| Semantic HTML   | Use `<button>`, `<nav>`, `<main>`, `<section>`, not `<div onClick>`                                           |
+| Colour contrast | 4.5 : 1 minimum (OKLCH palette is calibrated for this)                                                        |
+| Focus states    | `focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2` on all interactive elements |
+| Touch targets   | `h-11` minimum (44px), spacing between targets ≥ 8px                                                          |
+| ARIA labels     | Icon-only buttons must have `aria-label`; decorative icons get `aria-hidden="true"`                           |
+| Screen readers  | Dynamic content updates (toasts, balance changes) announced via `role="alert"` or `aria-live`                 |
+| Keyboard nav    | All interactive elements reachable via Tab; modals trap focus                                                 |
 
 ### Forms
 
@@ -582,18 +597,18 @@ Start with mobile styles, use breakpoint prefixes (`sm:`, `md:`, `lg:`) to enhan
 ```html
 <!-- Single column on mobile, 2-column on sm+ -->
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-<!-- Full-width button on mobile, auto-width on sm+ -->
-<button class="w-full sm:w-auto">Add Money</button>
+  <!-- Full-width button on mobile, auto-width on sm+ -->
+  <button class="w-full sm:w-auto">Add Money</button>
+</div>
 ```
 
 ### Layout Patterns by Breakpoint
 
-| Screen | Layout | Navigation |
-|--------|---------|-----------|
-| < 640px (mobile) | Single column, stacked | Bottom tab bar |
-| 640–1023px (tablet) | 2-column stat cards | Bottom tab bar |
-| ≥ 1024px (desktop) | 2–3 column dashboard | Bottom tab bar + optional left panel |
+| Screen              | Layout                 | Navigation                           |
+| ------------------- | ---------------------- | ------------------------------------ |
+| < 640px (mobile)    | Single column, stacked | Bottom tab bar                       |
+| 640–1023px (tablet) | 2-column stat cards    | Bottom tab bar                       |
+| ≥ 1024px (desktop)  | 2–3 column dashboard   | Bottom tab bar + optional left panel |
 
 **Bottom tab bar is mandatory on all screen sizes.**  
 Desktop may add a left sidebar for quick stats, but the bottom bar always persists.
@@ -639,15 +654,15 @@ handled by the framework.
 
 ### Approved Micro-interactions
 
-| Use Case | Animation | Duration |
-|----------|-----------|----------|
+| Use Case              | Animation                            | Duration       |
+| --------------------- | ------------------------------------ | -------------- |
 | Balance number ticker | `AnimatedNumber` (counter animation) | 600ms ease-out |
-| Skeleton loaders | CSS shimmer (`animate-pulse`) | Continuous |
-| Modal / dialog open | Fade + scale (0.95 → 1) | 200ms ease-out |
-| Tab switch | Slide + fade | 150ms |
-| Button press | Scale 0.98 | 100ms spring |
-| Page transition | Fade (opacity 0 → 1) | 150ms ease-out |
-| Toast notification | Slide in from top | 200ms spring |
+| Skeleton loaders      | CSS shimmer (`animate-pulse`)        | Continuous     |
+| Modal / dialog open   | Fade + scale (0.95 → 1)              | 200ms ease-out |
+| Tab switch            | Slide + fade                         | 150ms          |
+| Button press          | Scale 0.98                           | 100ms spring   |
+| Page transition       | Fade (opacity 0 → 1)                 | 150ms ease-out |
+| Toast notification    | Slide in from top                    | 200ms spring   |
 
 ### Code Pattern
 
@@ -655,7 +670,7 @@ handled by the framework.
 import { motion, useReducedMotion } from "framer-motion";
 
 const FADE_UP_VARIANTS = {
-  hidden:  { opacity: 0, y: 8 },
+  hidden: { opacity: 0, y: 8 },
   visible: { opacity: 1, y: 0 },
 };
 
@@ -787,11 +802,11 @@ native e-wallet.
 
 **Trade-offs:**
 
-| Pro | Con |
-|-----|-----|
-| Native app feel, Home Screen install | Caching strategy adds complexity |
-| Offline balance / history viewing | Requires HTTPS in production |
-| Push notifications for transactions | Service worker debugging is non-trivial |
+| Pro                                  | Con                                     |
+| ------------------------------------ | --------------------------------------- |
+| Native app feel, Home Screen install | Caching strategy adds complexity        |
+| Offline balance / history viewing    | Requires HTTPS in production            |
+| Push notifications for transactions  | Service worker debugging is non-trivial |
 
 **Recommendation:** Implement post-MVP or as a stretch goal if time permits. The
 foundation (Tailwind, React, mobile-first layout) already supports PWA without
@@ -838,6 +853,6 @@ architectural changes.
 
 ## 📝 Changelog
 
-| Version | Date | Notes |
-|---------|------|-------|
-| 1.0 | 2026-03 | Initial design system for OneCurrency FYP MVP |
+| Version | Date    | Notes                                         |
+| ------- | ------- | --------------------------------------------- |
+| 1.0     | 2026-03 | Initial design system for OneCurrency FYP MVP |

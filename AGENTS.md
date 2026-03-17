@@ -347,14 +347,14 @@ describe("Counter", () => {
 
 Use familiar financial terminology - never expose blockchain concepts to users:
 
-| Use This | Not This |
-|----------|----------|
-| Account / OneCurrency Balance | Wallet |
-| Add Money / Top Up | Deposit |
-| Cash Out / Send to Bank | Withdraw |
-| Receipt Reference | Transaction Hash |
-| Processing Fee | Gas Fee |
-| Processing your funds... | Minting Tokens |
+| Use This                      | Not This         |
+| ----------------------------- | ---------------- |
+| Account / OneCurrency Balance | Wallet           |
+| Add Money / Top Up            | Deposit          |
+| Cash Out / Send to Bank       | Withdraw         |
+| Receipt Reference             | Transaction Hash |
+| Processing Fee                | Gas Fee          |
+| Processing your funds...      | Minting Tokens   |
 
 **Never mention**: Smart Contract, Blockchain, Web3, Crypto, Token, Mint
 
