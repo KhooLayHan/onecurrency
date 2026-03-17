@@ -540,7 +540,7 @@ export default function Button(...) {}
 The root `biome.jsonc` extends `ultracite` which bundles recommended a11y rules. Linting
 runs on:
 
-```
+```bash
 frontend/app/**/*
 frontend/components/**
 frontend/hooks/**
@@ -709,7 +709,7 @@ export function FadeIn({ children }: { children: React.ReactNode }) {
 
 Place `.stories.tsx` files **next to** the component they document:
 
-```
+```bash
 components/
 └── ui/
     ├── button.tsx
