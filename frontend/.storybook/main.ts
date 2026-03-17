@@ -13,8 +13,13 @@ function getAbsolutePath(value: string) {
 }
 const config: StorybookConfig = {
   "stories": [
+    // Legacy scaffold stories
     "../stories/**/*.mdx",
-    "../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)"
+    "../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+    // Colocated stories — components live next to their .stories.tsx
+    "../components/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+    "../components/**/*.mdx",
+    "../app/**/*.stories.@(js|jsx|mjs|ts|tsx)",
   ],
   "addons": [
     getAbsolutePath('@chromatic-com/storybook'),

@@ -1,4 +1,6 @@
 import type { Preview } from '@storybook/nextjs-vite'
+// Import design system tokens and Tailwind utilities for all stories
+import '../app/globals.css'
 
 const preview: Preview = {
   parameters: {
