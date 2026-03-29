@@ -32,8 +32,6 @@ export default async function RootLayout({
             </div>
           </header>
 
-          {/* Main Content Area */}
-          {/* Container restricts max width on massive monitors */}
           <main className="container mx-auto max-w-7xl px-4 py-6 sm:px-8 md:py-10">
             {children}
           </main>
