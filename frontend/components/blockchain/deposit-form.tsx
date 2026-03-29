@@ -3,11 +3,11 @@
 import { useForm } from "@tanstack/react-form";
 import { ofetch } from "ofetch";
 import { useConnection } from "wagmi";
+import { depositSchema } from "@/common/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { env } from "@/env";
-import { depositSchema } from "../../../packages/common/src/index";
 
 export function DepositForm() {
   const { address } = useConnection();
