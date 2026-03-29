@@ -18,6 +18,7 @@
       "frontend/lib/**",
       "frontend/public/**",
       "frontend/styles/**",
+      "frontend/config/**",
       "packages/common/**",
       "!node_modules",
       "!.next",
