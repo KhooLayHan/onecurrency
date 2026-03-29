@@ -1,4 +1,4 @@
-import { cookieStorage, createStorage, http } from "wagmi";
+import { cookieStorage, createStorage } from "wagmi";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { sepolia, hardhat } from "@reown/appkit/networks";
 import { env } from "@/env";
