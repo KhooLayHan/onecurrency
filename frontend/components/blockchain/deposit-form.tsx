@@ -42,8 +42,8 @@ export function DepositForm() {
           window.location.href = response.checkoutUrl;
         }
       } catch (_error) {
-        // .error("Deposit failed:", error);
-        // alert("Failed to initiate deposit.");
+        // TODO: Show user-facing error via toast or form state
+        // Example: setError("Failed to initiate payment. Please try again.");
       }
     },
   });

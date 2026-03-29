@@ -16,7 +16,7 @@ if (!projectId) {
 const metadata = {
   name: "OneCurrency",
   description: "A Hybrid Fiat-to-Crypto Bridge",
-  url: "https//localhost:3000",
+  url: "http://localhost:3000",
   icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 
