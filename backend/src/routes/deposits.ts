@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
 import Stripe from "stripe";
 import z from "zod";
+import { AMOUNT_CENTS, DEPOSIT_MAX } from "@/common/index";
 import { db } from "../db";
 import { blockchainTransactions } from "../db/schema/blockchain-transactions";
 import { deposits } from "../db/schema/deposits";
@@ -39,8 +40,6 @@ app.post("/test-mint", async (c) => {
   });
 });
 
-const AMOUNT_CENTS = 1000;
-
 // const app = new Hono<{ Variables: { session: { userId: number } } }>();
 
 app.post(
@@ -48,7 +47,11 @@ app.post(
   sValidator(
     "json",
     z.object({
-      amountCents: z.number().int().min(AMOUNT_CENTS), // Min $10.00
+      amountCents: z
+        .number()
+        .int()
+        .min(AMOUNT_CENTS)
+        .max(DEPOSIT_MAX, "Maximum is $10,000.00"), // Min $10.00
       walletId: z.number().int().positive(), // The ID of the wallet receiving the funds
     })
   ),
