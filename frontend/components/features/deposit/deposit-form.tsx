@@ -41,6 +41,7 @@ export function DepositForm() {
             // Note: In a full production app, you'd fetch the user's DB walletId first.
             // For this MVP, we use walletId: 1 (the one we seeded earlier) to keep the flow fast.
             body: { amountCents, walletId: 1 },
+            credentials: "include",
           }
         );
 
