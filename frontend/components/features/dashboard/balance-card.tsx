@@ -1,7 +1,6 @@
 "use client";
 
 import { Plus, Send } from "lucide-react";
-import type React from "react";
 import { formatUnits } from "viem";
 import { useConnection, useReadContract } from "wagmi";
 import {
@@ -11,7 +10,16 @@ import {
 import { AmountDisplay } from "@/components/shared/amount-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DepositForm } from "../deposit/deposit-form";
 
 const MYR_EXCHANGE_RATE = 4.72;
 
@@ -88,10 +96,30 @@ export function BalanceCard() {
 
         {/* Quick Actions - The "Low Floor" UX */}
         <div className="grid grid-cols-2 gap-3 pt-4">
-          <Button className="flex w-full gap-2 font-semibold" size="lg">
-            <Plus size={18} />
-            Add Money
-          </Button>
+          <Dialog>
+            <DialogTrigger>
+              <Button className="flex w-full gap-2 font-semibold" size="lg">
+                <Plus size={18} />
+                Add Money
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent className="rounded-2xl sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-bold text-2xl">
+                  Top Up Account
+                </DialogTitle>
+                <DialogDescription>
+                  Enter the amount of USD you want to add. This will be
+                  instantly converted to OneCurrency.
+                </DialogDescription>
+              </DialogHeader>
+
+              {/* Insert our TanStack Form here */}
+              <DepositForm />
+            </DialogContent>
+          </Dialog>
+
           <Button
             className="flex w-full gap-2 bg-secondary/60 font-semibold"
             size="lg"
