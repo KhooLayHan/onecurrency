@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Send } from "lucide-react";
+import type React from "react";
 import { formatUnits } from "viem";
 import { useConnection, useReadContract } from "wagmi";
 import {
@@ -32,8 +33,10 @@ export function BalanceCard() {
     },
   });
 
+  const POWER_OF_18 = 18;
+
   const formattedBalance = balanceWei
-    ? Number(formatUnits(balanceWei as bigint, 18))
+    ? Number(formatUnits(balanceWei as bigint, POWER_OF_18))
     : 0;
   const localBalance = formattedBalance * MYR_EXCHANGE_RATE;
 
@@ -41,7 +44,7 @@ export function BalanceCard() {
     return null; // The parent page will handle the "Not Connected" state
   }
 
-  let balanceContent: JSX;
+  let balanceContent: React.JSX.Element;
 
   if (isLoading) {
     balanceContent = (
