@@ -49,7 +49,7 @@ export default function DashboardPage() {
                 <span className="font-medium text-sm">Network Operational</span>
               </div>
               <p className="mt-1 ml-4.5 text-muted-foreground text-xs">
-                Connected to Sepolia via Alchemy
+                Your account is secure and active
               </p>
             </div>
           </div>
