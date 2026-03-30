@@ -27,9 +27,11 @@ export function DepositForm() {
         return;
       }
 
+      const TEMP_100 = 100;
+
       try {
         // Convert USD dollars to cents for the backend
-        const amountCents = value.amount * 100;
+        const amountCents = Math.round(value.amount * TEMP_100);
 
         // 3. Call the Hono Backend API
         const response = await ofetch(
@@ -48,11 +50,11 @@ export function DepositForm() {
         }
       } catch (error) {
         if (error) {
-          // Handle custom API errors (e.g., KYC blocked, Unauthorized)
-          //   const apiMsg =
-          //     error.data?.message ||
-          //     "Failed to initiate deposit. Please try again.";
-          //   setGlobalError(apiMsg);
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Failed to initiate deposit. Please try again.";
+          setGlobalError(message);
         }
       }
     },

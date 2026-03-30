@@ -23,15 +23,6 @@ export default async function RootLayout({
       <body className="min-h-screen bg-background pb-20 font-sans antialiased sm:pb-0">
         <Providers cookies={cookies}>
           <TopNav />
-
-          <header className="border-border/40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-            <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
-              <div className="font-bold text-primary text-xl">OneCurrency</div>
-
-              <appkit-button />
-            </div>
-          </header>
-
           <main className="container mx-auto max-w-7xl px-4 py-6 sm:px-8 md:py-10">
             {children}
           </main>
