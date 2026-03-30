@@ -6,7 +6,13 @@ import { env } from "./env";
 // import { logger } from "./lib/logger";
 import { depositsRouter } from "./routes/deposits";
 
-const app = new Hono();
+type SessionVariables = {
+  session: {
+    userId: number;
+  } | null;
+};
+
+const app = new Hono<{ Variables: SessionVariables }>();
 
 app.use(
   "*",
@@ -45,6 +51,19 @@ app.get("/api/health", (c) =>
     version: "1.0.0",
   })
 );
+
+// Unsure why got CORS errors
+app.use("/api/*", async (c, next) => {
+  // Grab the session securely using the headers
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+
+  if (session?.user) {
+    // Inject it into the Hono Context so c.get("session") works in your routes
+    c.set("session", { userId: Number(session.user.id) });
+  }
+
+  await next();
+});
 
 app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 
