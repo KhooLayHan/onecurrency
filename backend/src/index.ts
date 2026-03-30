@@ -6,7 +6,13 @@ import { env } from "./env";
 // import { logger } from "./lib/logger";
 import { depositsRouter } from "./routes/deposits";
 
-const app = new Hono();
+type SessionVariables = {
+  session: {
+    userId: number;
+  } | null;
+};
+
+const app = new Hono<{ Variables: SessionVariables }>();
 
 app.use(
   "*",
@@ -23,13 +29,13 @@ app.use(
   "/api/*",
   cors({
     origin: env.CORS_ORIGIN,
-    // allowHeaders: [
-    //   "Content-Type",
-    //   "Authorization",
-    //   "X-Custom-Header",
-    //   "Upgrade-Insecure-Requests",
-    // ],
-    // allowMethods: ["POST", "GET", "OPTIONS"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Custom-Header",
+      "Upgrade-Insecure-Requests",
+    ],
+    allowMethods: ["POST", "GET", "OPTIONS"],
     exposeHeaders: ["Content-Length", "X-Kuma-Revision"],
     maxAge: 600,
     credentials: true,
@@ -53,7 +59,7 @@ app.use("/api/*", async (c, next) => {
 
   if (session?.user) {
     // Inject it into the Hono Context so c.get("session") works in your routes
-    c.set("session", session.user);
+    c.set("session", { userId: Number(session.user.id) });
   }
 
   await next();
