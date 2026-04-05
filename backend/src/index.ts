@@ -4,7 +4,7 @@ import { logger } from "hono/logger";
 import { auth } from "./auth";
 import { env } from "./env";
 // import { logger } from "./lib/logger";
-import { depositsRouter } from "./routes/deposits";
+import { depositsRouter } from "./routes/deposits/deposits";
 import { usersRouter } from "./routes/users";
 
 type SessionVariables = {
