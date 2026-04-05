@@ -24,7 +24,7 @@ export const webhookEvents = pgTable(
       .unique(),
     eventType: varchar("event_type", { length: 100 }).notNull(),
     apiVersion: varchar("api_version", { length: 20 }),
-    payload: jsonb("payload").notNull(),
+    payload: jsonb("payload").notNull().$type<object>(),
     processedAt: timestamp("processed_at", { withTimezone: true }),
     processingError: text("processing_error"),
     retryCount: integer("retry_count").notNull().default(0),

@@ -57,3 +57,5 @@ export const db = drizzle({
   logger: env.NODE_ENV !== "production",
   casing: "snake_case",
 });
+
+export type Database = typeof db;
