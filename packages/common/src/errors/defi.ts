@@ -8,6 +8,7 @@
 import { StatusCodes } from "http-status-codes";
 import {
   BASIS_POINTS_PER_PERCENT,
+  HEALTH_FACTOR_DECIMAL_PLACES,
   MIN_HEALTH_FACTOR,
 } from "@/constants/blockchain";
 import { AppError } from "./base";
@@ -164,7 +165,7 @@ export class LiquidationRiskError extends AppError {
     options?: ConstructorParameters<typeof AppError>[1]
   ) {
     super(
-      `Position '${positionId}' is at liquidation risk. Health factor: ${healthFactor.toFixed(4)} (minimum: ${MIN_HEALTH_FACTOR}).`,
+      `Position '${positionId}' is at liquidation risk. Health factor: ${healthFactor.toFixed(HEALTH_FACTOR_DECIMAL_PLACES)} (minimum: ${MIN_HEALTH_FACTOR}).`,
       { ...options, context: { positionId, healthFactor, ...options?.context } }
     );
   }

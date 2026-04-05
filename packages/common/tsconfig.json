@@ -4,10 +4,9 @@
   "compilerOptions": {
     "moduleResolution": "bundler",
     "incremental": true,
-    "baseUrl": ".",
     "rootDir": "./src",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
     "noEmit": false,
     "declaration": true,

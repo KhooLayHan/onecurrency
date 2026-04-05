@@ -22,6 +22,7 @@ import {
 } from "@/common/errors/infrastructure";
 import { TransactionRevertedError } from "@/common/errors/transaction";
 import { InvalidAddressError } from "@/common/errors/wallet";
+import { HARDHAT_CHAIN_ID, SEPOLIA_CHAIN_ID } from "../constants/blockchain";
 import { env } from "../env";
 import { logger } from "../lib/logger";
 
@@ -155,7 +156,7 @@ function isErrorMessage(
 }
 
 const handleNetworkError = (e: unknown): AppError => {
-  const chainId = isProd ? 11_155_111 : 31_337;
+  const chainId = isProd ? SEPOLIA_CHAIN_ID : HARDHAT_CHAIN_ID;
   return new RpcUnavailableError(chainId, {
     cause: e,
     context: {
@@ -170,8 +171,3 @@ const handleContractRevert = (e: unknown): AppError => {
     cause: e,
   });
 };
-
-const getErrorMessage = (e: unknown): string =>
-  isErrorMessage(e)
-    ? e.shortMessage || e.message || "Unexpected blockchain failure."
-    : "Unknown error occurred.";
