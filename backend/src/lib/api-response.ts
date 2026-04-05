@@ -1,7 +1,12 @@
 import type { Context } from "hono";
-import { StatusCodes } from "http-status-codes";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
-import { AppError } from "./errors";
+import { AppError } from "@/common/errors/base";
+import { InternalError } from "@/common/errors/infrastructure";
+import {
+  type FieldViolationDetail,
+  ValidationError,
+} from "@/common/errors/validation";
 import { logger } from "./logger";
 
 /**
@@ -11,46 +16,28 @@ import { logger } from "./logger";
 export function handleApiError(c: Context, error: unknown) {
   // const reqLogger = c.get("logger");
 
-  // 1. If it's our custom AppError
+  let appError: AppError;
+
   if (error instanceof AppError) {
-    // Log with the provided context
-    logger.warn(
-      { err: error, errContext: error.context, code: error.code },
-      error.message
-    );
+    appError = error;
+  } else if (error instanceof z.ZodError) {
+    const violations: FieldViolationDetail[] = error.issues.map((issue) => ({
+      field: issue.path.join(".") || "_root",
+      constraint: issue.message,
+      received: "received" in issue ? issue.received : undefined,
+    }));
 
-    return c.json(
-      {
-        success: false,
-        error: error.code,
-        message: error.message, // Safe to expose to users
-      },
-      StatusCodes.INTERNAL_SERVER_ERROR
-    );
-  }
-
-  // 2. If it's a Zod Validation Error (From oRPC or zValidator)
-  if (error instanceof z.ZodError) {
-    logger.warn({ validationErrors: error.message }, "Validation Failed");
-    return c.json(
-      {
-        success: false,
-        error: "VALIDATION_ERROR",
-        message: "Invalid request parameters",
-        details: z.treeifyError(error),
-      },
-      StatusCodes.BAD_REQUEST
+    appError = new ValidationError(violations, { cause: error });
+  } else {
+    appError = new InternalError(
+      "An unexpected error occurred at the API boundary.",
+      { cause: error }
     );
   }
 
-  // 3. Fallback for unhandled exceptions (e.g., standard JS Errors)
-  logger.error({ err: error }, "Unhandled Internal Server Error");
+  logger.error(appError.toLog());
   return c.json(
-    {
-      success: false,
-      error: "INTERNAL_SERVER_ERROR",
-      message: "An unexpected error occurred. Our team has been notified.",
-    },
-    StatusCodes.INTERNAL_SERVER_ERROR
+    appError.toResponse(),
+    appError.statusCode as ContentfulStatusCode
   );
 }

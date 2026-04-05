@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { Stripe } from "stripe";
+import { ExternalServiceError } from "@/common/errors/infrastructure";
 import { MIN_CONFIRMATIONS, ZERO_ADDRESS } from "../constants/blockchain";
 import { KYC_STATUS } from "../constants/kyc-status";
 import { TRANSACTION_STATUS } from "../constants/transaction-status";
@@ -23,7 +24,6 @@ import {
 } from "../dto/deposit.dto";
 import { env } from "../env";
 import { handleApiError } from "../lib/api-response";
-import { ExternalServiceError } from "../lib/errors";
 import { logger } from "../lib/logger";
 import { mintTokens } from "../services/blockchain";
 import { calculateTokenAmountWei, stripe } from "../services/stripe.service";
@@ -115,11 +115,7 @@ app.post("/checkout", sValidator("json", createCheckoutSchema), async (c) => {
     if (!session_.url) {
       return handleApiError(
         c,
-        new ExternalServiceError(
-          "STRIPE_API_ERROR",
-          "Checkout session URL not generated",
-          {}
-        )
+        new ExternalServiceError("Stripe", "Checkout session URL not generated")
       );
     }
 
@@ -133,11 +129,9 @@ app.post("/checkout", sValidator("json", createCheckoutSchema), async (c) => {
   } catch (e) {
     return handleApiError(
       c,
-      new ExternalServiceError(
-        "STRIPE_API_ERROR",
-        "Failed to create checkout session",
-        { e }
-      )
+      new ExternalServiceError("Stripe", "Failed to create checkout session", {
+        cause: e,
+      })
     );
   }
 });
