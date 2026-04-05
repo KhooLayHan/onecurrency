@@ -4,16 +4,18 @@ import { InternalError } from "@/common/errors/infrastructure";
 import { WalletNotFoundError } from "@/common/errors/wallet";
 import type { Database } from "../db";
 import { type Wallet, wallets } from "../db/schema/wallets";
+import { dbExec } from "../lib/db-result";
+
 export class WalletRepository {
   private readonly db: Database;
+
   constructor(database: Database) {
     this.db = database;
   }
-  async findById(
-    id: bigint
-  ): Promise<ResultAsync<Wallet | null, InternalError>> {
-    return ResultAsync.fromPromise(
-      this.db.query.wallets.findFirst({ where: eq(wallets.id, id) }),
+
+  findById(id: bigint): ResultAsync<Wallet | null, InternalError> {
+    return dbExec(
+      this.db._query.wallets.findFirst({ where: eq(wallets.id, id) }),
       (e): InternalError =>
         new InternalError("Failed to fetch wallet from database", {
           cause: e,
@@ -21,11 +23,12 @@ export class WalletRepository {
         })
     );
   }
-  async findPrimaryByUserId(
+
+  findPrimaryByUserId(
     userId: bigint
-  ): Promise<ResultAsync<Wallet | null, InternalError>> {
+  ): ResultAsync<Wallet | null, InternalError> {
     return ResultAsync.fromPromise(
-      this.db.query.wallets.findFirst({
+      this.db._query.wallets.findFirst({
         where: and(eq(wallets.userId, userId), eq(wallets.isPrimary, true)),
       }),
       (e): InternalError =>
@@ -33,20 +36,20 @@ export class WalletRepository {
           cause: e,
           context: { userId: userId.toString() },
         })
-    );
+    ).map((wallet) => wallet ?? null);
   }
-  async verifyOwnership(
+
+  verifyOwnership(
     id: bigint,
     userId: bigint
-  ): Promise<ResultAsync<boolean, InternalError>> {
-    return this.findById(id).map(
-      (wallet) => wallet?.userId === userId ?? false
-    );
+  ): ResultAsync<boolean, InternalError> {
+    return this.findById(id).map((wallet) => wallet?.userId === userId);
   }
-  async requireOwnership(
+
+  requireOwnership(
     id: bigint,
     userId: bigint
-  ): Promise<ResultAsync<Wallet, WalletNotFoundError | InternalError>> {
+  ): ResultAsync<Wallet, WalletNotFoundError | InternalError> {
     return this.findById(id).andThen((wallet) => {
       if (!wallet) {
         return errAsync(new WalletNotFoundError(id.toString()));
