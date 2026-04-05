@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
+import { DepositNotFoundError } from "@/common/errors/deposit";
 import { InternalError } from "@/common/errors/infrastructure";
 import type { TransactionStatusId } from "../constants/transaction-status";
 import type { Database } from "../db";
@@ -42,27 +43,30 @@ export class DepositRepository {
   updateStatus(
     id: bigint,
     statusId: TransactionStatusId
-  ): ResultAsync<void, InternalError> {
+  ): ResultAsync<void, DepositNotFoundError | InternalError> {
     return ResultAsync.fromPromise(
       this.db
         .update(deposits)
         .set({ statusId })
         .where(eq(deposits.id, id))
-        .then(() => {
-          return;
-        }),
+        .returning({ id: deposits.id }),
       (e): InternalError =>
         new InternalError("Failed to update deposit status", {
           cause: e,
           context: { depositId: id.toString(), statusId },
         })
-    );
+    ).andThen((rows) => {
+      if (rows.length === 0) {
+        return errAsync(new DepositNotFoundError(id.toString()));
+      }
+      return okAsync(undefined);
+    });
   }
 
   complete(
     id: bigint,
     blockchainTxId: bigint
-  ): ResultAsync<void, InternalError> {
+  ): ResultAsync<void, DepositNotFoundError | InternalError> {
     return ResultAsync.fromPromise(
       this.db
         .update(deposits)
@@ -71,9 +75,7 @@ export class DepositRepository {
           completedAt: new Date(),
         })
         .where(eq(deposits.id, id))
-        .then(() => {
-          return;
-        }),
+        .returning({ id: deposits.id }),
       (e): InternalError =>
         new InternalError("Failed to complete deposit", {
           cause: e,
@@ -82,6 +84,11 @@ export class DepositRepository {
             blockchainTxId: blockchainTxId.toString(),
           },
         })
-    );
+    ).andThen((rows) => {
+      if (rows.length === 0) {
+        return errAsync(new DepositNotFoundError(id.toString()));
+      }
+      return okAsync(undefined);
+    });
   }
 }

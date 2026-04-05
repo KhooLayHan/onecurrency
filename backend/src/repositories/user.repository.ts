@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
-import { ResultAsync } from "neverthrow";
+import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
+import { UserNotFoundError } from "@/common/errors/user";
 import type { KycStatusId } from "../constants/kyc-status";
 import type { Database } from "../db";
 import { type User, users } from "../db/schema/users";
@@ -28,7 +29,7 @@ export class UserRepository {
   updateKycStatus(
     id: bigint,
     statusId: KycStatusId
-  ): ResultAsync<void, InternalError> {
+  ): ResultAsync<void, UserNotFoundError | InternalError> {
     return ResultAsync.fromPromise(
       this.db
         .update(users)
@@ -37,14 +38,17 @@ export class UserRepository {
           updatedAt: new Date(),
         })
         .where(eq(users.id, id))
-        .then(() => {
-          return;
-        }),
+        .returning({ id: users.id }),
       (e): InternalError =>
         new InternalError("Failed to update user KYC status", {
           cause: e,
           context: { userId: id.toString(), statusId },
         })
-    );
+    ).andThen((rows) => {
+      if (rows.length === 0) {
+        return errAsync(new UserNotFoundError(id.toString()));
+      }
+      return okAsync(undefined);
+    });
   }
 }

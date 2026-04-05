@@ -17,6 +17,8 @@ export type ErrorDomain =
   | "contract"
   | "defi"
   | "auth"
+  | "user"
+  | "deposit"
   | "compliance"
   | "market"
   | "infrastructure"
