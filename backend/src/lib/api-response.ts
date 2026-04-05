@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
-import { AppError } from "./errors";
+import { AppError } from "@/common/errors/base";
 import { logger } from "./logger";
 
 /**
@@ -13,20 +13,10 @@ export function handleApiError(c: Context, error: unknown) {
 
   // 1. If it's our custom AppError
   if (error instanceof AppError) {
-    // Log with the provided context
-    logger.warn(
-      { err: error, errContext: error.context, code: error.code },
-      error.message
-    );
+    // Log with rich structured details
+    logger.warn(error.toLog(), error.message);
 
-    return c.json(
-      {
-        success: false,
-        error: error.code,
-        message: error.message, // Safe to expose to users
-      },
-      StatusCodes.INTERNAL_SERVER_ERROR
-    );
+    return c.json(error.toResponse(), error.statusCode);
   }
 
   // 2. If it's a Zod Validation Error (From oRPC or zValidator)

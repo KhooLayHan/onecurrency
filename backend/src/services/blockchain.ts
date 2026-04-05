@@ -1,4 +1,3 @@
-import { StatusCodes } from "http-status-codes";
 import { ResultAsync } from "neverthrow";
 import {
   ContractFunctionRevertedError,
@@ -15,8 +14,14 @@ import {
   ONECURRENCY_ADDRESS,
   OneCurrencyABI,
 } from "@/common/contracts/one-currency";
+import { AppError } from "@/common/errors/base";
+import {
+  InternalError,
+  RpcUnavailableError,
+} from "@/common/errors/infrastructure";
+import { TransactionRevertedError } from "@/common/errors/transaction";
+import { InvalidAddressError } from "@/common/errors/wallet";
 import { env } from "../env";
-import { AppError, BlockchainError } from "../lib/errors";
 import { logger } from "../lib/logger";
 
 // 1. Determine the correct chain and RPC Provider
@@ -62,15 +67,12 @@ const walletClient = createWalletClient({
 export function mintTokens(
   toAddress: string,
   amountWei: string
-): ResultAsync<string, BlockchainError> {
+): ResultAsync<string, AppError> {
   return ResultAsync.fromPromise(
     (async () => {
       // 1. Input Validation (Viem's built-in isAddress)
       if (!isAddress(toAddress)) {
-        throw new BlockchainError(
-          "INVALID_WALLET_ADDRESS",
-          `The address ${toAddress} is not valid.`
-        );
+        throw new InvalidAddressError(toAddress);
       }
 
       logger.info({ toAddress, amountWei }, "Initiating mint transaction...");
@@ -104,10 +106,9 @@ export function mintTokens(
       logger.info(txHash);
 
       if (receipt.status === "reverted") {
-        throw new BlockchainError(
-          "TRANSACTION_REVERTED",
-          "Transaction reverted on-chain after broadcast.",
-          StatusCodes.BAD_REQUEST
+        throw new TransactionRevertedError(
+          txHash,
+          "Transaction reverted on-chain after broadcast."
         );
       }
 
@@ -134,7 +135,10 @@ export function mintTokens(
       }
 
       // Fallback for unknown errors
-      return new BlockchainError("INTERNAL_SERVER_ERROR", getErrorMessage(e));
+      return new InternalError(
+        "An unhandled exception was caught at the system boundary.",
+        { cause: e }
+      );
     }
   );
 }
@@ -149,25 +153,23 @@ function isErrorMessage(
   );
 }
 
-const handleNetworkError = (e: unknown): BlockchainError =>
-  new BlockchainError(
-    "BLOCKCHAIN_NETWORK_ERROR",
-    "Lost connection to the blockchain RPC node.",
-    StatusCodes.BAD_GATEWAY,
-    {
+const handleNetworkError = (e: unknown): AppError => {
+  const chainId = isProd ? 11_155_111 : 31_337;
+  return new RpcUnavailableError(chainId, {
+    cause: e,
+    context: {
       originalError: isErrorMessage(e) ? e.message : "Unknown error occurred.",
-    }
-  );
+    },
+  });
+};
 
-const handleContractRevert = (e: unknown): BlockchainError =>
-  new BlockchainError(
-    "TRANSACTION_REVERTED",
-    "The smart contract rejected the transaction. The user might be blacklisted.",
-    StatusCodes.BAD_GATEWAY,
-    {
-      reason: isErrorMessage(e) ? e.message : "Unknown error occurred.",
-    }
-  );
+const handleContractRevert = (e: unknown): AppError => {
+  const reason = isErrorMessage(e) ? e.message : "Unknown error occurred.";
+  return new ContractCallRevertedError("simulateContract", undefined, reason, {
+    cause: e,
+    context: { method: "mint" },
+  });
+};
 
 const getErrorMessage = (e: unknown): string =>
   isErrorMessage(e)

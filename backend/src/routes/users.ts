@@ -1,10 +1,12 @@
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
+import { InternalError } from "@/common/errors/infrastructure";
 import { KYC_STATUS } from "../constants/kyc-status";
 import { db } from "../db";
 import { users } from "../db/schema/users";
 import type { KycSimulateResponse } from "../dto/user.dto";
+import { handleApiError } from "../lib/api-response";
 import { logger } from "../lib/logger";
 
 const app = new Hono<{ Variables: { session: { userId: number } } }>();
@@ -44,9 +46,11 @@ app.post("/kyc/simulate", async (c) => {
     });
   } catch (error) {
     logger.error({ err: error }, "Failed to simulate KYC");
-    return c.json(
-      { success: false, error: "INTERNAL_SERVER_ERROR" },
-      StatusCodes.INTERNAL_SERVER_ERROR
+    return handleApiError(
+      c,
+      new InternalError("An unexpected error occurred during KYC simulation.", {
+        cause: error,
+      })
     );
   }
 });
