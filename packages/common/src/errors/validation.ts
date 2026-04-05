@@ -6,6 +6,7 @@
  */
 
 import { StatusCodes } from "http-status-codes";
+import type { ErrorEnvelope, FieldViolation } from "./base";
 import { AppError } from "./base";
 
 export type FieldViolationDetail = {
@@ -38,5 +39,24 @@ export class ValidationError extends AppError {
       context: { violations, ...options?.context },
     });
     this.violations = violations;
+  }
+
+  override toResponse(): ErrorEnvelope {
+    const base = super.toResponse();
+
+    const details: FieldViolation[] = this.violations.map(
+      ({ field, constraint, received }) => ({
+        field,
+        message: constraint,
+        received,
+      })
+    );
+
+    return {
+      error: {
+        ...base.error,
+        details,
+      },
+    };
   }
 }

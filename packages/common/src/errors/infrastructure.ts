@@ -94,7 +94,11 @@ export class ExternalServiceError extends AppError {
     message: string,
     options?: ConstructorParameters<typeof AppError>[1]
   ) {
-    super(message, { ...options, retryable: true });
+    super(message, {
+      ...options,
+      retryable: true,
+      context: { service, ...options?.context },
+    });
     this.code = `INFRA_${service.toUpperCase().replace(/\s+/g, "_")}_UNAVAILABLE`;
   }
 }

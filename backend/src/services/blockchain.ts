@@ -15,6 +15,7 @@ import {
   OneCurrencyABI,
 } from "@/common/contracts/one-currency";
 import { AppError } from "@/common/errors/base";
+import { ContractCallRevertedError } from "@/common/errors/contract";
 import {
   InternalError,
   RpcUnavailableError,
@@ -165,9 +166,8 @@ const handleNetworkError = (e: unknown): AppError => {
 
 const handleContractRevert = (e: unknown): AppError => {
   const reason = isErrorMessage(e) ? e.message : "Unknown error occurred.";
-  return new ContractCallRevertedError("simulateContract", undefined, reason, {
+  return new ContractCallRevertedError("mint", undefined, reason, {
     cause: e,
-    context: { method: "mint" },
   });
 };
 

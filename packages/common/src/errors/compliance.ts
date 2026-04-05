@@ -37,7 +37,7 @@ export class KycRequiredError extends AppError {
  */
 export class KycPendingError extends AppError {
   readonly code = "COMPLIANCE_KYC_PENDING";
-  readonly statusCode = StatusCodes.ACCEPTED;
+  readonly statusCode = StatusCodes.CONFLICT;
   readonly domain = "compliance" as const;
   readonly severity = "low" as const;
   readonly isOperational = true;
