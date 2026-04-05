@@ -72,6 +72,10 @@ app.post(
 
     logger.info({ userId: session.userId }, "Processing checkout request");
 
+    const userRecord = await db._query.users.findFirst({
+      where: eq(users.id, BigInt(session.userId)),
+    });
+
     const KYC_STATUS_VERIFIED_ID = 3;
 
     // Re-validate KYC before creating deposit/minting
