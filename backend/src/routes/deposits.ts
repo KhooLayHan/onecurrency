@@ -3,6 +3,7 @@ import { DatabaseError } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
+import { Stripe } from "stripe";
 import { MIN_CONFIRMATIONS, ZERO_ADDRESS } from "../constants/blockchain";
 import { KYC_STATUS } from "../constants/kyc-status";
 import { TRANSACTION_STATUS } from "../constants/transaction-status";
@@ -63,15 +64,6 @@ app.post("/checkout", sValidator("json", createCheckoutSchema), async (c) => {
   const userRecord = await db._query.users.findFirst({
     where: eq(users.id, BigInt(session.userId)),
   });
-
-  // Re-validate KYC before creating deposit/minting
-  const currentUser = await db._query.users.findFirst({
-    where: eq(users.id, BigInt(userId)),
-  });
-
-  if (!currentUser || currentUser.kycStatusId !== KYC_STATUS.VERIFIED) {
-    return c.text("KYC no longer valid", StatusCodes.FORBIDDEN);
-  }
 
   if (!userRecord || userRecord.kycStatusId !== KYC_STATUS.VERIFIED) {
     return c.json(
@@ -162,7 +154,7 @@ app.post("/webhook", async (c) => {
 
   // Stripe requires the raw, unparsed string body to verify the cryptographic signature
   const payload = await c.req.text();
-  let event: import("stripe").Stripe.Event;
+  let event: Stripe.Event;
 
   try {
     event = await stripe.webhooks.constructEventAsync(
@@ -177,10 +169,7 @@ app.post("/webhook", async (c) => {
       payload: event,
     });
   } catch (err) {
-    if (
-      err instanceof Error &&
-      err.constructor.name === "StripeSignatureVerificationError"
-    ) {
+    if (err instanceof Stripe.errors.StripeSignatureVerificationError) {
       logger.error({ err }, "Webhook signature verification failed!");
       return c.text(`Webhook Error: ${err.message}`, StatusCodes.BAD_REQUEST);
     }
