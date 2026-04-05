@@ -46,7 +46,10 @@ export default function ProfilePage() {
     );
   }
 
-  const isVerified = session.user.kycStatusId === "verified";
+  const KYC_STATUS_VERIFIED_ID = 3;
+
+  // `user` property does not have kycStatusId property
+  const isVerified = session.user.kycStatusId === KYC_STATUS_VERIFIED_ID;
 
   return (
     <div className="fade-in mx-auto flex w-full max-w-2xl animate-in flex-col gap-6 duration-300 ease-out">

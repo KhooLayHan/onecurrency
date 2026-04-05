@@ -72,11 +72,16 @@ app.post(
 
     logger.info({ userId: session.userId }, "Processing checkout request");
 
-    const userRecord = await db._query.users.findFirst({
-      where: eq(users.id, BigInt(session.userId)),
+    const KYC_STATUS_VERIFIED_ID = 3;
+
+    // Re-validate KYC before creating deposit/minting
+    const currentUser = await db._query.users.findFirst({
+      where: eq(users.id, BigInt(userId)),
     });
 
-    const KYC_STATUS_VERIFIED_ID = 3;
+    if (!currentUser || currentUser.kycStatusId !== KYC_STATUS_VERIFIED_ID) {
+      return c.text("KYC no longer valid", StatusCodes.FORBIDDEN);
+    }
 
     if (!userRecord || userRecord.kycStatusId !== KYC_STATUS_VERIFIED_ID) {
       return c.json(

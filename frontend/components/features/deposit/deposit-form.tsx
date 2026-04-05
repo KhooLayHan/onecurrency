@@ -16,7 +16,11 @@ export function DepositForm() {
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const { data: session } = useSession();
-  const isVerified = session?.user?.kycStatus === "verified";
+
+  const KYC_STATUS_VERIFIED_ID = 3;
+
+  // `user` property does not have kycStatusId property
+  const isVerified = session?.user?.kycStatusId === KYC_STATUS_VERIFIED_ID;
 
   // 2. Initialize TanStack Form
   const form = useForm({
