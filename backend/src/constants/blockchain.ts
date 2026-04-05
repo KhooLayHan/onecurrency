@@ -8,3 +8,7 @@ export const ZERO_ADDRESS =
 
 /** Minimum confirmations before a transaction is considered confirmed on-chain */
 export const MIN_CONFIRMATIONS = 1;
+
+export const SEPOLIA_CHAIN_ID = 11_155_111;
+
+export const HARDHAT_CHAIN_ID = 31_337;
