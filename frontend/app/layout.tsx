@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import "./globals.css";
 import { headers } from "next/headers"; // added
 import { Providers } from "@/components/providers";
 import { BottomTabs } from "@/components/shared/bottom-tabs";
 import { TopNav } from "@/components/shared/top-nav";
+// import "./globals.css";
 
 export const metadata: Metadata = {
   title: "OneCurrency",

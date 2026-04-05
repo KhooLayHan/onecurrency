@@ -9,10 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { env } from "@/env";
+import { useSession } from "@/lib/auth-client";
 
 export function DepositForm() {
   const { address } = useConnection();
   const [globalError, setGlobalError] = useState<string | null>(null);
+
+  const { data: session } = useSession();
+
+  const KYC_STATUS_VERIFIED_ID = 3;
+
+  // `user` property does not have kycStatusId property
+  const isVerified = session?.user?.kycStatusId === KYC_STATUS_VERIFIED_ID;
 
   // 2. Initialize TanStack Form
   const form = useForm({
@@ -124,7 +132,7 @@ export function DepositForm() {
         {([canSubmit, isSubmitting]) => (
           <Button
             className="h-12 w-full rounded-xl font-semibold text-base"
-            disabled={!canSubmit || isSubmitting || !address}
+            disabled={!canSubmit || isSubmitting || !address || !isVerified}
             type="submit"
           >
             {isSubmitting ? "Generating Secure Link..." : "Continue to Payment"}
