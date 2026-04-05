@@ -7,17 +7,6 @@ import {
   type NewBlockchainTransaction,
 } from "../db/schema/blockchain-transactions";
 
-type NewBlockchainTxData = {
-  networkId: number;
-  transactionTypeId: TransactionTypeId;
-  fromAddress: string;
-  toAddress: string;
-  txHash: string;
-  amount: string;
-  isConfirmed: boolean;
-  confirmations: number;
-};
-
 export class BlockchainTransactionRepository {
   private readonly db: Database;
 

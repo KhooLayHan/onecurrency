@@ -4,7 +4,6 @@ import { InternalError } from "@/common/errors/infrastructure";
 import { WalletNotFoundError } from "@/common/errors/wallet";
 import type { Database } from "../db";
 import { type Wallet, wallets } from "../db/schema/wallets";
-import { dbExec } from "../lib/db-result";
 
 export class WalletRepository {
   private readonly db: Database;
@@ -14,14 +13,14 @@ export class WalletRepository {
   }
 
   findById(id: bigint): ResultAsync<Wallet | null, InternalError> {
-    return dbExec(
+    return ResultAsync.fromPromise(
       this.db._query.wallets.findFirst({ where: eq(wallets.id, id) }),
       (e): InternalError =>
         new InternalError("Failed to fetch wallet from database", {
           cause: e,
           context: { walletId: id.toString() },
         })
-    );
+    ).map((wallet) => wallet ?? null);
   }
 
   findPrimaryByUserId(

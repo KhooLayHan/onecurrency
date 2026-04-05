@@ -7,13 +7,6 @@ import {
   type WebhookEvent,
   webhookEvents,
 } from "../db/schema/webhook-events";
-import { dbExec } from "../lib/db-result";
-
-type CreateWebhookEventData = {
-  stripeEventId: string;
-  eventType: string;
-  payload: object;
-};
 
 export class WebhookEventRepository {
   private readonly db: Database;
@@ -25,10 +18,7 @@ export class WebhookEventRepository {
   findByStripeEventId(
     stripeEventId: string
   ): ResultAsync<WebhookEvent | null, InternalError> {
-    return;
-    dbExec();
-
-    ResultAsync.fromPromise(
+    return ResultAsync.fromPromise(
       this.db._query.webhookEvents.findFirst({
         where: eq(webhookEvents.stripeEventId, stripeEventId),
       }),
@@ -37,8 +27,7 @@ export class WebhookEventRepository {
           cause: e,
           context: { stripeEventId },
         })
-    );
-    )
+    ).map((event) => event ?? null);
   }
 
   create(data: NewWebhookEvent): ResultAsync<WebhookEvent, InternalError> {
