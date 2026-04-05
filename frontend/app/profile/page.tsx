@@ -1,3 +1,5 @@
+"use client";
+
 import { ShieldAlert, ShieldCheck, User } from "lucide-react";
 import { ofetch } from "ofetch";
 import { useState } from "react";
@@ -21,6 +23,7 @@ export default function ProfilePage() {
     try {
       await ofetch(`${env.NEXT_PUBLIC_API_URL}/api/users/kyc/simulate`, {
         method: "POST",
+        credentials: "include",
       });
       // Refetch the session so the UI updates to show "verified" instantly!
       await refetch();

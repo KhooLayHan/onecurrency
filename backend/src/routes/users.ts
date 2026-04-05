@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { db } from "../db";
-import { kycStatuses } from "../db/schema/kyc-statuses";
 import { users } from "../db/schema/users";
 import { logger } from "../lib/logger";
 
@@ -20,13 +19,6 @@ app.post("/kyc/simulate", async (c) => {
   }
 
   try {
-    const result = db
-      .select({ id: kycStatuses.id })
-      .from(kycStatuses)
-      .where(eq(kycStatuses.id, 1));
-
-    const { id } = result;
-
     // TODO: Trigger an Onfido/Stripe Identity flow.
     await db
       .update(users)

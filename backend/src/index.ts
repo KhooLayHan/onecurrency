@@ -5,6 +5,7 @@ import { auth } from "./auth";
 import { env } from "./env";
 // import { logger } from "./lib/logger";
 import { depositsRouter } from "./routes/deposits";
+import { usersRouter } from "./routes/users";
 
 type SessionVariables = {
   session: {
@@ -68,6 +69,8 @@ app.use("/api/*", async (c, next) => {
 app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
 
 app.route("/api/deposits", depositsRouter);
+
+app.route("/api/users", usersRouter);
 
 export default {
   port: env.API_PORT,

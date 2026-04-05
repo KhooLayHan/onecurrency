@@ -76,7 +76,9 @@ app.post(
       where: eq(users.id, BigInt(session.userId)),
     });
 
-    if (!userRecord || userRecord.kycStatusId !== 3) {
+    const KYC_STATUS_VERIFIED_ID = 3;
+
+    if (!userRecord || userRecord.kycStatusId !== KYC_STATUS_VERIFIED_ID) {
       return c.json(
         {
           success: false,
