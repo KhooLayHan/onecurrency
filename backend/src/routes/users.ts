@@ -1,8 +1,10 @@
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
+import { KYC_STATUS } from "../constants/kyc-status";
 import { db } from "../db";
 import { users } from "../db/schema/users";
+import type { KycSimulateResponse } from "../dto/user.dto";
 import { logger } from "../lib/logger";
 
 const app = new Hono<{ Variables: { session: { userId: number } } }>();
@@ -19,11 +21,10 @@ app.post("/kyc/simulate", async (c) => {
   }
 
   try {
-    // TODO: Trigger an Onfido/Stripe Identity flow.
     await db
       .update(users)
       .set({
-        kycStatusId: 3,
+        kycStatusId: KYC_STATUS.VERIFIED,
         updatedAt: new Date(),
       })
       .where(eq(users.id, BigInt(session.userId)));
@@ -33,9 +34,13 @@ app.post("/kyc/simulate", async (c) => {
       "User successfully completed KYC simulation"
     );
 
+    const response: KycSimulateResponse = {
+      message: "Identity verified successfully.",
+    };
+
     return c.json({
       success: true,
-      message: "Identity verified successfully.",
+      data: response,
     });
   } catch (error) {
     logger.error({ err: error }, "Failed to simulate KYC");
