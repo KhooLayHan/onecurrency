@@ -87,7 +87,10 @@ export async function recordWebhookEvent(
     payload: event,
   });
 
-  return result.map(() => {});
+  if (result.isErr()) {
+    return errAsync(result.error);
+  }
+  return okAsync(undefined);
 }
 
 // Phase 2: Create deposit record
@@ -227,7 +230,7 @@ export function finalizeWebhookProcessing(params: {
   tokenAmountWei: string;
   depositId: bigint;
   eventId: string;
-}): Promise<ResultAsync<void, AppError>> {
+}): ResultAsync<void, AppError> {
   const {
     networkId,
     walletAddress,
