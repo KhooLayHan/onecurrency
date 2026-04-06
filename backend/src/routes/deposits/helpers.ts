@@ -16,6 +16,8 @@ import { WebhookEventRepository } from "@/src/repositories/webhook-event.reposit
 import { mintTokens } from "@/src/services/blockchain";
 import { calculateTokenAmountWei } from "@/src/services/stripe.service";
 
+// TODO: To integrate with deposits.ts in the future.
+
 // Stripe signature verification
 export function verifyStripeWebhookSignature(
   payload: string,
@@ -31,7 +33,10 @@ export function verifyStripeWebhookSignature(
       if (e instanceof Stripe.errors.StripeSignatureVerificationError) {
         return e;
       }
-      throw e; // Let other errors bubble up to outer catch
+      // Let other errors bubble up to outer catch
+      throw new Error(
+        `Unexpected Stripe error: ${e instanceof Error ? e.message : String(e)}`
+      );
     }
   );
 }

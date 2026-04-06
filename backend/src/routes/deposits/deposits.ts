@@ -217,6 +217,24 @@ app.post("/webhook", async (c) => {
       );
       return handleApiError(c, createWebhookResult.error);
     }
+
+    const paymentIntentId =
+      typeof checkoutSession.payment_intent === "string"
+        ? checkoutSession.payment_intent
+        : checkoutSession.payment_intent?.id;
+
+    if (!paymentIntentId) {
+      logger.error(
+        { eventId: event.id },
+        "Missing payment_intent in checkout session"
+      );
+
+      return c.text(
+        "Missing payment_intent",
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+
     // Phase 2: Create deposit record (outside transaction, to establish idempotency for retry)
     const tokenAmountWei = calculateTokenAmountWei(amountCents);
     const createDepositResult = await new DepositRepository(db).create({
@@ -224,7 +242,7 @@ app.post("/webhook", async (c) => {
       walletId: BigInt(walletId),
       amountCents: BigInt(amountCents),
       tokenAmount: tokenAmountWei,
-      stripePaymentIntentId: checkoutSession.payment_intent as string,
+      stripePaymentIntentId: paymentIntentId,
       statusId: TRANSACTION_STATUS.PROCESSING,
       stripeSessionId: checkoutSession.id,
     });
