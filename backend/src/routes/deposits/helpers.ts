@@ -36,14 +36,17 @@ export function verifyStripeWebhookSignature(
   );
 }
 
+type ExtractMetadataResult =
+  | { type: "unsupported_event" }
+  | { type: "invalid_metadata" }
+  | { type: "ok"; userId: string; walletId: string; amountCents: number };
+
 // Extract and validate webhook payload metadata
-export function extractWebhookMetadata(event: Stripe.Event): {
-  userId: string;
-  walletId: string;
-  amountCents: number;
-} | null {
+export function extractWebhookMetadata(
+  event: Stripe.Event
+): ExtractMetadataResult {
   if (event.type !== "checkout.session.completed") {
-    return null;
+    return { type: "unsupported_event" };
   }
 
   const session = event.data.object;
@@ -52,10 +55,10 @@ export function extractWebhookMetadata(event: Stripe.Event): {
   const amountCents = session.amount_total;
 
   if (!(userId && walletId && amountCents)) {
-    return null;
+    return { type: "invalid_metadata" };
   }
 
-  return { userId, walletId, amountCents };
+  return { type: "ok", userId, walletId, amountCents };
 }
 
 // Phase 1: Check if webhook event was already processed (idempotency)

@@ -2,11 +2,18 @@ import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
 import { ResultAsync } from "neverthrow";
-import type { Stripe } from "stripe";
+import { Stripe } from "stripe";
 import type { AppError } from "@/common/errors/base";
 import { ExternalServiceError } from "@/common/errors/infrastructure";
+import { MIN_CONFIRMATIONS, ZERO_ADDRESS } from "@/src/constants/blockchain";
+import { TRANSACTION_STATUS } from "@/src/constants/transaction-status";
+import { TRANSACTION_TYPE } from "@/src/constants/transaction-type";
+import { withTransaction } from "@/src/lib/transaction";
+import { BlockchainTransactionRepository } from "@/src/repositories/blockchain-transaction.repository";
+import { DepositRepository } from "@/src/repositories/deposit.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { WalletRepository } from "@/src/repositories/wallet.repository";
+import { WebhookEventRepository } from "@/src/repositories/webhook-event.repository";
 import { KYC_STATUS } from "../../constants/kyc-status";
 import { db } from "../../db";
 import {
@@ -20,17 +27,7 @@ import { env } from "../../env";
 import { handleApiError } from "../../lib/api-response";
 import { logger } from "../../lib/logger";
 import { mintTokens } from "../../services/blockchain";
-import { stripe } from "../../services/stripe.service";
-import {
-  checkWebhookIdempotency,
-  createDepositRecord,
-  executeBlockchainMint,
-  extractWebhookMetadata,
-  fetchWalletAndValidate,
-  finalizeWebhookProcessing,
-  recordWebhookEvent,
-  verifyStripeWebhookSignature,
-} from "./helpers";
+import { calculateTokenAmountWei, stripe } from "../../services/stripe.service";
 
 const app = new Hono<{ Variables: { session: { userId: number } } }>();
 
@@ -150,163 +147,175 @@ app.post("/checkout", sValidator("json", createCheckoutSchema), async (c) => {
   return c.json({ success: true, data: response });
 });
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex webhook flow by design
 app.post("/webhook", async (c) => {
   const signature = c.req.header("stripe-signature");
-
   logger.debug({ hasSignature: !!signature }, "Webhook signature check");
-
   if (!signature) {
     return c.text("Missing stripe-signature header", StatusCodes.BAD_REQUEST);
   }
-
   // Stripe requires the raw, unparsed string body to verify the cryptographic signature
   const payload = await c.req.text();
-
-  // Verify signature
-  const verifyResult = await verifyStripeWebhookSignature(payload, signature);
-  if (verifyResult.isErr()) {
-    logger.error(
-      { err: verifyResult.error },
-      "Webhook signature verification failed!"
+  let event: Stripe.Event;
+  try {
+    event = await stripe.webhooks.constructEventAsync(
+      payload,
+      signature,
+      env.STRIPE_WEBHOOK_SECRET
     );
-    return c.text(
-      `Webhook Error: ${verifyResult.error.message}`,
-      StatusCodes.BAD_REQUEST
+  } catch (err) {
+    if (err instanceof Stripe.errors.StripeSignatureVerificationError) {
+      logger.error({ err }, "Webhook signature verification failed!");
+      return c.text(`Webhook Error: ${err.message}`, StatusCodes.BAD_REQUEST);
+    }
+    throw err;
+  }
+  if (event.type === "checkout.session.completed") {
+    const checkoutSession = event.data.object;
+    const userId = checkoutSession.metadata?.userId;
+    const walletId = checkoutSession.metadata?.walletId;
+    const amountCents = checkoutSession.amount_total;
+    if (!(userId && walletId && amountCents)) {
+      logger.error(
+        { eventId: event.id, userId, walletId, amountCents },
+        "CRITICAL: Missing required metadata in checkout session"
+      );
+      return c.text(
+        "Missing required metadata",
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+    logger.info(
+      { eventId: event.id, userId, amountCents },
+      "Processing successful payment webhook"
+    );
+    // Phase 1: Check idempotency
+    const existingEventResult = await new WebhookEventRepository(
+      db
+    ).findByStripeEventId(event.id);
+    if (existingEventResult.isErr()) {
+      logger.error(
+        { err: existingEventResult.error },
+        "Failed to check webhook idempotency"
+      );
+      return handleApiError(c, existingEventResult.error);
+    }
+    if (existingEventResult.value) {
+      logger.info({ eventId: event.id }, "Webhook already processed");
+      return c.json({ received: true });
+    }
+    // Phase 1.5: Create webhook event record (outside transaction, for idempotency)
+    const createWebhookResult = await new WebhookEventRepository(db).create({
+      stripeEventId: event.id,
+      eventType: event.type,
+      payload: event,
+    });
+    if (createWebhookResult.isErr()) {
+      logger.error(
+        { err: createWebhookResult.error },
+        "Failed to create webhook event record"
+      );
+      return handleApiError(c, createWebhookResult.error);
+    }
+    // Phase 2: Create deposit record (outside transaction, to establish idempotency for retry)
+    const tokenAmountWei = calculateTokenAmountWei(amountCents);
+    const createDepositResult = await new DepositRepository(db).create({
+      userId: BigInt(userId),
+      walletId: BigInt(walletId),
+      amountCents: BigInt(amountCents),
+      tokenAmount: tokenAmountWei,
+      stripePaymentIntentId: checkoutSession.payment_intent as string,
+      statusId: TRANSACTION_STATUS.PROCESSING,
+      stripeSessionId: checkoutSession.id,
+    });
+    if (createDepositResult.isErr()) {
+      logger.error(
+        { err: createDepositResult.error },
+        "Failed to create deposit record"
+      );
+      return handleApiError(c, createDepositResult.error);
+    }
+    const deposit = createDepositResult.value;
+    // Fetch wallet for address
+    const walletResult = await new WalletRepository(db).findById(
+      BigInt(walletId)
+    );
+    if (walletResult.isErr()) {
+      logger.error(
+        { err: walletResult.error },
+        "Failed to fetch wallet for mint"
+      );
+      await new DepositRepository(db).updateStatus(
+        BigInt(deposit.id),
+        TRANSACTION_STATUS.FAILED
+      );
+      return handleApiError(c, walletResult.error);
+    }
+    const walletRecord = walletResult.value;
+    if (!walletRecord) {
+      logger.error({ walletId }, "CRITICAL: Paid wallet not found in DB!");
+      await new DepositRepository(db).updateStatus(
+        BigInt(deposit.id),
+        TRANSACTION_STATUS.FAILED
+      );
+      return c.text("Wallet not found", StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+    // Phase 3: Blockchain mint (outside transaction, cannot be rolled back)
+    const mintResult = await mintTokens(walletRecord.address, tokenAmountWei);
+    if (mintResult.isErr()) {
+      logger.error(
+        { err: mintResult.error },
+        "Bridge Failed: Could not mint tokens on-chain"
+      );
+      const updateFailedResult = await new DepositRepository(db).updateStatus(
+        BigInt(deposit.id),
+        TRANSACTION_STATUS.FAILED
+      );
+      if (updateFailedResult.isErr()) {
+        logger.error(
+          { err: updateFailedResult.error },
+          "Failed to mark deposit as failed"
+        );
+      }
+      return c.text(
+        "Blockchain minting failed",
+        StatusCodes.INTERNAL_SERVER_ERROR
+      );
+    }
+    const txHash = mintResult.value;
+    // Phase 4: Atomic finalization (blockchain tx + deposit completion + webhook mark processed)
+    const finalizeResult = await withTransaction(db, (tx) =>
+      new BlockchainTransactionRepository(tx)
+        .create({
+          networkId: walletRecord.networkId,
+          transactionTypeId: TRANSACTION_TYPE.MINT,
+          fromAddress: ZERO_ADDRESS,
+          toAddress: walletRecord.address,
+          txHash,
+          amount: tokenAmountWei,
+          isConfirmed: true,
+          confirmations: MIN_CONFIRMATIONS,
+        })
+        .andThen((blockchainTx) =>
+          new DepositRepository(tx).complete(
+            BigInt(deposit.id),
+            BigInt(blockchainTx.id)
+          )
+        )
+        .andThen(() => new WebhookEventRepository(tx).markProcessed(event.id))
+    );
+    if (finalizeResult.isErr()) {
+      logger.error(
+        { err: finalizeResult.error },
+        "Failed to finalize deposit webhook processing"
+      );
+      return handleApiError(c, finalizeResult.error);
+    }
+    logger.info(
+      { txHash, depositId: deposit.id },
+      "Bridge Successful! Tokens minted."
     );
   }
-
-  const event = verifyResult.value;
-
-  // Extract metadata
-  const metadata = extractWebhookMetadata(event);
-
-  if (!metadata) {
-    logger.error(
-      { eventId: event.id, type: event.type },
-      "CRITICAL: Missing required metadata in checkout session"
-    );
-
-    return c.text(
-      "Missing required metadata",
-      StatusCodes.INTERNAL_SERVER_ERROR
-    );
-  }
-
-  const { userId, walletId, amountCents } = metadata;
-
-  logger.info(
-    { eventId: event.id, userId, amountCents },
-    "Processing successful payment webhook"
-  );
-
-  // Phase 1: Idempotency check
-  const idempotencyResult = await checkWebhookIdempotency(event.id);
-
-  if (idempotencyResult.isErr()) {
-    logger.error(
-      { err: idempotencyResult.error },
-      "Failed to check webhook idempotency"
-    );
-
-    return handleApiError(c, idempotencyResult.error);
-  }
-
-  if (idempotencyResult.value) {
-    logger.info({ eventId: event.id }, "Webhook already processed");
-    return c.json({ received: true });
-  }
-
-  // Phase 1.5: Record webhook event
-  const recordResult = await recordWebhookEvent(event);
-
-  if (recordResult.isErr()) {
-    logger.error(
-      { err: recordResult.error },
-      "Failed to create webhook event record"
-    );
-
-    return handleApiError(c, recordResult.error);
-  }
-
-  const checkoutSession = event.data.object as Stripe.Checkout.Session;
-
-  // Phase 2: Create deposit
-  const createDepositResult = await createDepositRecord({
-    userId,
-    walletId,
-    amountCents,
-    stripeSessionId: checkoutSession.id,
-    stripePaymentIntentId: checkoutSession.payment_intent as string,
-  });
-
-  if (createDepositResult.isErr()) {
-    logger.error(
-      { err: createDepositResult.error },
-      "Failed to create deposit record"
-    );
-
-    return handleApiError(c, createDepositResult.error);
-  }
-
-  const { deposit, tokenAmountWei } = createDepositResult.value;
-
-  // Phase 2b: Fetch and validate wallet
-  const walletValidation = await fetchWalletAndValidate(walletId, deposit.id);
-
-  if (walletValidation.isErr()) {
-    return handleApiError(c, walletValidation.error);
-  }
-
-  if (!walletValidation.value.success) {
-    return c.text("Wallet not found", StatusCodes.INTERNAL_SERVER_ERROR);
-  }
-
-  const wallet = walletValidation.value.wallet;
-
-  // Phase 3: Blockchain mint
-  const mintResult = await executeBlockchainMint({
-    walletAddress: wallet.address,
-    tokenAmountWei,
-    depositId: deposit.id,
-  });
-
-  if (mintResult.isErr()) {
-    return handleApiError(c, mintResult.error);
-  }
-
-  if ("error" in mintResult.value) {
-    return c.text(
-      "Blockchain minting failed",
-      StatusCodes.INTERNAL_SERVER_ERROR
-    );
-  }
-
-  const { txHash } = mintResult.value;
-
-  // Phase 4: Atomic finalization
-  const finalizeResult = await finalizeWebhookProcessing({
-    networkId: wallet.networkId,
-    walletAddress: wallet.address,
-    txHash,
-    tokenAmountWei,
-    depositId: deposit.id,
-    eventId: event.id,
-  });
-
-  if (finalizeResult.isErr()) {
-    logger.error(
-      { err: finalizeResult.error },
-      "Failed to finalize deposit webhook processing"
-    );
-
-    return handleApiError(c, finalizeResult.error);
-  }
-
-  logger.info(
-    { txHash, depositId: deposit.id },
-    "Bridge Successful! Tokens minted."
-  );
-
   return c.json({ received: true });
 });
 
