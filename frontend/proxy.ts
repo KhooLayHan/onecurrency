@@ -9,11 +9,11 @@ const BETTER_AUTH_SESSION_COOKIE_NAMES = [
   "__Secure-better-auth.session_token",
 ] as const;
 
-export function proxy(request: NextRequest) {
+export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
   // Get the session cookie from the request
-  const sessionCookie = request.cookies.get("session")?.value;
+  const _sessionCookie = request.cookies.get("session")?.value;
 
   const isAuthenticated = BETTER_AUTH_SESSION_COOKIE_NAMES.some((cookieName) =>
     request.cookies.has(cookieName)
