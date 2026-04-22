@@ -1,15 +1,20 @@
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
+import { onError } from "@orpc/server";
+import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { auth } from "./auth";
 import { env } from "./env";
-// import { logger } from "./lib/logger";
-import { depositsRouter } from "./routes/deposits/deposits";
-import { usersRouter } from "./routes/users";
+import { logger as pinoLogger } from "./lib/logger";
+import type { ORPCContext } from "./orpc/context";
+import { appRouter } from "./orpc/router";
+import { depositsWebhookRouter } from "./routes/deposits/deposits";
 
 type SessionVariables = {
   session: {
-    userId: number;
+    userId: string;
   } | null;
 };
 
@@ -45,7 +50,9 @@ app.use(
 
 app.get("/", (c) => c.json({ message: "Hello Hono!", status: "ok" }));
 
-app.get("/api/health", (c) =>
+const v1 = new Hono<{ Variables: SessionVariables }>();
+
+v1.get("health", (c) =>
   c.json({
     status: "healthy",
     timestamp: new Date().toISOString(),
@@ -53,24 +60,97 @@ app.get("/api/health", (c) =>
   })
 );
 
+// Inject better-auth session into Hono context for all v1 routes
 // Unsure why got CORS errors
-app.use("/api/*", async (c, next) => {
-  // Grab the session securely using the headers
+v1.use("*", async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
   if (session?.user) {
-    // Inject it into the Hono Context so c.get("session") works in your routes
-    c.set("session", { userId: Number(session.user.id) });
+    c.set("session", { userId: session.user.id });
   }
 
   await next();
 });
 
-app.on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw));
+// better-auth sign-in / sign-up / session routes
+v1.on(["POST", "GET"], "/auth/**", (c) => auth.handler(c.req.raw));
 
-app.route("/api/deposits", depositsRouter);
+// Stripe webhook — must stay as a raw Hono route: Stripe signature verification
+// requires the unparsed request body, which oRPC's handler would consume first.
+v1.route("/deposits", depositsWebhookRouter);
 
-app.route("/api/users", usersRouter);
+// oRPC OpenAPIHandler — serves checkout, test-mint, and kyc/simulate.
+// Also serves OpenAPI spec at /api/v1/openapi.json via OpenAPIReferencePlugin.
+// Proxies the raw request so oRPC reuses Hono's already-parsed body buffer
+// instead of double-reading it (avoids "body already used" errors).
+const openAPIHandler = new OpenAPIHandler(appRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      specPath: "/api/v1/openapi.json",
+      specGenerateOptions: {
+        info: {
+          title: "OneCurrency API",
+          version: "1.0.0",
+          description: "API documentation for OneCurrency e-wallet application",
+        },
+        servers: [
+          {
+            url: `http://localhost:${env.API_PORT}/api/v1`,
+            description: "Local development server",
+          },
+        ],
+      },
+    }),
+  ],
+  interceptors: [
+    onError((error) => {
+      pinoLogger.error(error, "oRPC unhandled error");
+    }),
+  ],
+});
+
+const BODY_PARSER_METHODS = new Set([
+  "arrayBuffer",
+  "blob",
+  "formData",
+  "json",
+  "text",
+] as const);
+
+type BodyParserMethod = typeof BODY_PARSER_METHODS extends Set<infer T>
+  ? T
+  : never;
+
+v1.use("*", async (c, next) => {
+  const request = new Proxy(c.req.raw, {
+    get(target, prop) {
+      if (BODY_PARSER_METHODS.has(prop as BodyParserMethod)) {
+        return () => c.req[prop as BodyParserMethod]();
+      }
+      const value = Reflect.get(target, prop, target);
+      // Bind functions to preserve this-context (e.g., request.clone())
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+
+  const context: ORPCContext = { session: c.get("session") ?? null };
+
+  const { matched, response } = await openAPIHandler.handle(request, {
+    prefix: "/api/v1",
+    context,
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+
+app.route("/api/v1", v1);
+
+// Scalar API Reference UI (served by oRPC OpenAPIReferencePlugin at /api/v1/openapi.json)
+app.get("/api/v1/docs", Scalar({ url: "/api/v1/openapi.json" }));
 
 export default {
   port: env.API_PORT,
