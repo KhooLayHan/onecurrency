@@ -27,10 +27,24 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const DEFAULT_AUTH_REDIRECT_PATH = "/dashboard";
+
+function getSafeCallbackPath(callbackUrl: string | null): string {
+  if (!callbackUrl) {
+    return DEFAULT_AUTH_REDIRECT_PATH;
+  }
+
+  if (!(callbackUrl.startsWith("/") && !callbackUrl.startsWith("//"))) {
+    return DEFAULT_AUTH_REDIRECT_PATH;
+  }
+
+  return callbackUrl;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = getSafeCallbackPath(searchParams.get("callbackUrl"));
 
   const form = useForm({
     defaultValues: {
@@ -133,7 +147,6 @@ export default function LoginPage() {
                           <Link
                             className="text-muted-foreground text-xs transition hover:text-foreground"
                             href="/forgot-password"
-                            tabIndex={-1}
                           >
                             Forgot password?
                           </Link>

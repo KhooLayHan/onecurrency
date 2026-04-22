@@ -252,7 +252,9 @@ export default function SignUpPage() {
                             className="font-normal text-muted-foreground text-sm"
                             htmlFor={field.name}
                           >
-                            I agree to the{" "}
+                            I agree to the Terms of Service and Privacy Policy
+                          </FieldLabel>
+                          <FieldDescription>
                             <Link
                               className="font-medium text-foreground underline-offset-4 hover:underline"
                               href="/terms"
@@ -266,7 +268,7 @@ export default function SignUpPage() {
                             >
                               Privacy Policy
                             </Link>
-                          </FieldLabel>
+                          </FieldDescription>
                           {isInvalid && (
                             <FieldError errors={field.state.meta.errors} />
                           )}

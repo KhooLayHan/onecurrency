@@ -3,6 +3,7 @@
 import { LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { signOut, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -20,9 +21,19 @@ export function TopNav() {
   const { data: session, isPending } = useSession();
 
   const handleSignOut = async () => {
-    await signOut();
-    router.push("/login");
-    router.refresh();
+    try {
+      const result = await signOut();
+
+      if (result.error) {
+        toast.error("Failed to sign out. Please try again.");
+
+        return;
+      }
+      router.push("/login");
+      router.refresh();
+    } catch {
+      toast.error("Failed to sign out. Please try again.");
+    }
   };
 
   const isAuthenticated = !!session && !isPending;
@@ -67,7 +78,12 @@ export function TopNav() {
         <div className="flex items-center gap-3">
           {/* Show Sign Out if authenticated, otherwise show login link */}
           {isAuthenticated ? (
-            <Button onClick={handleSignOut} size="sm" variant="ghost">
+            <Button
+              className="min-h-11"
+              onClick={handleSignOut}
+              size="sm"
+              variant="ghost"
+            >
               <LogOut className="size-4" />
               <span className="hidden sm:inline">Sign out</span>
             </Button>
