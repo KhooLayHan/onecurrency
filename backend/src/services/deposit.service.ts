@@ -141,17 +141,23 @@ export class DepositService {
           return okAsync<void, AppError>(undefined);
         }
 
-        return recordWebhookEvent(this.db, event)
-          .andThen(() =>
-            createDepositRecord(this.db, {
-              userId,
-              walletId,
-              amountCents,
-              stripeSessionId: checkoutSession.id,
-              stripePaymentIntentId: paymentIntentId,
-            })
-          )
-          .andThen(({ deposit, tokenAmountWei }) =>
+        // Attempt to record event atomically; null = duplicate (another request is processing)
+        return recordWebhookEvent(this.db, event).andThen((recordedEvent) => {
+          if (!recordedEvent) {
+            logger.info(
+              { eventId: event.id },
+              "Duplicate webhook request detected, skipping"
+            );
+            return okAsync<void, AppError>(undefined);
+          }
+
+          return createDepositRecord(this.db, {
+            userId,
+            walletId,
+            amountCents,
+            stripeSessionId: checkoutSession.id,
+            stripePaymentIntentId: paymentIntentId,
+          }).andThen(({ deposit, tokenAmountWei }) =>
             fetchWalletForMint(this.db, walletId, deposit.id).andThen(
               (wallet) =>
                 executeBlockchainMint(this.db, {
@@ -174,6 +180,7 @@ export class DepositService {
                 })
             )
           );
+        });
       }
     );
   }

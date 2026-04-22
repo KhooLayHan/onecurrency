@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import z from "zod";
 import { db } from "@/src/db";
 import { logger } from "@/src/lib/logger";
@@ -19,7 +20,17 @@ export const simulateKyc = base
   .output(z.object({ message: z.string() }))
   .handler(async ({ context }) => {
     const userId = context.session?.userId;
-    const result = await userService.simulateKyc(BigInt(userId ?? 0));
+
+    // Explicit auth check (requireAuth middleware should already enforce this,
+    // but we validate again to fail fast with clear error)
+    if (!userId) {
+      logger.warn("simulateKyc called without authenticated session");
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Authentication required",
+      });
+    }
+
+    const result = await userService.simulateKyc(BigInt(userId));
     if (result.isErr()) {
       throw mapToORPCError(result.error);
     }

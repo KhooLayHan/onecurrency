@@ -1,7 +1,10 @@
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import Stripe from "stripe";
 import type { AppError } from "@/common/errors/base";
-import { ExternalServiceError } from "@/common/errors/infrastructure";
+import {
+  ExternalServiceError,
+  InternalError,
+} from "@/common/errors/infrastructure";
 import { MIN_CONFIRMATIONS, ZERO_ADDRESS } from "@/src/constants/blockchain";
 import { TRANSACTION_STATUS } from "@/src/constants/transaction-status";
 import { TRANSACTION_TYPE } from "@/src/constants/transaction-type";
@@ -76,7 +79,7 @@ export function extractWebhookMetadata(
 
 /**
  * Phase 1: Checks whether a Stripe webhook event has already been processed.
- * Returns true if already processed (idempotency hit).
+ * Returns true if already processed (idempotency hit) - checks for processedAt flag.
  */
 export function checkWebhookIdempotency(
   db: Database,
@@ -84,23 +87,41 @@ export function checkWebhookIdempotency(
 ): ResultAsync<boolean, AppError> {
   return new WebhookEventRepository(db)
     .findByStripeEventId(eventId)
-    .map((existing) => existing !== null);
+    .map(
+      (existing) =>
+        existing?.processedAt !== null && existing?.processedAt !== undefined
+    );
 }
 
 /**
  * Phase 1.5: Records the incoming Stripe webhook event to establish idempotency.
- * Returns the created record; callers that don't need the value can ignore it
- * via `andThen(() => nextStep())`.
+ * Uses unique constraint on stripeEventId for atomic create-or-skip.
+ * Duplicate key errors are treated as idempotent success (another request is processing).
  */
 export function recordWebhookEvent(
   db: Database,
   event: Stripe.Event
-): ResultAsync<WebhookEvent, AppError> {
-  return new WebhookEventRepository(db).create({
-    stripeEventId: event.id,
-    eventType: event.type,
-    payload: event,
-  });
+): ResultAsync<WebhookEvent | null, AppError> {
+  return new WebhookEventRepository(db)
+    .create({
+      stripeEventId: event.id,
+      eventType: event.type,
+      payload: event,
+    })
+    .orElse((error) => {
+      // If duplicate key error (23505), another request is already processing
+      // Treat this as idempotent - return null to signal "skip processing"
+      const isDuplicateKeyError =
+        error instanceof InternalError &&
+        error.cause instanceof Error &&
+        error.cause.message?.includes("23505");
+
+      if (isDuplicateKeyError) {
+        return okAsync(null);
+      }
+
+      return errAsync(error);
+    });
 }
 
 /**

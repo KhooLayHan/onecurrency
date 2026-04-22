@@ -1,9 +1,11 @@
+import { ORPCError } from "@orpc/server";
 import z from "zod";
 import { db } from "@/src/db";
 import {
   createCheckoutSchema,
   testMintRequestSchema,
 } from "@/src/dto/deposit.dto";
+import { env } from "@/src/env";
 import { logger } from "@/src/lib/logger";
 import { DepositService } from "@/src/services/deposit.service";
 import { base } from "../context";
@@ -11,6 +13,9 @@ import { mapToORPCError } from "../errors";
 import { requireAuth } from "../middleware";
 
 const depositService = new DepositService(db);
+
+// Only available in non-production environments
+const isProduction = env.NODE_ENV === "production";
 
 export const testMint = base
   .route({
@@ -22,6 +27,13 @@ export const testMint = base
   .input(testMintRequestSchema)
   .output(z.object({ txHash: z.string() }))
   .handler(async ({ input }) => {
+    // Guard: testMint only available in non-production
+    if (isProduction) {
+      throw new ORPCError("FORBIDDEN", {
+        message: "Test minting not available in production",
+      });
+    }
+
     logger.debug(input, "Test mint request received");
     const result = await depositService.testMint(
       input.address,
@@ -45,9 +57,19 @@ export const checkout = base
   .output(z.object({ checkoutUrl: z.string() }))
   .handler(async ({ input, context }) => {
     const userId = context.session?.userId;
+
+    // Explicit auth check (requireAuth middleware should already enforce this,
+    // but we validate again to fail fast with clear error)
+    if (!userId) {
+      logger.warn("Checkout called without authenticated session");
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Authentication required",
+      });
+    }
+
     logger.info({ userId }, "Processing checkout request");
     const result = await depositService.createCheckoutSession(
-      BigInt(userId ?? 0),
+      BigInt(userId),
       input.amountCents,
       BigInt(input.walletId)
     );

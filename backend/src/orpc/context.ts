@@ -1,7 +1,7 @@
 import { os } from "@orpc/server";
 
 export type ORPCContext = {
-  session: { userId: number } | null;
+  session: { userId: string } | null;
 };
 
 /**

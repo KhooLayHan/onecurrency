@@ -1,10 +1,10 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { openAPIRouteHandler } from "hono-openapi";
 import { auth } from "./auth";
 import { env } from "./env";
 import { logger as pinoLogger } from "./lib/logger";
@@ -14,7 +14,7 @@ import { depositsWebhookRouter } from "./routes/deposits/deposits";
 
 type SessionVariables = {
   session: {
-    userId: number;
+    userId: string;
   } | null;
 };
 
@@ -66,7 +66,7 @@ v1.use("*", async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
   if (session?.user) {
-    c.set("session", { userId: Number(session.user.id) });
+    c.set("session", { userId: session.user.id });
   }
 
   await next();
@@ -80,9 +80,28 @@ v1.on(["POST", "GET"], "/auth/**", (c) => auth.handler(c.req.raw));
 v1.route("/deposits", depositsWebhookRouter);
 
 // oRPC OpenAPIHandler — serves checkout, test-mint, and kyc/simulate.
+// Also serves OpenAPI spec at /api/v1/openapi.json via OpenAPIReferencePlugin.
 // Proxies the raw request so oRPC reuses Hono's already-parsed body buffer
 // instead of double-reading it (avoids "body already used" errors).
 const openAPIHandler = new OpenAPIHandler(appRouter, {
+  plugins: [
+    new OpenAPIReferencePlugin({
+      specPath: "/api/v1/openapi.json",
+      specGenerateOptions: {
+        info: {
+          title: "OneCurrency API",
+          version: "1.0.0",
+          description: "API documentation for OneCurrency e-wallet application",
+        },
+        servers: [
+          {
+            url: `http://localhost:${env.API_PORT}/api/v1`,
+            description: "Local development server",
+          },
+        ],
+      },
+    }),
+  ],
   interceptors: [
     onError((error) => {
       pinoLogger.error(error, "oRPC unhandled error");
@@ -108,7 +127,9 @@ v1.use("*", async (c, next) => {
       if (BODY_PARSER_METHODS.has(prop as BodyParserMethod)) {
         return () => c.req[prop as BodyParserMethod]();
       }
-      return Reflect.get(target, prop, target);
+      const value = Reflect.get(target, prop, target);
+      // Bind functions to preserve this-context (e.g., request.clone())
+      return typeof value === "function" ? value.bind(target) : value;
     },
   });
 
@@ -128,55 +149,8 @@ v1.use("*", async (c, next) => {
 
 app.route("/api/v1", v1);
 
-// OpenAPI Spec Endpoint
-app.get(
-  "/api/v1/openapi.json",
-  openAPIRouteHandler(v1, {
-    documentation: {
-      openapi: "3.0.0",
-      info: {
-        title: "OneCurrency API",
-        version: "1.0.0",
-        description: "API documentation for OneCurrency e-wallet application",
-      },
-      servers: [
-        {
-          url: `http://localhost:${env.API_PORT}/api/v1`,
-          description: "Local development server",
-        },
-      ],
-      tags: [
-        { name: "Health", description: "Health check endpoints" },
-        { name: "Auth", description: "Authentication endpoints" },
-        { name: "Deposits", description: "Deposit and payment processing" },
-        { name: "Users", description: "User management and KYC" },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: "http",
-            scheme: "bearer",
-            bearerFormat: "JWT",
-            description: "JWT token from better-auth session",
-          },
-        },
-      },
-      security: [
-        {
-          bearerAuth: [],
-        },
-      ],
-    },
-  })
-);
-
-// Scalar API Reference UI
-app.get(
-  "/api/v1/docs",
-  Scalar({
-    url: "/api/v1/openapi.json",
-  })
-);
+// Scalar API Reference UI (served by oRPC OpenAPIReferencePlugin at /api/v1/openapi.json)
+app.get("/api/v1/docs", Scalar({ url: "/api/v1/openapi.json" }));
 
 export default {
   port: env.API_PORT,
