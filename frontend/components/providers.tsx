@@ -4,8 +4,8 @@ import { hardhat, sepolia } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
-import { Toaster } from "sonner";
 import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
+import { Toaster } from "@/components/ui/sonner";
 import { projectId, wagmiAdapter } from "@/config";
 
 if (!projectId) {

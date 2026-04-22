@@ -52,6 +52,23 @@ app.get("/", (c) => c.json({ message: "Hello Hono!", status: "ok" }));
 
 const v1 = new Hono<{ Variables: SessionVariables }>();
 
+v1.use(
+  "*",
+  cors({
+    origin: env.CORS_ORIGIN,
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Custom-Header",
+      "Upgrade-Insecure-Requests",
+    ],
+    allowMethods: ["POST", "GET", "OPTIONS"],
+    exposeHeaders: ["Content-Length", "X-Kuma-Revision"],
+    maxAge: 600,
+    credentials: true,
+  })
+);
+
 v1.get("health", (c) =>
   c.json({
     status: "healthy",

@@ -3,7 +3,7 @@
 import { LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { signOut, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +33,7 @@ export function TopNav() {
         <div className="flex items-center gap-8">
           {/* Brand Logo */}
           <Link className="flex items-center gap-2" href="/">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
               <span className="font-bold text-lg text-primary-foreground">
                 1
               </span>
@@ -64,20 +64,24 @@ export function TopNav() {
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* Show Sign Out if authenticated, otherwise show login link */}
           {isAuthenticated ? (
             <Button onClick={handleSignOut} size="sm" variant="ghost">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign out
+              <LogOut className="size-4" />
+              <span className="hidden sm:inline">Sign out</span>
             </Button>
           ) : (
-            <Button asChild size="sm" variant="outline">
-              <Link href="/login">
-                <User className="mr-2 h-4 w-4" />
-                Sign in
-              </Link>
-            </Button>
+            <Link
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "gap-1.5"
+              )}
+              href="/login"
+            >
+              <User className="size-3.5" />
+              <span className="hidden sm:inline">Sign in</span>
+            </Link>
           )}
 
           {/* The Reown AppKit Connect Button */}
