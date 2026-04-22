@@ -1,4 +1,3 @@
-import { mkdirSync, writeFileSync } from "node:fs";
 import { network } from "hardhat";
 import { logger } from "../lib/logger";
 
@@ -41,24 +40,22 @@ async function main() {
     maxSupplyTokens: MAX_SUPPLY_TOKENS.toString(),
   });
 
-  // ─── Save Deployment Artifact ───────────────────────────────────────────────
-  // This file is read by your backend .env setup and the seeding plan.
-  const deployment = {
-    network: networkName,
-    contractAddress,
-    deployerAddress,
-    deployedAt: new Date().toISOString(),
-    maxSupplyTokens: MAX_SUPPLY_TOKENS.toString(),
-    maxSupplyWei: MAX_SUPPLY_WEI.toString(),
-  };
+  // // ─── Save Deployment Artifact ───────────────────────────────────────────────
+  // // This file is read by your backend .env setup and the seeding plan.
+  // const deployment = {
+  //   network: networkName,
+  //   contractAddress,
+  //   deployerAddress,
+  //   deployedAt: new Date().toISOString(),
+  //   maxSupplyTokens: MAX_SUPPLY_TOKENS.toString(),
+  //   maxSupplyWei: MAX_SUPPLY_WEI.toString(),
+  // };
 
-  mkdirSync("deployments", { recursive: true });
-  writeFileSync(
-    `deployments/${networkName}.json`,
-    JSON.stringify(deployment, null, 2)
-  );
-
-  logger.info(`Artifact saved to deployments/${networkName}.json`);
+  // mkdirSync("deployments", { recursive: true });
+  // writeFileSync(
+  //   `deployments/${networkName}.json`,
+  //   JSON.stringify(deployment, null, 2)
+  // );
 
   // ─── Etherscan Verification ─────────────────────────────────────────────────
   // Only runs on live networks — skipped for localhost/hardhat.
@@ -66,7 +63,7 @@ async function main() {
     logger.info(
       "Waiting 30s for Etherscan to index the contract before verifying..."
     );
-    await new Promise((resolve) => setTimeout(resolve, 30_000));
+    // await new Promise((resolve) => setTimeout(resolve, 30_000));
 
     logger.info("Run the following command to verify on Etherscan:");
     logger.info(
