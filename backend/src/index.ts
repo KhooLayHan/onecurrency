@@ -86,7 +86,7 @@ v1.route("/deposits", depositsWebhookRouter);
 const openAPIHandler = new OpenAPIHandler(appRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
-      specPath: "/api/v1/openapi.json",
+      specPath: "/openapi.json",
       specGenerateOptions: {
         info: {
           title: "OneCurrency API",
