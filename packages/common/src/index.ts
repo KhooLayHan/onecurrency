@@ -1,6 +1,8 @@
 import { z } from "zod";
 
-export const hexString32Schema = z.string().regex(/^0x[0-9a-fA-F]{64}$/);
+export const hexString32Schema = z
+  .string()
+  .regex(/^\d+$/, "Amount must be a numeric string");
 
 export const ethereumAddressSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 

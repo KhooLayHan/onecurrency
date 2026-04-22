@@ -49,7 +49,7 @@ app.get("/", (c) => c.json({ message: "Hello Hono!", status: "ok" }));
 
 const v1 = new Hono<{ Variables: SessionVariables }>();
 
-v1.get("/api/health", (c) =>
+v1.get("health", (c) =>
   c.json({
     status: "healthy",
     timestamp: new Date().toISOString(),
@@ -58,7 +58,7 @@ v1.get("/api/health", (c) =>
 );
 
 // Unsure why got CORS errors
-v1.use("/api/*", async (c, next) => {
+v1.use("*", async (c, next) => {
   // Grab the session securely using the headers
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
@@ -72,9 +72,9 @@ v1.use("/api/*", async (c, next) => {
 
 v1.on(["POST", "GET"], "/auth/**", (c) => auth.handler(c.req.raw));
 
-v1.route("/api/deposits", depositsRouter);
+v1.route("/deposits", depositsRouter);
 
-v1.route("/api/users", usersRouter);
+v1.route("/users", usersRouter);
 
 app.route("/api/v1", v1);
 
