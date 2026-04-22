@@ -11,7 +11,7 @@ export const openAPIDocumentation = {
     {
       // TODO: Maybe change to use different port?
       url: env.API_PORT
-        ? `${env.API_PORT}/api/v1`
+        ? `http://localhost:${env.API_PORT}/api/v1`
         : `http://localhost:${env.API_PORT}/api/v1`,
       description:
         env.NODE_ENV === "production" ? "Production" : "Local development",

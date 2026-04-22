@@ -18,7 +18,7 @@
     "exactOptionalPropertyTypes": false,
     "noImplicitOverride": true,
     "forceConsistentCasingInFileNames": true,
-
+    // "baseUrl": ".",
     "rootDir": ".",
     "paths": {
       "@onecurrency/common": ["packages/common/src"],
