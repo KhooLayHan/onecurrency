@@ -1,10 +1,12 @@
 "use client";
 
+import { LogOut, User } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { signOut, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
-// Reusing the same routes from BottomTabs
 const TABS = [
   { id: "home", label: "Dashboard", href: "/dashboard" },
   { id: "transfer", label: "Transfer", href: "/transfer" },
@@ -14,6 +16,16 @@ const TABS = [
 
 export function TopNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/login");
+    router.refresh();
+  };
+
+  const isAuthenticated = !!session && !isPending;
 
   return (
     <header className="sticky top-0 z-40 w-full border-border/40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -51,9 +63,24 @@ export function TopNav() {
           </nav>
         </div>
 
-        {/* The Reown AppKit Connect Button */}
-        {/* On mobile, this is the only thing shown besides the logo */}
+        {/* Right side actions */}
         <div className="flex items-center gap-4">
+          {/* Show Sign Out if authenticated, otherwise show login link */}
+          {isAuthenticated ? (
+            <Button onClick={handleSignOut} size="sm" variant="ghost">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
+            </Button>
+          ) : (
+            <Button asChild size="sm" variant="outline">
+              <Link href="/login">
+                <User className="mr-2 h-4 w-4" />
+                Sign in
+              </Link>
+            </Button>
+          )}
+
+          {/* The Reown AppKit Connect Button */}
           <appkit-button />
         </div>
       </div>

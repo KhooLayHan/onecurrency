@@ -1,83 +1,121 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { signIn } from "@/lib/auth-client";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const result = await signIn.email({
+      email,
+      password,
+      callbackURL: callbackUrl,
+    });
+
+    setIsLoading(false);
+
+    if (result.error) {
+      toast.error(
+        result.error.message || "Failed to sign in. Please try again."
+      );
+      return;
+    }
+
+    toast.success("Signed in successfully");
+    router.push(callbackUrl);
+    router.refresh();
+  };
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-8 text-center">
-          <h1 className="font-bold text-2xl text-neutral-900 tracking-tight">
-            OneCurrency
-          </h1>
-          <p className="mt-1.5 text-neutral-500 text-sm">
+          <h1 className="font-bold text-2xl tracking-tight">OneCurrency</h1>
+          <p className="mt-1.5 text-muted-foreground text-sm">
             Sign in to your account
           </p>
         </div>
 
         {/* Card */}
-        <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <form action="#" className="flex flex-col gap-4" method="post">
-            {/* Email */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                className="font-medium text-neutral-900 text-sm"
-                htmlFor="email"
-              >
-                Email
-              </label>
-              <input
-                autoComplete="email"
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-transparent focus:ring-2 focus:ring-neutral-900"
-                id="email"
-                name="email"
-                placeholder="you@example.com"
-                required
-                type="email"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label
-                  className="font-medium text-neutral-900 text-sm"
-                  htmlFor="password"
-                >
-                  Password
-                </label>
-                <a
-                  className="text-neutral-500 text-xs transition hover:text-neutral-900"
-                  href="/forgot-password"
-                >
-                  Forgot password?
-                </a>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Welcome back</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+              {/* Email */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  autoComplete="email"
+                  id="email"
+                  name="email"
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  type="email"
+                  value={email}
+                />
               </div>
-              <input
-                autoComplete="current-password"
-                className="rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none transition placeholder:text-neutral-400 focus:border-transparent focus:ring-2 focus:ring-neutral-900"
-                id="password"
-                name="password"
-                placeholder="••••••••"
-                required
-                type="password"
-              />
-            </div>
 
-            {/* Submit */}
-            <button
-              className="mt-1 rounded-lg bg-neutral-900 py-2 font-medium text-sm text-white transition hover:bg-neutral-700 active:bg-neutral-800"
-              type="submit"
-            >
-              Sign in
-            </button>
-          </form>
-        </div>
+              {/* Password */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link
+                    className="text-muted-foreground text-xs transition hover:text-foreground"
+                    href="/forgot-password"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  autoComplete="current-password"
+                  id="password"
+                  name="password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  type="password"
+                  value={password}
+                />
+              </div>
+
+              {/* Submit */}
+              <Button
+                className="mt-1 w-full"
+                disabled={isLoading}
+                type="submit"
+              >
+                {isLoading ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         {/* Footer */}
-        <p className="mt-4 text-center text-neutral-500 text-sm">
-          Don&apos;t have an account?{" "}
+        <p className="mt-4 text-center text-muted-foreground text-sm">
+          Don't have an account?{" "}
           <Link
-            className="font-medium text-neutral-900 hover:underline"
+            className="font-medium text-foreground hover:underline"
             href="/sign-up"
           >
             Sign up
