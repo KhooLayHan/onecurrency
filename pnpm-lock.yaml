@@ -180,6 +180,9 @@ importers:
       '@orpc/react-query':
         specifier: ^1.13.14
         version: 1.13.14(@orpc/client@1.13.14)(@tanstack/query-core@5.90.20)(@tanstack/react-query@5.90.21(react@19.1.0))(react@19.1.0)
+      '@orpc/tanstack-query':
+        specifier: ^1.13.14
+        version: 1.13.14(@orpc/client@1.13.14)(@tanstack/query-core@5.90.20)
       '@reown/appkit':
         specifier: ^1.8.19
         version: 1.8.19(@azure/identity@4.13.0)(@types/react@19.2.14)(bufferutil@4.1.0)(immer@10.0.2)(react@19.1.0)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.1.0))(utf-8-validate@6.0.6)(zod@4.3.6)
@@ -10993,6 +10996,7 @@ snapshots:
     optionalDependencies:
       msw: 2.12.11(@types/node@25.5.0)(typescript@5.9.3)
       vite: 8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)
+    optional: true
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -11029,7 +11033,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.1.0
-      vitest: 4.1.0(@types/node@25.5.0)(@vitest/browser-playwright@4.1.0)(@vitest/browser-preview@4.1.0)(@vitest/ui@4.1.0)(jsdom@29.0.0(@noble/hashes@2.0.1))(msw@2.12.11(@types/node@25.5.0)(typescript@5.9.3))(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
+      vitest: 4.1.0(@types/node@20.19.37)(@vitest/browser-playwright@4.1.0)(@vitest/browser-preview@4.1.0)(@vitest/ui@4.1.0)(jsdom@29.0.0(@noble/hashes@2.0.1))(msw@2.12.11(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0))
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -14719,6 +14723,7 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.6.1
       tsx: 4.21.0
+    optional: true
 
   vitest@4.1.0(@types/node@20.19.37)(@vitest/browser-playwright@4.1.0)(@vitest/browser-preview@4.1.0)(@vitest/ui@4.1.0)(jsdom@29.0.0(@noble/hashes@2.0.1))(msw@2.12.11(@types/node@20.19.37)(typescript@5.9.3))(vite@8.0.0(@types/node@20.19.37)(esbuild@0.27.4)(jiti@2.6.1)(tsx@4.21.0)):
     dependencies:
@@ -14812,6 +14817,7 @@ snapshots:
       jsdom: 29.0.0(@noble/hashes@2.0.1)
     transitivePeerDependencies:
       - msw
+    optional: true
 
   w3c-xmlserializer@5.0.0:
     dependencies:

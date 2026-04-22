@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { password } from "bun";
+import { hashPassword } from "better-auth/crypto";
 import { eq } from "drizzle-orm";
 import { db } from "@/src/db";
 import { logger } from "@/src/lib/logger";
@@ -60,9 +60,10 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
       continue;
     }
 
-    const passwordHash = await password.hash(config.password, {
-      algorithm: "argon2id",
-    });
+    // const passwordHash = await password.hash(config.password, {
+    //   algorithm: "argon2id",
+    // });
+    const passwordHash = await hashPassword(config.password);
 
     // Insert user + credential account in transaction
     const [user] = await db.transaction(async (tx) => {

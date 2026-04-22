@@ -3,7 +3,7 @@
 import { hardhat, sepolia } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
 import { projectId, wagmiAdapter } from "@/config";
 
