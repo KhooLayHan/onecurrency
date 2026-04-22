@@ -5,7 +5,8 @@ import { ExternalServiceError } from "@/common/errors/infrastructure";
 import { MIN_CONFIRMATIONS, ZERO_ADDRESS } from "@/src/constants/blockchain";
 import { TRANSACTION_STATUS } from "@/src/constants/transaction-status";
 import { TRANSACTION_TYPE } from "@/src/constants/transaction-type";
-import { db } from "@/src/db";
+import type { Database } from "@/src/db";
+import type { WebhookEvent } from "@/src/db/schema/webhook-events";
 import { env } from "@/src/env";
 import { logger } from "@/src/lib/logger";
 import { withTransaction } from "@/src/lib/transaction";
@@ -14,17 +15,20 @@ import { DepositRepository } from "@/src/repositories/deposit.repository";
 import { WalletRepository } from "@/src/repositories/wallet.repository";
 import { WebhookEventRepository } from "@/src/repositories/webhook-event.repository";
 import { mintTokens } from "@/src/services/blockchain";
-import { calculateTokenAmountWei } from "@/src/services/stripe.service";
+import { calculateTokenAmountWei, stripe } from "@/src/services/stripe.service";
 
-// TODO: To integrate with deposits.ts in the future.
+// --- Pure helpers (no database dependency) ---
 
-// Stripe signature verification
+/**
+ * Verifies the Stripe webhook signature and constructs the event.
+ * Non-signature errors are rethrown so the caller gets a 500 instead of 400.
+ */
 export function verifyStripeWebhookSignature(
   payload: string,
   signature: string
 ): ResultAsync<Stripe.Event, Stripe.errors.StripeSignatureVerificationError> {
   return ResultAsync.fromPromise(
-    Stripe.webhooks.constructEventAsync(
+    stripe.webhooks.constructEventAsync(
       payload,
       signature,
       env.STRIPE_WEBHOOK_SECRET
@@ -33,7 +37,7 @@ export function verifyStripeWebhookSignature(
       if (e instanceof Stripe.errors.StripeSignatureVerificationError) {
         return e;
       }
-      // Let other errors bubble up to outer catch
+      // Rethrow unexpected errors so they surface as 500, not 400
       throw new Error(
         `Unexpected Stripe error: ${e instanceof Error ? e.message : String(e)}`
       );
@@ -41,12 +45,14 @@ export function verifyStripeWebhookSignature(
   );
 }
 
-type ExtractMetadataResult =
+export type ExtractMetadataResult =
   | { type: "unsupported_event" }
   | { type: "invalid_metadata" }
   | { type: "ok"; userId: string; walletId: string; amountCents: number };
 
-// Extract and validate webhook payload metadata
+/**
+ * Extracts and validates the required metadata from a Stripe webhook event.
+ */
 export function extractWebhookMetadata(
   event: Stripe.Event
 ): ExtractMetadataResult {
@@ -66,48 +72,51 @@ export function extractWebhookMetadata(
   return { type: "ok", userId, walletId, amountCents };
 }
 
-// Phase 1: Check if webhook event was already processed (idempotency)
-export async function checkWebhookIdempotency(
+// --- Database-dependent helpers ---
+
+/**
+ * Phase 1: Checks whether a Stripe webhook event has already been processed.
+ * Returns true if already processed (idempotency hit).
+ */
+export function checkWebhookIdempotency(
+  db: Database,
   eventId: string
-): Promise<ResultAsync<boolean, AppError>> {
-  const existingEventResult = await new WebhookEventRepository(
-    db
-  ).findByStripeEventId(eventId);
-
-  if (existingEventResult.isErr()) {
-    return errAsync(existingEventResult.error);
-  }
-
-  // true = already processed
-  return okAsync(existingEventResult.value !== null);
+): ResultAsync<boolean, AppError> {
+  return new WebhookEventRepository(db)
+    .findByStripeEventId(eventId)
+    .map((existing) => existing !== null);
 }
 
-// Phase 1.5: Record webhook event
-export async function recordWebhookEvent(
+/**
+ * Phase 1.5: Records the incoming Stripe webhook event to establish idempotency.
+ * Returns the created record; callers that don't need the value can ignore it
+ * via `andThen(() => nextStep())`.
+ */
+export function recordWebhookEvent(
+  db: Database,
   event: Stripe.Event
-): Promise<ResultAsync<void, AppError>> {
-  const result = await new WebhookEventRepository(db).create({
+): ResultAsync<WebhookEvent, AppError> {
+  return new WebhookEventRepository(db).create({
     stripeEventId: event.id,
     eventType: event.type,
     payload: event,
   });
-
-  if (result.isErr()) {
-    return errAsync(result.error);
-  }
-  return okAsync(undefined);
 }
 
-// Phase 2: Create deposit record
-export async function createDepositRecord(params: {
-  userId: string;
-  walletId: string;
-  amountCents: number;
-  stripeSessionId: string;
-  stripePaymentIntentId: string;
-}): Promise<
-  ResultAsync<{ deposit: { id: bigint }; tokenAmountWei: string }, AppError>
-> {
+/**
+ * Phase 2: Creates the deposit record in PROCESSING state.
+ * Also calculates the token amount (Wei) from the fiat amount.
+ */
+export function createDepositRecord(
+  db: Database,
+  params: {
+    userId: string;
+    walletId: string;
+    amountCents: number;
+    stripeSessionId: string;
+    stripePaymentIntentId: string;
+  }
+): ResultAsync<{ deposit: { id: bigint }; tokenAmountWei: string }, AppError> {
   const {
     userId,
     walletId,
@@ -115,127 +124,96 @@ export async function createDepositRecord(params: {
     stripeSessionId,
     stripePaymentIntentId,
   } = params;
-
   const tokenAmountWei = calculateTokenAmountWei(amountCents);
 
-  const result = await new DepositRepository(db).create({
-    userId: BigInt(userId),
-    walletId: BigInt(walletId),
-    amountCents: BigInt(amountCents),
-    tokenAmount: tokenAmountWei,
-    stripePaymentIntentId,
-    statusId: TRANSACTION_STATUS.PROCESSING,
-    stripeSessionId,
-  });
-
-  return result.map((deposit) => ({
-    deposit: { id: deposit.id },
-    tokenAmountWei,
-  }));
+  return new DepositRepository(db)
+    .create({
+      userId: BigInt(userId),
+      walletId: BigInt(walletId),
+      amountCents: BigInt(amountCents),
+      tokenAmount: tokenAmountWei,
+      stripePaymentIntentId,
+      statusId: TRANSACTION_STATUS.PROCESSING,
+      stripeSessionId,
+    })
+    .map((deposit) => ({ deposit: { id: deposit.id }, tokenAmountWei }));
 }
 
-// Phase 2b: Fetch wallet for address
-export function fetchWalletForMint(_walletId: string): Promise<
-  ResultAsync<
-    {
-      walletRecord: { id: bigint; address: string; networkId: number };
-      depositId: bigint;
-    },
-    AppError
-  >
-> {
-  // This needs depositId to mark as failed if wallet not found
-  // Refactored to accept depositId as parameter
-  throw new Error("Use fetchWalletAndValidate instead");
-}
-
-export async function fetchWalletAndValidate(
+/**
+ * Phase 2.5: Fetches the wallet required for minting.
+ * On any error (DB failure or wallet not found), marks the deposit as FAILED
+ * and propagates the original error.
+ */
+export function fetchWalletForMint(
+  db: Database,
   walletId: string,
   depositId: bigint
-): Promise<
-  ResultAsync<
-    | { success: true; wallet: { address: string; networkId: number } }
-    | { success: false; error: AppError },
-    AppError
-  >
-> {
-  const walletResult = await new WalletRepository(db).findById(
-    BigInt(walletId)
-  );
-  if (walletResult.isErr()) {
+): ResultAsync<{ address: string; networkId: number }, AppError> {
+  return new WalletRepository(db)
+    .findById(BigInt(walletId))
+    .andThen((wallet) => {
+      if (!wallet) {
+        logger.error({ walletId }, "CRITICAL: Paid wallet not found in DB!");
+        return errAsync(
+          new ExternalServiceError("Database", "Wallet not found for minting", {
+            context: { walletId },
+          }) as AppError
+        );
+      }
+      return okAsync({ address: wallet.address, networkId: wallet.networkId });
+    })
+    .orElse((error) =>
+      // Best-effort: mark deposit failed; always propagate the original error
+      new DepositRepository(db)
+        .updateStatus(depositId, TRANSACTION_STATUS.FAILED)
+        .orElse(() => okAsync(undefined))
+        .andThen(() => errAsync(error))
+    );
+}
+
+/**
+ * Phase 3: Executes the on-chain token mint.
+ * On failure, marks the deposit as FAILED and propagates the error.
+ * Returns the transaction hash on success.
+ */
+export function executeBlockchainMint(
+  db: Database,
+  params: {
+    walletAddress: string;
+    tokenAmountWei: string;
+    depositId: bigint;
+  }
+): ResultAsync<string, AppError> {
+  const { walletAddress, tokenAmountWei, depositId } = params;
+
+  return mintTokens(walletAddress, tokenAmountWei).orElse((error) => {
     logger.error(
-      { err: walletResult.error },
-      "Failed to fetch wallet for mint"
+      { err: error },
+      "Bridge Failed: Could not mint tokens on-chain"
     );
-
-    await new DepositRepository(db).updateStatus(
-      depositId,
-      TRANSACTION_STATUS.FAILED
-    );
-
-    return okAsync({ success: false, error: walletResult.error });
-  }
-
-  const wallet = walletResult.value;
-
-  if (!wallet) {
-    logger.error({ walletId }, "CRITICAL: Paid wallet not found in DB!");
-
-    await new DepositRepository(db).updateStatus(
-      depositId,
-      TRANSACTION_STATUS.FAILED
-    );
-
-    return okAsync({
-      success: false,
-      error: new ExternalServiceError(
-        "Database",
-        "Wallet not found"
-      ) as AppError,
-    });
-  }
-
-  return okAsync({
-    success: true,
-    wallet: { address: wallet.address, networkId: wallet.networkId },
+    return new DepositRepository(db)
+      .updateStatus(depositId, TRANSACTION_STATUS.FAILED)
+      .orElse(() => okAsync(undefined))
+      .andThen(() => errAsync(error));
   });
 }
 
-// Phase 3: Execute blockchain mint
-export async function executeBlockchainMint(params: {
-  walletAddress: string;
-  tokenAmountWei: string;
-  depositId: bigint;
-}): Promise<ResultAsync<{ txHash: string } | { error: AppError }, AppError>> {
-  const { walletAddress, tokenAmountWei, depositId } = params;
-  const mintResult = await mintTokens(walletAddress, tokenAmountWei);
-
-  if (mintResult.isErr()) {
-    logger.error(
-      { err: mintResult.error },
-      "Bridge Failed: Could not mint tokens on-chain"
-    );
-
-    await new DepositRepository(db).updateStatus(
-      depositId,
-      TRANSACTION_STATUS.FAILED
-    );
-
-    return okAsync({ error: mintResult.error });
+/**
+ * Phase 4: Atomically finalizes the webhook — inserts the blockchain tx record,
+ * marks the deposit as COMPLETED, and marks the webhook event as processed.
+ * All three writes are wrapped in a single database transaction.
+ */
+export function finalizeWebhookProcessing(
+  db: Database,
+  params: {
+    networkId: number;
+    walletAddress: string;
+    txHash: string;
+    tokenAmountWei: string;
+    depositId: bigint;
+    eventId: string;
   }
-
-  return okAsync({ txHash: mintResult.value });
-}
-
-// Phase 4: Atomic finalization (blockchain tx record + deposit complete + webhook processed)
-export function finalizeWebhookProcessing(params: {
-  networkId: number;
-  walletAddress: string;
-  txHash: string;
-  tokenAmountWei: string;
-  depositId: bigint;
-  eventId: string;
-}): ResultAsync<void, AppError> {
+): ResultAsync<void, AppError> {
   const {
     networkId,
     walletAddress,
@@ -245,12 +223,8 @@ export function finalizeWebhookProcessing(params: {
     eventId,
   } = params;
 
-  return withTransaction(db, (tx) => {
-    const blockchainTxRepo = new BlockchainTransactionRepository(tx);
-    const depositRepo = new DepositRepository(tx);
-    const webhookRepo = new WebhookEventRepository(tx);
-
-    return blockchainTxRepo
+  return withTransaction(db, (tx) =>
+    new BlockchainTransactionRepository(tx)
       .create({
         networkId,
         transactionTypeId: TRANSACTION_TYPE.MINT,
@@ -262,8 +236,8 @@ export function finalizeWebhookProcessing(params: {
         confirmations: MIN_CONFIRMATIONS,
       })
       .andThen((blockchainTx) =>
-        depositRepo.complete(depositId, BigInt(blockchainTx.id))
+        new DepositRepository(tx).complete(depositId, BigInt(blockchainTx.id))
       )
-      .andThen(() => webhookRepo.markProcessed(eventId));
-  });
+      .andThen(() => new WebhookEventRepository(tx).markProcessed(eventId))
+  );
 }

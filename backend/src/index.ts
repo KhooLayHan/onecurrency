@@ -1,3 +1,5 @@
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { onError } from "@orpc/server";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -5,9 +7,10 @@ import { logger } from "hono/logger";
 import { openAPIRouteHandler } from "hono-openapi";
 import { auth } from "./auth";
 import { env } from "./env";
-// import { logger } from "./lib/logger";
-import { depositsRouter } from "./routes/deposits/deposits";
-import { usersRouter } from "./routes/users";
+import { logger as pinoLogger } from "./lib/logger";
+import type { ORPCContext } from "./orpc/context";
+import { appRouter } from "./orpc/router";
+import { depositsWebhookRouter } from "./routes/deposits/deposits";
 
 type SessionVariables = {
   session: {
@@ -57,24 +60,71 @@ v1.get("health", (c) =>
   })
 );
 
+// Inject better-auth session into Hono context for all v1 routes
 // Unsure why got CORS errors
 v1.use("*", async (c, next) => {
-  // Grab the session securely using the headers
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
   if (session?.user) {
-    // Inject it into the Hono Context so c.get("session") works in your routes
     c.set("session", { userId: Number(session.user.id) });
   }
 
   await next();
 });
 
+// better-auth sign-in / sign-up / session routes
 v1.on(["POST", "GET"], "/auth/**", (c) => auth.handler(c.req.raw));
 
-v1.route("/deposits", depositsRouter);
+// Stripe webhook — must stay as a raw Hono route: Stripe signature verification
+// requires the unparsed request body, which oRPC's handler would consume first.
+v1.route("/deposits", depositsWebhookRouter);
 
-v1.route("/users", usersRouter);
+// oRPC OpenAPIHandler — serves checkout, test-mint, and kyc/simulate.
+// Proxies the raw request so oRPC reuses Hono's already-parsed body buffer
+// instead of double-reading it (avoids "body already used" errors).
+const openAPIHandler = new OpenAPIHandler(appRouter, {
+  interceptors: [
+    onError((error) => {
+      pinoLogger.error(error, "oRPC unhandled error");
+    }),
+  ],
+});
+
+const BODY_PARSER_METHODS = new Set([
+  "arrayBuffer",
+  "blob",
+  "formData",
+  "json",
+  "text",
+] as const);
+
+type BodyParserMethod = typeof BODY_PARSER_METHODS extends Set<infer T>
+  ? T
+  : never;
+
+v1.use("*", async (c, next) => {
+  const request = new Proxy(c.req.raw, {
+    get(target, prop) {
+      if (BODY_PARSER_METHODS.has(prop as BodyParserMethod)) {
+        return () => c.req[prop as BodyParserMethod]();
+      }
+      return Reflect.get(target, prop, target);
+    },
+  });
+
+  const context: ORPCContext = { session: c.get("session") ?? null };
+
+  const { matched, response } = await openAPIHandler.handle(request, {
+    prefix: "/api/v1",
+    context,
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
 
 app.route("/api/v1", v1);
 
