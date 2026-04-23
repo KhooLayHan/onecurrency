@@ -5,6 +5,7 @@ import { blacklistedAddresses } from "./blacklisted-addresses";
 import { blockchainTransactions } from "./blockchain-transactions";
 import { deposits } from "./deposits";
 import { kycStatuses } from "./kyc-statuses";
+import { kycSubmissions } from "./kyc-submissions";
 import { networks } from "./networks";
 import { roles } from "./roles";
 import { sessions } from "./sessions";
@@ -24,6 +25,7 @@ export const relations = defineRelations(
     blockchainTransactions,
     deposits,
     kycStatuses,
+    kycSubmissions,
     networks,
     roles,
     sessions,
@@ -48,6 +50,7 @@ export const relations = defineRelations(
       deposits: r.many.deposits(),
       auditLogs: r.many.auditLogs(),
       blacklistedAddressesAdded: r.many.blacklistedAddresses(),
+      kycSubmissions: r.many.kycSubmissions(),
     },
     sessions: {
       user: r.one.users({
@@ -64,6 +67,7 @@ export const relations = defineRelations(
     },
     kycStatuses: {
       users: r.many.users(),
+      kycSubmissions: r.many.kycSubmissions(),
     },
     roles: {
       userRoles: r.many.userRoles(),
@@ -146,6 +150,16 @@ export const relations = defineRelations(
       addedBy: r.one.users({
         from: r.blacklistedAddresses.addedByUserId,
         to: r.users.id,
+      }),
+    },
+    kycSubmissions: {
+      user: r.one.users({
+        from: r.kycSubmissions.userId,
+        to: r.users.id,
+      }),
+      kycStatus: r.one.kycStatuses({
+        from: r.kycSubmissions.kycStatusId,
+        to: r.kycStatuses.id,
       }),
     },
   })
