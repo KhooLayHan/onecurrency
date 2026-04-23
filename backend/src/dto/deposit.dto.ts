@@ -15,6 +15,8 @@ const CENTS_PER_DOLLAR = 100;
 
 // --- Request DTOs ---
 
+const DEPOSIT_MAX_CENTS = DEPOSIT_MAX * CENTS_PER_DOLLAR;
+
 export const createCheckoutSchema = z.object({
   amountCents: z
     .number()
@@ -24,7 +26,7 @@ export const createCheckoutSchema = z.object({
       `Minimum deposit is $${AMOUNT_CENTS / CENTS_PER_DOLLAR}.00`
     )
     .max(
-      DEPOSIT_MAX,
+      DEPOSIT_MAX_CENTS,
       `Maximum deposit is $${DEPOSIT_MAX / CENTS_PER_DOLLAR}.00`
     ),
   walletId: z.number().int().positive("Wallet ID must be positive"),

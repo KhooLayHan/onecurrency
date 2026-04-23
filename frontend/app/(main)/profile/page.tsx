@@ -19,7 +19,7 @@ export default function ProfilePage() {
 
   const handleSubmitKyc = async () => {
     // Call the existing KYC simulation endpoint
-    await ofetch(`${env.NEXT_PUBLIC_API_URL}/api/users/kyc/simulate`, {
+    await ofetch(`${env.NEXT_PUBLIC_API_URL}/api/v1/users/kyc/simulate`, {
       method: "POST",
       credentials: "include",
     });

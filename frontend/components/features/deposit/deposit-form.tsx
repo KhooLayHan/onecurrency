@@ -41,14 +41,25 @@ export function DepositForm() {
         // Convert USD dollars to cents for the backend
         const amountCents = Math.round(value.amount * TEMP_100);
 
+        const requestBody = { amountCents, walletId: 1 };
+        // eslint-disable-next-line no-console
+        // console.log("[DEBUG] Sending deposit request:", {
+        //   url: `${env.NEXT_PUBLIC_API_URL}/api/v1/deposits/checkout`,
+        //   body: requestBody,
+        //   bodyTypes: {
+        //     amountCents: typeof amountCents,
+        //     walletId: typeof requestBody.walletId,
+        //   },
+        // });
+
         // 3. Call the Hono Backend API
         const response = await ofetch(
-          `${env.NEXT_PUBLIC_API_URL}/api/deposits/checkout`,
+          `${env.NEXT_PUBLIC_API_URL}/api/v1/deposits/checkout`,
           {
             method: "POST",
             // Note: In a full production app, you'd fetch the user's DB walletId first.
             // For this MVP, we use walletId: 1 (the one we seeded earlier) to keep the flow fast.
-            body: { amountCents, walletId: 1 },
+            body: requestBody,
             credentials: "include",
           }
         );
