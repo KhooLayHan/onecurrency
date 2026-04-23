@@ -1,0 +1,2 @@
+ALTER TABLE "kyc_submissions" ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
+ALTER TABLE "kyc_submissions" ALTER COLUMN "kyc_status_id" SET DATA TYPE integer USING "kyc_status_id"::integer;
