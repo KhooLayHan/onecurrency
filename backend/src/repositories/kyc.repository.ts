@@ -32,7 +32,11 @@ export class KycRepository {
       kycStatusId: input.kycStatusId,
       fullName: input.fullName,
       // date columns expect a string in YYYY-MM-DD format
-      dateOfBirth: input.dateOfBirth.toISOString().slice(0, 10),
+      dateOfBirth: [
+        input.dateOfBirth.getFullYear(),
+        String(input.dateOfBirth.getMonth() + 1).padStart(2, "0"),
+        String(input.dateOfBirth.getDate()).padStart(2, "0"),
+      ].join("-"),
       nationality: input.nationality,
       documentType: input.documentType,
     };
