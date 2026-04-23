@@ -10,7 +10,7 @@ import {
 
 type CreateSubmissionInput = {
   userId: bigint;
-  kycStatusId: bigint;
+  kycStatusId: number;
   fullName: string;
   dateOfBirth: Date;
   nationality: string;

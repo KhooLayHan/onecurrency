@@ -75,7 +75,7 @@ export class UserService {
         new KycRepository(tx)
           .createSubmission({
             userId,
-            kycStatusId: BigInt(KYC_STATUS.PENDING),
+            kycStatusId: KYC_STATUS.PENDING,
             fullName: data.fullName,
             dateOfBirth: data.dateOfBirth,
             nationality: data.nationality,

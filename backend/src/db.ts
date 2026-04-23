@@ -7,6 +7,7 @@ import { blacklistedAddresses } from "./db/schema/blacklisted-addresses";
 import { blockchainTransactions } from "./db/schema/blockchain-transactions";
 import { deposits } from "./db/schema/deposits";
 import { kycStatuses } from "./db/schema/kyc-statuses";
+import { kycSubmissions } from "./db/schema/kyc-submissions";
 import { networks } from "./db/schema/networks";
 import { relations } from "./db/schema/relations";
 import { roles } from "./db/schema/roles";
@@ -37,6 +38,7 @@ export const db = drizzle({
   client: pool,
   schema: {
     kycStatuses,
+    kycSubmissions,
     transactionStatuses,
     transactionTypes,
     networks,
