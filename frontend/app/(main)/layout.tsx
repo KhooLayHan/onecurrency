@@ -13,11 +13,11 @@ export default function MainLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <main className="flex-1 overflow-auto pb-20 sm:pb-0">
+        <div className="flex-1 overflow-auto pb-20 sm:pb-0">
           <div className="container mx-auto max-w-7xl px-4 py-6 sm:px-8 md:py-10">
             {children}
           </div>
-        </main>
+        </div>
       </SidebarInset>
       <BottomTabs />
     </SidebarProvider>

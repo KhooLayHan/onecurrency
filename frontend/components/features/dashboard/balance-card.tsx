@@ -48,7 +48,7 @@ export function BalanceCard() {
     : 0;
   const localBalance = formattedBalance * MYR_EXCHANGE_RATE;
 
-  // Wallet not connected - show connect prompt inside card
+  // Account (wallet) not connected - show connect prompt inside card
   if (!isConnected) {
     return (
       <Card className="relative w-full overflow-hidden border-border shadow-sm">
@@ -66,7 +66,7 @@ export function BalanceCard() {
               <Wallet className="size-6 text-muted-foreground" />
             </div>
             <p className="mb-4 max-w-xs text-muted-foreground text-sm">
-              Connect your wallet to view your balance and make transactions.
+              Connect your account to view your balance and make transactions.
             </p>
             {/* Reown AppKit wallet connect button */}
             <appkit-button />

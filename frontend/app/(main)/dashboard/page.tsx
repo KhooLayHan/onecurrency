@@ -203,7 +203,7 @@ export default function DashboardPage() {
                     Today's Rate
                   </span>
                   <Tooltip>
-                    <TooltipTrigger>
+                    <TooltipTrigger aria-label="About the exchange rate">
                       <Info className="size-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
