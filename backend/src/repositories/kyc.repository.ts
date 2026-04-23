@@ -1,7 +1,9 @@
+import { desc, eq } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
 import type { Database } from "../db";
 import {
+  type KycSubmission,
   kycSubmissions,
   type NewKycSubmission,
 } from "../db/schema/kyc-submissions";
@@ -48,5 +50,21 @@ export class KycRepository {
           context: { userId: input.userId.toString() },
         })
     );
+  }
+
+  findLatestByUserId(
+    userId: bigint
+  ): ResultAsync<KycSubmission | null, InternalError> {
+    return ResultAsync.fromPromise(
+      this.db._query.kycSubmissions.findFirst({
+        where: eq(kycSubmissions.userId, userId),
+        orderBy: desc(kycSubmissions.id),
+      }),
+      (e): InternalError =>
+        new InternalError("Failed to fetch latest KYC submission", {
+          cause: e,
+          context: { userId: userId.toString() },
+        })
+    ).map((submission) => submission ?? null);
   }
 }

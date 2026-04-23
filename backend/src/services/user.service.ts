@@ -38,6 +38,24 @@ export class UserService {
         return errAsync(new UserNotFoundError(userId.toString()));
       }
 
+      if (user.kycStatusId === KYC_STATUS.PENDING) {
+        // If already PENDING, fetch the submission record for accurate timestamp
+        return new KycRepository(this.db)
+          .findLatestByUserId(userId)
+          .andThen((submission) => {
+            const submittedAt =
+              submission?.createdAt.toISOString() ??
+              user.updatedAt?.toISOString() ??
+              new Date().toISOString();
+            return errAsync(new KycPendingError(submittedAt));
+          });
+      }
+
+      if (user.kycStatusId === KYC_STATUS.VERIFIED) {
+        // Check for other blocking statuses
+        return errAsync(new KycAlreadyVerifiedError());
+      }
+
       // Check current KYC status and prevent duplicate submissions
       switch (user.kycStatusId) {
         case KYC_STATUS.PENDING:
@@ -73,7 +91,12 @@ export class UserService {
     });
   }
 
-  simulateKyc(userId: bigint): ResultAsync<{ message: string }, AppError> {
+  simulateKyc(userId: bigint): ResultAsync<
+    {
+      message: string;
+    },
+    AppError
+  > {
     return withTransaction(this.db, (tx) =>
       new UserRepository(tx).updateKycStatus(userId, KYC_STATUS.VERIFIED)
     ).map(() => ({ message: "Identity verified successfully." }));
