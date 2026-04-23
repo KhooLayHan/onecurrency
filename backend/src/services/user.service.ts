@@ -1,12 +1,12 @@
 import type { ResultAsync } from "neverthrow";
 import { errAsync } from "neverthrow";
-import { KYC_STATUS } from "../constants/kyc-status";
 import type { AppError } from "@/common/errors/base";
 import {
   KycAlreadyVerifiedError,
   KycPendingError,
 } from "@/common/errors/compliance";
 import { UserNotFoundError } from "@/common/errors/user";
+import { KYC_STATUS } from "../constants/kyc-status";
 import type { Database } from "../db";
 import { withTransaction } from "../lib/transaction";
 import { UserRepository } from "../repositories/user.repository";
