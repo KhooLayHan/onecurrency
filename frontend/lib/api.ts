@@ -2,7 +2,7 @@ import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { RouterClient } from "@orpc/server";
 import { env } from "@/env";
-import { type AppRouter } from "../../backend/src/orpc/router"
+import type { AppRouter } from "../../backend/src/orpc/router";
 
 const API_V1_BASE_PATH = "/api/v1";
 

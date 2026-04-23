@@ -2,8 +2,8 @@ import { ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
 import type { Database } from "../db";
 import {
-  type NewKycSubmission,
   kycSubmissions,
+  type NewKycSubmission,
 } from "../db/schema/kyc-submissions";
 
 type CreateSubmissionInput = {
