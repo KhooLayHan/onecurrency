@@ -122,7 +122,7 @@ export function BalanceCard() {
           <Dialog>
             <DialogTrigger>
               <Button className="flex w-full gap-2 font-semibold" size="lg">
-                <Plus className="size-[18px]" />
+                <Plus className="size-4.5" />
                 Add Money
               </Button>
             </DialogTrigger>
@@ -147,7 +147,7 @@ export function BalanceCard() {
             size="lg"
             variant="secondary"
           >
-            <Send className="size-[18px]" />
+            <Send className="size-4.5" />
             Send
           </Button>
         </div>
