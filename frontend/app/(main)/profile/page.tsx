@@ -1,30 +1,73 @@
 "use client";
 
 import { User } from "lucide-react";
-import { ofetch } from "ofetch";
 import { useState } from "react";
+import { toast } from "sonner";
+import { KYC_STATUS } from "@/common/constants/kyc";
 import { KycStatusCard } from "@/components/features/profile/kyc-status-card";
-import { KycVerificationWizard } from "@/components/features/profile/kyc-verification-wizard";
+import {
+  type KycFormData,
+  KycVerificationWizard,
+} from "@/components/features/profile/kyc-verification-wizard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { env } from "@/env";
+import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
-
-// Default KYC status ID (None - not started)
-const KYC_STATUS_NONE = 1;
 
 export default function ProfilePage() {
   const { data: session, isPending, refetch } = useSession();
   const [wizardOpen, setWizardOpen] = useState(false);
 
-  const handleSubmitKyc = async () => {
-    // Call the existing KYC simulation endpoint
-    await ofetch(`${env.NEXT_PUBLIC_API_URL}/api/users/kyc/simulate`, {
-      method: "POST",
-      credentials: "include",
-    });
-    // Refetch the session so the UI updates to show "pending" status
-    await refetch();
+  const handleSubmitKyc = async (data: KycFormData) => {
+    // This guard is redundant with wizard validation but satisfies TypeScript strict null checks
+    if (!data.dateOfBirth) {
+      toast.error("Date of birth is required");
+      return;
+    }
+
+    try {
+      // Submit the KYC form data (sets status to PENDING)
+      await orpcClient.users.submitKyc({
+        fullName: data.fullName,
+        dateOfBirth: data.dateOfBirth,
+        nationality: data.nationality,
+        documentType: data.documentType as
+          | "passport"
+          | "drivers_license"
+          | "national_id",
+        // documentFrontUploaded: data.documentFrontUploaded,
+        documentFrontUploaded: true,
+        documentBackUploaded: data.documentBackUploaded,
+        // selfieUploaded: data.selfieUploaded,
+        selfieUploaded: true,
+      });
+      toast.success("Verification submitted", {
+        description: "We'll review your documents within 1-2 business days.",
+      });
+      await refetch();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit verification";
+      toast.error("Submission failed", { description: message });
+      throw error;
+    }
+  };
+
+  const handleSimulateKyc = async () => {
+    try {
+      // Development helper: immediately set status to VERIFIED
+      await orpcClient.users.simulateKyc({});
+      toast.success("Identity verified (simulated)");
+      await refetch();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to simulate verification";
+      toast.error("Simulation failed", { description: message });
+    }
   };
 
   const handleStartVerification = () => {
@@ -57,7 +100,7 @@ export default function ProfilePage() {
   }
 
   // Get KYC status ID from session, default to "None" if not present
-  const kycStatusId = session?.user?.kycStatusId ?? KYC_STATUS_NONE;
+  const kycStatusId = session?.user?.kycStatusId ?? KYC_STATUS.NONE;
 
   return (
     <div className="fade-in mx-auto flex w-full max-w-2xl animate-in flex-col gap-6 duration-300 ease-out">
@@ -104,6 +147,26 @@ export default function ProfilePage() {
         onSubmit={handleSubmitKyc}
         open={wizardOpen}
       />
+
+      {/* Dev Simulation Button - only shown when status is PENDING */}
+      {kycStatusId === KYC_STATUS.PENDING && (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-muted-foreground text-sm">
+              Development Tools
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <button
+              className="rounded-md border border-muted-foreground/30 px-3 py-1 text-muted-foreground text-xs hover:bg-muted"
+              onClick={handleSimulateKyc}
+              type="button"
+            >
+              Simulate Verification (Dev)
+            </button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

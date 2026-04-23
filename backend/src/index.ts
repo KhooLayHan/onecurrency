@@ -122,6 +122,16 @@ const openAPIHandler = new OpenAPIHandler(appRouter, {
   interceptors: [
     onError((error) => {
       pinoLogger.error(error, "oRPC unhandled error");
+      // Log validation errors in detail for debugging
+      // if (error.cause && typeof error.cause === "object") {
+      //   const cause = error.cause;
+      //   if ("flatten" in cause || "issues" in cause) {
+      //     pinoLogger.error(
+      //       { validationError: cause },
+      //       "Input validation failed - detailed error"
+      //     );
+      //   }
+      // }
     }),
   ],
 });

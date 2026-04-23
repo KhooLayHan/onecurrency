@@ -1,6 +1,8 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+import type { RouterClient } from "@orpc/server";
 import { env } from "@/env";
+import type { AppRouter } from "../../backend/src/orpc/router";
 
 const API_V1_BASE_PATH = "/api/v1";
 
@@ -13,4 +15,5 @@ const link = new RPCLink({
     }),
 });
 
-export const orpcClient = createORPCClient(link);
+// The client is typed based on the backend router at runtime
+export const orpcClient: RouterClient<AppRouter> = createORPCClient(link);

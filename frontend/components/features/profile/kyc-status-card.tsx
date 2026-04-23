@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
+import { KYC_STATUS } from "@/common/constants/kyc";
 import {
   Alert,
   AlertAction,
@@ -23,13 +24,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
-
-// KYC Status IDs from database schema (kyc_statuses lookup table)
-const KYC_STATUS_NONE = 1;
-const KYC_STATUS_PENDING = 2;
-const KYC_STATUS_VERIFIED = 3;
-const KYC_STATUS_REJECTED = 4;
-const KYC_STATUS_EXPIRED = 5;
 
 // Progress indicator value for pending state (indeterminate feel)
 const PENDING_PROGRESS_VALUE = 66;
@@ -48,7 +42,7 @@ export function KycStatusCard({
   onRetryVerification,
 }: KycStatusCardProps) {
   // None - KYC not started
-  if (kycStatusId === KYC_STATUS_NONE) {
+  if (kycStatusId === KYC_STATUS.NONE) {
     return (
       <Card className="border-highlight-500/50 bg-highlight-50/10">
         <CardHeader>
@@ -74,7 +68,7 @@ export function KycStatusCard({
   }
 
   // Pending - Under review
-  if (kycStatusId === KYC_STATUS_PENDING) {
+  if (kycStatusId === KYC_STATUS.PENDING) {
     return (
       <Card className="border-primary-500/50 bg-primary-50/10">
         <CardHeader>
@@ -101,7 +95,7 @@ export function KycStatusCard({
   }
 
   // Verified - Success state
-  if (kycStatusId === KYC_STATUS_VERIFIED) {
+  if (kycStatusId === KYC_STATUS.VERIFIED) {
     return (
       <Card className="border-success-500/50 bg-success-50/10">
         <CardHeader>
@@ -125,7 +119,7 @@ export function KycStatusCard({
   }
 
   // Rejected - Error state with retry
-  if (kycStatusId === KYC_STATUS_REJECTED) {
+  if (kycStatusId === KYC_STATUS.REJECTED) {
     return (
       <Card className="border-destructive/50 bg-destructive/5">
         <CardHeader>
@@ -160,7 +154,7 @@ export function KycStatusCard({
   }
 
   // Expired - Needs renewal
-  if (kycStatusId === KYC_STATUS_EXPIRED) {
+  if (kycStatusId === KYC_STATUS.EXPIRED) {
     return (
       <Card className="border-highlight-500/50 bg-highlight-50/10">
         <CardHeader>

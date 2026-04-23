@@ -114,3 +114,21 @@ export class RestrictedJurisdictionError extends AppError {
     super("This service is not available in your jurisdiction.", options);
   }
 }
+
+/**
+ * Thrown when a user tries to submit KYC but their verification is already approved.
+ */
+export class KycAlreadyVerifiedError extends AppError {
+  readonly code = "COMPLIANCE_KYC_ALREADY_VERIFIED";
+  readonly statusCode = StatusCodes.CONFLICT;
+  readonly domain = "compliance" as const;
+  readonly severity = "low" as const;
+  readonly isOperational = true;
+
+  constructor(options?: ConstructorParameters<typeof AppError>[1]) {
+    super(
+      "Your identity has already been verified. No further action is needed.",
+      options
+    );
+  }
+}

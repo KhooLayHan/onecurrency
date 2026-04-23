@@ -1,28 +1,76 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { Loader2 } from "lucide-react";
+
+type SubmitButtonLabelProps = {
+  isWalletLoading: boolean;
+  isSubmitting: boolean;
+};
+
+function SubmitButtonLabel({
+  isWalletLoading,
+  isSubmitting,
+}: SubmitButtonLabelProps) {
+  if (isWalletLoading) {
+    return (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Loading wallet...
+      </>
+    );
+  }
+  if (isSubmitting) {
+    return "Generating Secure Link...";
+  }
+  return "Continue to Payment";
+}
+
 import { ofetch } from "ofetch";
 import { useState } from "react";
 import { useConnection } from "wagmi";
+import { KYC_STATUS } from "@/common/constants/kyc";
 import { depositSchema } from "@/common/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { env } from "@/env";
+import { useUserWallet } from "@/hooks/use-user-wallet";
 import { useSession } from "@/lib/auth-client";
+
+const CENTS_PER_DOLLAR = 100;
+
+async function initiateCheckout(
+  amountCents: number,
+  walletId: number
+): Promise<string | null> {
+  const response = await ofetch(
+    `${env.NEXT_PUBLIC_API_URL}/api/v1/deposits/checkout`,
+    {
+      method: "POST",
+      body: { amountCents, walletId },
+      credentials: "include",
+    }
+  );
+  return response.success && response.checkoutUrl
+    ? (response.checkoutUrl as string)
+    : null;
+}
 
 export function DepositForm() {
   const { address } = useConnection();
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const { data: session } = useSession();
+  const {
+    walletId,
+    isLoading: isWalletLoading,
+    error: walletError,
+  } = useUserWallet();
 
-  const KYC_STATUS_VERIFIED_ID = 3;
+  // Check if user has completed KYC verification
+  const isVerified = session?.user?.kycStatusId === KYC_STATUS.VERIFIED;
 
-  // `user` property does not have kycStatusId property
-  const isVerified = session?.user?.kycStatusId === KYC_STATUS_VERIFIED_ID;
-
-  // 2. Initialize TanStack Form
   const form = useForm({
     defaultValues: {
       amount: 100, // Default suggested amount
@@ -35,27 +83,16 @@ export function DepositForm() {
         return;
       }
 
-      const TEMP_100 = 100;
+      if (!walletId) {
+        setGlobalError("No primary wallet found. Please contact support.");
+        return;
+      }
 
       try {
-        // Convert USD dollars to cents for the backend
-        const amountCents = Math.round(value.amount * TEMP_100);
-
-        // 3. Call the Hono Backend API
-        const response = await ofetch(
-          `${env.NEXT_PUBLIC_API_URL}/api/deposits/checkout`,
-          {
-            method: "POST",
-            // Note: In a full production app, you'd fetch the user's DB walletId first.
-            // For this MVP, we use walletId: 1 (the one we seeded earlier) to keep the flow fast.
-            body: { amountCents, walletId: 1 },
-            credentials: "include",
-          }
-        );
-
-        // 4. Redirect to Stripe Checkout!
-        if (response.success && response.checkoutUrl) {
-          window.location.href = response.checkoutUrl;
+        const amountCents = Math.round(value.amount * CENTS_PER_DOLLAR);
+        const checkoutUrl = await initiateCheckout(amountCents, walletId);
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
         }
       } catch (error) {
         if (error) {
@@ -78,6 +115,16 @@ export function DepositForm() {
         form.handleSubmit();
       }}
     >
+      {/* Wallet error */}
+      {walletError && (
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-destructive text-sm">
+          Unable to load your wallet:{" "}
+          {walletError instanceof Error
+            ? walletError.message
+            : "Unknown error. Please try again."}
+        </div>
+      )}
+
       {/* TanStack Form Field */}
       <form.Field
         name="amount"
@@ -132,10 +179,19 @@ export function DepositForm() {
         {([canSubmit, isSubmitting]) => (
           <Button
             className="h-12 w-full rounded-xl font-semibold text-base"
-            disabled={!canSubmit || isSubmitting || !address || !isVerified}
+            disabled={
+              !canSubmit ||
+              isSubmitting ||
+              !address ||
+              !isVerified ||
+              isWalletLoading
+            }
             type="submit"
           >
-            {isSubmitting ? "Generating Secure Link..." : "Continue to Payment"}
+            <SubmitButtonLabel
+              isSubmitting={isSubmitting as boolean}
+              isWalletLoading={isWalletLoading}
+            />
           </Button>
         )}
       </form.Subscribe>

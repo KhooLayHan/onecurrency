@@ -1,5 +1,5 @@
 import { checkout, testMint } from "./procedures/deposits";
-import { simulateKyc } from "./procedures/users";
+import { getPrimaryWallet, simulateKyc, submitKyc } from "./procedures/users";
 
 export const appRouter = {
   deposits: {
@@ -7,7 +7,9 @@ export const appRouter = {
     checkout,
   },
   users: {
+    submitKyc,
     simulateKyc,
+    getPrimaryWallet,
   },
 };
 
