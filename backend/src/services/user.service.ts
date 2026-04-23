@@ -9,6 +9,7 @@ import { UserNotFoundError } from "@/common/errors/user";
 import { KYC_STATUS } from "../constants/kyc-status";
 import type { Database } from "../db";
 import { withTransaction } from "../lib/transaction";
+import { KycRepository } from "../repositories/kyc.repository";
 import { UserRepository } from "../repositories/user.repository";
 
 export type KycSubmissionData = {
@@ -30,7 +31,7 @@ export class UserService {
 
   submitKyc(
     userId: bigint,
-    _data: KycSubmissionData
+    data: KycSubmissionData
   ): ResultAsync<{ message: string }, AppError> {
     return new UserRepository(this.db).findById(userId).andThen((user) => {
       if (user === null) {
@@ -48,12 +49,23 @@ export class UserService {
         case KYC_STATUS.VERIFIED:
           return errAsync(new KycAlreadyVerifiedError());
         default:
-        // For NONE, REJECTED, or EXPIRED - allow submission and set to PENDING below
+        // For NONE, REJECTED, or EXPIRED - allow submission below
       }
 
-      // For NONE, REJECTED, or EXPIRED - allow submission and set to PENDING
+      // Persist the submission record and update the user status atomically
       return withTransaction(this.db, (tx) =>
-        new UserRepository(tx).updateKycStatus(userId, KYC_STATUS.PENDING)
+        new KycRepository(tx)
+          .createSubmission({
+            userId,
+            kycStatusId: BigInt(KYC_STATUS.PENDING),
+            fullName: data.fullName,
+            dateOfBirth: data.dateOfBirth,
+            nationality: data.nationality,
+            documentType: data.documentType,
+          })
+          .andThen(() =>
+            new UserRepository(tx).updateKycStatus(userId, KYC_STATUS.PENDING)
+          )
       ).map(() => ({
         message:
           "Verification submitted. We'll review your documents within 1-2 business days.",

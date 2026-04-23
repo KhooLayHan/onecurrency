@@ -12,10 +12,17 @@ type UserWallet = {
   networkId: number;
 };
 
-export function useUserWallet() {
+export function useUserWallet(): {
+  walletId: number | undefined;
+  address: string | undefined;
+  networkId: number | undefined;
+  isLoading: boolean;
+  error: Error | null;
+} {
   const { data, isLoading, error } = useQuery<UserWallet>({
     queryKey: [WALLET_QUERY_KEY],
     // orpcClient is a dynamic Proxy — procedures are resolved at runtime
+    // queryFn: () => orpcClient.users.getPrimaryWallet({}),
     queryFn: () =>
       (
         orpcClient as unknown as {

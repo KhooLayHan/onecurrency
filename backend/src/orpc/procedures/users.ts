@@ -52,7 +52,7 @@ export const getPrimaryWallet = base
   })
   .output(
     z.object({
-      walletId: z.number(),
+      walletId: z.string(),
       address: z.string(),
       networkId: z.number(),
     })
@@ -72,7 +72,7 @@ export const getPrimaryWallet = base
     const { walletId, address, networkId } = result.value;
     logger.info({ userId }, "User primary wallet fetched");
     return {
-      walletId: Number(walletId),
+      walletId: walletId.toString(),
       address,
       networkId,
     };
