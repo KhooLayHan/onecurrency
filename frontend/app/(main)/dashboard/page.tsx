@@ -2,6 +2,7 @@
 
 import { ArrowRight, Info, Receipt, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { KYC_STATUS } from "@/common/constants/kyc";
 import { BalanceCard } from "@/components/features/dashboard/balance-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,11 +15,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSession } from "@/lib/auth-client";
-
-// KYC Status IDs from database schema
-const KYC_STATUS_NONE = 1;
-const KYC_STATUS_PENDING = 2;
-const KYC_STATUS_VERIFIED = 3;
 
 // Exchange rate constant
 const MYR_EXCHANGE_RATE = 4.72;
@@ -42,9 +38,9 @@ function getKycBadgeVariant(
   statusId: number
 ): "secondary" | "default" | "outline" {
   switch (statusId) {
-    case KYC_STATUS_VERIFIED:
+    case KYC_STATUS.VERIFIED:
       return "default";
-    case KYC_STATUS_PENDING:
+    case KYC_STATUS.PENDING:
       return "outline";
     default:
       return "secondary";
@@ -53,9 +49,9 @@ function getKycBadgeVariant(
 
 function getKycStatusLabel(statusId: number): string {
   switch (statusId) {
-    case KYC_STATUS_VERIFIED:
+    case KYC_STATUS.VERIFIED:
       return "Verified";
-    case KYC_STATUS_PENDING:
+    case KYC_STATUS.PENDING:
       return "Pending";
     default:
       return "Not Started";
@@ -114,7 +110,7 @@ export default function DashboardPage() {
     );
   }
 
-  const kycStatusId = session.user.kycStatusId ?? KYC_STATUS_NONE;
+  const kycStatusId = session.user.kycStatusId ?? KYC_STATUS.NONE;
   const greeting = getTimeOfDayGreeting();
   const firstName = session.user.name?.split(" ")[0] ?? "there";
 

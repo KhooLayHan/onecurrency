@@ -13,4 +13,5 @@ const link = new RPCLink({
     }),
 });
 
+// The client is typed based on the backend router at runtime
 export const orpcClient = createORPCClient(link);

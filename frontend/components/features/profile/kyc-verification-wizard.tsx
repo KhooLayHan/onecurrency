@@ -75,7 +75,7 @@ const INITIAL_FORM_DATA: KycFormData = {
 type KycVerificationWizardProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: () => Promise<void>;
+  onSubmit: (data: KycFormData) => Promise<void>;
   defaultName?: string;
 };
 
@@ -114,7 +114,7 @@ export function KycVerificationWizard({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await onSubmit();
+      await onSubmit(formData);
       // Reset wizard state on successful submit
       setCurrentStep(STEP_PERSONAL_INFO);
       setFormData({ ...INITIAL_FORM_DATA, fullName: defaultName });

@@ -4,6 +4,7 @@ import { useForm } from "@tanstack/react-form";
 import { ofetch } from "ofetch";
 import { useState } from "react";
 import { useConnection } from "wagmi";
+import { KYC_STATUS } from "@/common/constants/kyc";
 import { depositSchema } from "@/common/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +18,8 @@ export function DepositForm() {
 
   const { data: session } = useSession();
 
-  const KYC_STATUS_VERIFIED_ID = 3;
-
-  // `user` property does not have kycStatusId property
-  const isVerified = session?.user?.kycStatusId === KYC_STATUS_VERIFIED_ID;
+  // Check if user has completed KYC verification
+  const isVerified = session?.user?.kycStatusId === KYC_STATUS.VERIFIED;
 
   // 2. Initialize TanStack Form
   const form = useForm({
