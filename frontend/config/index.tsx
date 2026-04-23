@@ -1,6 +1,6 @@
-import { cookieStorage, createStorage } from "wagmi";
+import { hardhat, sepolia } from "@reown/appkit/networks";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { sepolia, hardhat } from "@reown/appkit/networks";
+import { cookieStorage, createStorage } from "wagmi";
 import { env } from "@/env";
 
 export const projectId = env.NEXT_PUBLIC_WALLET_CONNECT_ID;

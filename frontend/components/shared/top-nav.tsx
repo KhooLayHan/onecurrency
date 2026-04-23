@@ -1,10 +1,13 @@
 "use client";
 
+import { LogOut, User } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { signOut, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
-// Reusing the same routes from BottomTabs
 const TABS = [
   { id: "home", label: "Dashboard", href: "/dashboard" },
   { id: "transfer", label: "Transfer", href: "/transfer" },
@@ -14,6 +17,26 @@ const TABS = [
 
 export function TopNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+
+  const handleSignOut = async () => {
+    try {
+      const result = await signOut();
+
+      if (result.error) {
+        toast.error("Failed to sign out. Please try again.");
+
+        return;
+      }
+      router.push("/login");
+      router.refresh();
+    } catch {
+      toast.error("Failed to sign out. Please try again.");
+    }
+  };
+
+  const isAuthenticated = !!session && !isPending;
 
   return (
     <header className="sticky top-0 z-40 w-full border-border/40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -21,7 +44,7 @@ export function TopNav() {
         <div className="flex items-center gap-8">
           {/* Brand Logo */}
           <Link className="flex items-center gap-2" href="/">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary">
               <span className="font-bold text-lg text-primary-foreground">
                 1
               </span>
@@ -51,9 +74,33 @@ export function TopNav() {
           </nav>
         </div>
 
-        {/* The Reown AppKit Connect Button */}
-        {/* On mobile, this is the only thing shown besides the logo */}
-        <div className="flex items-center gap-4">
+        {/* Right side actions */}
+        <div className="flex items-center gap-3">
+          {/* Show Sign Out if authenticated, otherwise show login link */}
+          {isAuthenticated ? (
+            <Button
+              className="min-h-11"
+              onClick={handleSignOut}
+              size="sm"
+              variant="ghost"
+            >
+              <LogOut className="size-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </Button>
+          ) : (
+            <Link
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "gap-1.5"
+              )}
+              href="/login"
+            >
+              <User className="size-3.5" />
+              <span className="hidden sm:inline">Sign in</span>
+            </Link>
+          )}
+
+          {/* The Reown AppKit Connect Button */}
           <appkit-button />
         </div>
       </div>

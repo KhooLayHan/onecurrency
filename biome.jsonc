@@ -26,7 +26,8 @@
       "!build",
       "!backend/src/db/migrations/**/*",
       "!frontend/.storybook/**/*",
-      "!frontend/stories/**/*"
+      "!frontend/stories/**/*",
+      "!frontend/components/ui"
     ]
   },
   "formatter": {

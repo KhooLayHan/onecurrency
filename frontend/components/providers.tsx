@@ -3,8 +3,9 @@
 import { hardhat, sepolia } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
+import { Toaster } from "@/components/ui/sonner";
 import { projectId, wagmiAdapter } from "@/config";
 
 if (!projectId) {
@@ -28,7 +29,7 @@ createAppKit({
     email: true,
     socials: ["google", "apple"],
     emailShowWallets: true,
-    analytics: true, // Optional - defaults to your Cloud configuration
+    analytics: true,
   },
   themeMode: "light",
 });
@@ -52,7 +53,10 @@ export function Providers({
       config={wagmiAdapter.wagmiConfig as Config}
       initialState={initialState}
     >
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <Toaster position="top-center" richColors />
+      </QueryClientProvider>
     </WagmiProvider>
   );
 }

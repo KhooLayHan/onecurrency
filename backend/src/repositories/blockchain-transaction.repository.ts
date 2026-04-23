@@ -21,6 +21,7 @@ export class BlockchainTransactionRepository {
       this.db
         .insert(blockchainTransactions)
         .values(data)
+        .onConflictDoNothing()
         .returning()
         .then((rows) => rows[0]),
       (e): InternalError =>

@@ -22,14 +22,14 @@ export default function Home() {
       <h1 className="mb-4 font-bold text-2xl">OneCurrency</h1>
       <div className="mb-6 flex gap-3">
         <Link
-          href="/login"
           className="rounded bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+          href="/login"
         >
           Login page →
         </Link>
         <Link
-          href="/sign-up"
           className="rounded border border-neutral-300 px-4 py-2 text-sm hover:border-neutral-500"
+          href="/sign-up"
         >
           Sign-up page →
         </Link>

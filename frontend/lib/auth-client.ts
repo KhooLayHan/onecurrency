@@ -4,7 +4,7 @@ import type { auth } from "../../backend/src/auth";
 import { env } from "../env";
 
 export const authClient = createAuthClient({
-  baseURL: env.NEXT_PUBLIC_BETTER_AUTH_URL,
+  baseURL: `${env.NEXT_PUBLIC_API_URL}/api/v1/auth`,
   plugins: [
     inferAdditionalFields<typeof auth>(), // Ensures correct typing
   ],
