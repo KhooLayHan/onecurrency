@@ -14,9 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const client = orpcClient as any;
-
 export default function ProfilePage() {
   const { data: session, isPending, refetch } = useSession();
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -30,7 +27,7 @@ export default function ProfilePage() {
 
     try {
       // Submit the KYC form data (sets status to PENDING)
-      await client.users.submitKyc({
+      await orpcClient.users.submitKyc({
         fullName: data.fullName,
         dateOfBirth: data.dateOfBirth,
         nationality: data.nationality,
@@ -38,9 +35,9 @@ export default function ProfilePage() {
           | "passport"
           | "drivers_license"
           | "national_id",
-        documentFrontUploaded: true,
+        documentFrontUploaded: data.documentFrontUploaded,
         documentBackUploaded: data.documentBackUploaded,
-        selfieUploaded: true,
+        selfieUploaded: data.selfieUploaded,
       });
       toast.success("Verification submitted", {
         description: "We'll review your documents within 1-2 business days.",
@@ -59,7 +56,7 @@ export default function ProfilePage() {
   const handleSimulateKyc = async () => {
     try {
       // Development helper: immediately set status to VERIFIED
-      await client.users.simulateKyc({});
+      await orpcClient.users.simulateKyc({});
       toast.success("Identity verified (simulated)");
       await refetch();
     } catch (error) {

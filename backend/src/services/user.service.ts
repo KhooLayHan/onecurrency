@@ -1,6 +1,6 @@
 import type { ResultAsync } from "neverthrow";
 import { errAsync } from "neverthrow";
-import { KYC_STATUS } from "@/common/constants/kyc";
+import { KYC_STATUS } from "../constants/kyc-status";
 import type { AppError } from "@/common/errors/base";
 import {
   KycAlreadyVerifiedError,

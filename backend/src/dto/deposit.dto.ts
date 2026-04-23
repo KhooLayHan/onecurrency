@@ -25,10 +25,7 @@ export const createCheckoutSchema = z.object({
       AMOUNT_CENTS,
       `Minimum deposit is $${AMOUNT_CENTS / CENTS_PER_DOLLAR}.00`
     )
-    .max(
-      DEPOSIT_MAX_CENTS,
-      `Maximum deposit is $${DEPOSIT_MAX / CENTS_PER_DOLLAR}.00`
-    ),
+    .max(DEPOSIT_MAX_CENTS, `Maximum deposit is $${DEPOSIT_MAX}.00`),
   walletId: z.number().int().positive("Wallet ID must be positive"),
 });
 
