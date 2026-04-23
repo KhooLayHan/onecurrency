@@ -19,7 +19,11 @@ export function useUserWallet() {
     queryFn: () =>
       (
         orpcClient as unknown as {
-          users: { getPrimaryWallet: (input: Record<string, never>) => Promise<UserWallet> };
+          users: {
+            getPrimaryWallet: (
+              input: Record<string, never>
+            ) => Promise<UserWallet>;
+          };
         }
       ).users.getPrimaryWallet({}),
     retry: false,
