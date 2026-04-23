@@ -29,7 +29,7 @@ createAppKit({
     email: true,
     socials: ["google", "apple"],
     emailShowWallets: true,
-    analytics: true,
+    // analytics: true,
   },
   themeMode: "light",
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Send } from "lucide-react";
+import { Plus, Send, Wallet } from "lucide-react";
 import { formatUnits } from "viem";
 import { useConnection, useReadContract } from "wagmi";
 import {
@@ -22,6 +22,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DepositForm } from "../deposit/deposit-form";
 
 const MYR_EXCHANGE_RATE = 4.72;
+const TOKEN_DECIMALS = 18;
+const BALANCE_REFRESH_INTERVAL_MS = 5000;
 
 export function BalanceCard() {
   const { address, isConnected } = useConnection();
@@ -36,20 +38,42 @@ export function BalanceCard() {
     functionName: "balanceOf",
     args: address ? [address] : undefined,
     query: {
-      enabled: !!address, // Only run if wallet is connected
-      refetchInterval: 5000, // Auto-refresh every 5 seconds for that "Instant" feel
+      enabled: !!address,
+      refetchInterval: BALANCE_REFRESH_INTERVAL_MS,
     },
   });
 
-  const POWER_OF_18 = 18;
-
   const formattedBalance = balanceWei
-    ? Number(formatUnits(balanceWei as bigint, POWER_OF_18))
+    ? Number(formatUnits(balanceWei as bigint, TOKEN_DECIMALS))
     : 0;
   const localBalance = formattedBalance * MYR_EXCHANGE_RATE;
 
+  // Wallet not connected - show connect prompt inside card
   if (!isConnected) {
-    return null; // The parent page will handle the "Not Connected" state
+    return (
+      <Card className="relative w-full overflow-hidden border-border shadow-sm">
+        <div className="-mr-8 -mt-8 absolute top-0 right-0 size-32 rounded-full bg-primary/5 blur-3xl" />
+
+        <CardHeader className="pb-2">
+          <CardTitle className="font-medium text-muted-foreground text-sm">
+            Total Balance
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-secondary">
+              <Wallet className="size-6 text-muted-foreground" />
+            </div>
+            <p className="mb-4 max-w-xs text-muted-foreground text-sm">
+              Connect your wallet to view your balance and make transactions.
+            </p>
+            {/* Reown AppKit wallet connect button */}
+            <appkit-button />
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   let balanceContent: React.JSX.Element;
@@ -82,7 +106,7 @@ export function BalanceCard() {
   return (
     <Card className="relative w-full overflow-hidden border-border shadow-sm">
       {/* Subtle background glow to make it feel premium */}
-      <div className="-mr-8 -mt-8 absolute top-0 right-0 h-32 w-32 rounded-full bg-primary/5 blur-3xl" />
+      <div className="-mr-8 -mt-8 absolute top-0 right-0 size-32 rounded-full bg-primary/5 blur-3xl" />
 
       <CardHeader className="pb-2">
         <CardTitle className="font-medium text-muted-foreground text-sm">
@@ -91,15 +115,14 @@ export function BalanceCard() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Deterministic Feedback: Skeleton loader while fetching RPC data */}
         {balanceContent}
 
-        {/* Quick Actions - The "Low Floor" UX */}
+        {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 pt-4">
           <Dialog>
             <DialogTrigger>
               <Button className="flex w-full gap-2 font-semibold" size="lg">
-                <Plus size={18} />
+                <Plus className="size-[18px]" />
                 Add Money
               </Button>
             </DialogTrigger>
@@ -115,7 +138,6 @@ export function BalanceCard() {
                 </DialogDescription>
               </DialogHeader>
 
-              {/* Insert our TanStack Form here */}
               <DepositForm />
             </DialogContent>
           </Dialog>
@@ -125,7 +147,7 @@ export function BalanceCard() {
             size="lg"
             variant="secondary"
           >
-            <Send size={18} />
+            <Send className="size-[18px]" />
             Send
           </Button>
         </div>
