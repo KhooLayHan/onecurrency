@@ -120,7 +120,7 @@ export function BalanceCard() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 pt-4">
           <Dialog>
-            <DialogTrigger>
+            <DialogTrigger asChild>
               <Button className="flex w-full gap-2 font-semibold" size="lg">
                 <Plus className="size-4.5" />
                 Add Money
