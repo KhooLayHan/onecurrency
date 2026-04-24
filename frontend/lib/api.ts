@@ -15,5 +15,12 @@ const link = new RPCLink({
     }),
 });
 
+// const link = new OpenAPILink({
+//   url: `${env.NEXT_PUBLIC_API_URL}/api/v1`,
+
+//   fetch: (request, init) =>
+//     globalThis.fetch(request, { ...init, credentials: "include" }),
+// });
+
 // The client is typed based on the backend router at runtime
 export const orpcClient: RouterClient<AppRouter> = createORPCClient(link);

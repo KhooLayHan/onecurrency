@@ -26,6 +26,7 @@ export default function ProfilePage() {
     }
 
     try {
+      // console.log("dada");
       // Submit the KYC form data (sets status to PENDING)
       await orpcClient.users.submitKyc({
         fullName: data.fullName,

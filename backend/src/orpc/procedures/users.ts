@@ -25,9 +25,9 @@ const kycSubmissionInputSchema = z
       .string()
       .length(2, "Nationality must be a 2-letter ISO code"),
     documentType: z.enum(["passport", "drivers_license", "national_id"]),
-    documentFrontUploaded: z.literal(true),
+    documentFrontUploaded: z.boolean(),
     documentBackUploaded: z.boolean(),
-    selfieUploaded: z.literal(true),
+    selfieUploaded: z.boolean(),
   })
   .superRefine((data, ctx) => {
     if (
@@ -44,12 +44,12 @@ const kycSubmissionInputSchema = z
 
 export const getPrimaryWallet = base
   .use(requireAuth)
-  .route({
-    method: "GET",
-    path: "/users/wallet",
-    summary: "Get the authenticated user's primary wallet",
-    tags: ["Users"],
-  })
+  // .route({
+  //   method: "GET",
+  //   // path: "/users/wallet",
+  //   summary: "Get the authenticated user's primary wallet",
+  //   tags: ["Users"],
+  // })
   .output(
     z.object({
       walletId: z.string(),
@@ -82,7 +82,7 @@ export const submitKyc = base
   .use(requireAuth)
   .route({
     method: "POST",
-    path: "/users/kyc/submit",
+    // path: "/users/kyc/submit",
     summary: "Submit KYC identity verification request",
     description:
       "Submits KYC form data and sets user status to PENDING. Documents will be reviewed within 1-2 business days.",
@@ -93,6 +93,18 @@ export const submitKyc = base
   .handler(async ({ context, input }) => {
     const userId = context.session?.userId;
 
+    logger.info(
+      {
+        input,
+        dateOfBirthType: typeof input.dateOfBirth,
+        dateOfBirthValue: input.dateOfBirth,
+      },
+      "submitKyc received raw input"
+    );
+
+    logger.info({ context }, "submitKyc received input");
+    logger.info({ userId }, "submitKyc received input");
+    logger.info({ input }, "submitKyc received input");
     if (!userId) {
       logger.warn("submitKyc called without authenticated session");
       throw new ORPCError("UNAUTHORIZED", {
@@ -100,8 +112,24 @@ export const submitKyc = base
       });
     }
 
-    const result = await userService.submitKyc(BigInt(userId), input);
+    // Validate that boolean fields are actually true (business logic check)
+    // if (!input.documentFrontUploaded || !input.selfieUploaded) {
+    //   throw new ORPCError("BAD_REQUEST", {
+    //     message: "Document front and selfie must be uploaded"
+    //   });
+    // }
+
+    const result = await userService.submitKyc(BigInt(userId), {
+      fullName: input.fullName,
+      dateOfBirth: new Date(input.dateOfBirth), // Convert ISO string to Date
+      nationality: input.nationality,
+      documentType: input.documentType,
+      documentFrontUploaded: input.documentFrontUploaded,
+      documentBackUploaded: input.documentBackUploaded,
+      selfieUploaded: input.selfieUploaded,
+    });
     if (result.isErr()) {
+      logger.info({ context }, "submitKyc received input here failed");
       throw mapToORPCError(result.error);
     }
     // logger.info(
