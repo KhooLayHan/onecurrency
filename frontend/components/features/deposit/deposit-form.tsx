@@ -42,7 +42,7 @@ const CENTS_PER_DOLLAR = 100;
 
 async function initiateCheckout(
   amountCents: number,
-  walletId: number
+  walletId: string
 ): Promise<string | null> {
   const response = await ofetch(
     `${env.NEXT_PUBLIC_API_URL}/api/v1/deposits/checkout`,
