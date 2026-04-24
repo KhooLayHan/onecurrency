@@ -1,19 +1,58 @@
+import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Card({
-  className,
-  size = "default",
-  ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+const cardVariants = cva(
+  // Base — always applied
+  "group/card flex flex-col gap-4 overflow-hidden rounded-xl text-card-foreground text-sm has-[>img:first-child]:pt-0 has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+  {
+    variants: {
+      variant: {
+        /** Standard white card with a subtle ring */
+        default:
+          "bg-card py-4 ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 data-[size=sm]:gap-3 data-[size=sm]:py-3",
+
+        /** Slightly elevated with a shadow — for hero/balance cards */
+        elevated:
+          "bg-card py-4 shadow-md ring-0 border border-border has-data-[slot=card-footer]:pb-0 data-[size=sm]:gap-3 data-[size=sm]:py-3",
+
+        /** Emerald tinted — verified, completed, healthy */
+        success:
+          "border border-success-200 bg-success-50/20 py-4 dark:border-success-500/30 dark:bg-success-900/10 data-[size=sm]:gap-3 data-[size=sm]:py-3",
+
+        /** Amber tinted — pending, expiring, action required */
+        warning:
+          "border border-highlight-200 bg-highlight-50/20 py-4 dark:border-highlight-500/30 dark:bg-highlight-950/30 data-[size=sm]:gap-3 data-[size=sm]:py-3",
+
+        /** Trust Blue tinted — informational, in-progress */
+        primary:
+          "border border-primary-200 bg-primary-50/20 py-4 dark:border-primary-500/30 dark:bg-primary-900/10 data-[size=sm]:gap-3 data-[size=sm]:py-3",
+
+        /** Red tinted — errors, rejections */
+        destructive:
+          "border border-destructive/30 bg-destructive/5 py-4 dark:border-destructive/20 dark:bg-destructive/10 data-[size=sm]:gap-3 data-[size=sm]:py-3",
+      },
+      size: {
+        default: "",
+        sm: "",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+);
+
+type CardProps = React.ComponentProps<"div"> &
+  VariantProps<typeof cardVariants>;
+
+function Card({ className, variant, size, ...props }: CardProps) {
   return (
     <div
-      className={cn(
-        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-card-foreground text-sm ring-1 ring-foreground/10 has-[>img:first-child]:pt-0 has-data-[slot=card-footer]:pb-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
-        className
-      )}
-      data-size={size}
+      className={cn(cardVariants({ variant, size }), className)}
+      data-size={size === "sm" ? "sm" : undefined}
       data-slot="card"
       {...props}
     />
@@ -94,6 +133,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
 
 export {
   Card,
+  cardVariants,
   CardHeader,
   CardFooter,
   CardTitle,
