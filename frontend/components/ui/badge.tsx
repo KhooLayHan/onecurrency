@@ -9,6 +9,7 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
+        /* ── Shadcn base variants (kept for backward compatibility) ── */
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         secondary:
           "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
@@ -19,6 +20,19 @@ const badgeVariants = cva(
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
+
+        /* ── Design system semantic variants ── */
+        /** Trust Blue — action required, processing */
+        primary: "bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300",
+        /** Emerald — completed, verified, healthy */
+        success: "bg-success-50 text-success-700 dark:bg-success-900/40 dark:text-success-300",
+        /** Amber — pending, in-progress, expiring */
+        warning: "bg-highlight-50 text-highlight-700 dark:bg-highlight-900/40 dark:text-highlight-300",
+        /** Red — failed, rejected, error */
+        error:
+          "bg-destructive/10 text-destructive dark:bg-destructive/20 [a]:hover:bg-destructive/20",
+        /** Muted grey — neutral status, inactive */
+        neutral: "bg-muted text-muted-foreground",
       },
     },
     defaultVariants: {

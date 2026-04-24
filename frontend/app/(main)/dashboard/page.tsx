@@ -36,14 +36,14 @@ function getTimeOfDayGreeting(): string {
 
 function getKycBadgeVariant(
   statusId: number
-): "secondary" | "default" | "outline" {
+): "success" | "warning" | "neutral" {
   switch (statusId) {
     case KYC_STATUS.VERIFIED:
-      return "default";
+      return "success";
     case KYC_STATUS.PENDING:
-      return "outline";
+      return "warning";
     default:
-      return "secondary";
+      return "neutral";
   }
 }
 
@@ -171,7 +171,7 @@ export default function DashboardPage() {
                   <div className="size-2 rounded-full bg-emerald-500" />
                   <span className="text-sm">Network</span>
                 </div>
-                <Badge variant="outline">Operational</Badge>
+                <Badge variant="success">Operational</Badge>
               </div>
 
               {/* Identity Verification */}
