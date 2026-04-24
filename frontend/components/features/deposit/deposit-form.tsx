@@ -2,6 +2,18 @@
 
 import { useForm } from "@tanstack/react-form";
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useConnection } from "wagmi";
+import { KYC_STATUS } from "@/common/constants/kyc";
+import { depositSchema } from "@/common/index";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useUserWallet } from "@/hooks/use-user-wallet";
+import { orpcClient } from "@/lib/api";
+import { useSession } from "@/lib/auth-client";
+
+const CENTS_PER_DOLLAR = 100;
 
 type SubmitButtonLabelProps = {
   isWalletLoading: boolean;
@@ -26,35 +38,32 @@ function SubmitButtonLabel({
   return "Continue to Payment";
 }
 
-import { ofetch } from "ofetch";
-import { useState } from "react";
-import { useConnection } from "wagmi";
-import { KYC_STATUS } from "@/common/constants/kyc";
-import { depositSchema } from "@/common/index";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { env } from "@/env";
-import { useUserWallet } from "@/hooks/use-user-wallet";
-import { useSession } from "@/lib/auth-client";
-
-const CENTS_PER_DOLLAR = 100;
+// async function initiateCheckout(
+//   amountCents: number,
+//   walletId: number
+// ): Promise<string | null> {
+//   const response = await ofetch(
+//     `${env.NEXT_PUBLIC_API_URL}/api/v1/deposits/checkout`,
+//     {
+//       method: "POST",
+//       body: { amountCents, walletId },
+//       credentials: "include",
+//     }
+//   );
+//   return response.success && response.checkoutUrl
+//     ? (response.checkoutUrl as string)
+//     : null;
+// }
 
 async function initiateCheckout(
   amountCents: number,
   walletId: string
 ): Promise<string | null> {
-  const response = await ofetch(
-    `${env.NEXT_PUBLIC_API_URL}/api/v1/deposits/checkout`,
-    {
-      method: "POST",
-      body: { amountCents, walletId },
-      credentials: "include",
-    }
-  );
-  return response.success && response.checkoutUrl
-    ? (response.checkoutUrl as string)
-    : null;
+  const response = await orpcClient.deposits.checkout({
+    amountCents,
+    walletId,
+  });
+  return response.checkoutUrl ?? null;
 }
 
 export function DepositForm() {
