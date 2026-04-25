@@ -23,7 +23,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Progress, ProgressLabel } from "@/components/ui/progress";
+import {
+  Progress,
+  ProgressIndicator,
+  ProgressTrack,
+} from "@/components/ui/progress";
 
 // Progress indicator value for pending state (indeterminate feel)
 const PENDING_PROGRESS_VALUE = 66;
@@ -41,10 +45,10 @@ export function KycStatusCard({
   onStartVerification,
   onRetryVerification,
 }: KycStatusCardProps) {
-  // None - KYC not started
+  // None — KYC not started
   if (kycStatusId === KYC_STATUS.NONE) {
     return (
-      <Card className="border-highlight-500/50 bg-highlight-50/10">
+      <Card variant="warning">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldAlert className="size-5 text-highlight-600" />
@@ -57,8 +61,9 @@ export function KycStatusCard({
         </CardHeader>
         <CardContent>
           <Button
-            className="w-full bg-highlight-600 text-white hover:bg-highlight-700 sm:w-auto"
+            className="w-full sm:w-auto"
             onClick={onStartVerification}
+            variant="primary"
           >
             Start Verification
           </Button>
@@ -67,25 +72,27 @@ export function KycStatusCard({
     );
   }
 
-  // Pending - Under review
+  // Pending — Under review
   if (kycStatusId === KYC_STATUS.PENDING) {
     return (
-      <Card className="border-primary-500/50 bg-primary-50/10">
+      <Card variant="primary">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="size-5 text-primary-600" />
             Verification In Progress
           </CardTitle>
           <CardDescription>
-            We&apos;re reviewing your documents. This usually takes 1-2 business
+            We&apos;re reviewing your documents. This usually takes 1–2 business
             days. We&apos;ll notify you once the review is complete.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Progress value={PENDING_PROGRESS_VALUE}>
-            <ProgressLabel>Review progress</ProgressLabel>
+            <ProgressTrack>
+              <ProgressIndicator color="default" />
+            </ProgressTrack>
           </Progress>
-          <Badge className="gap-1.5" variant="secondary">
+          <Badge variant="primary">
             <Clock className="size-3" data-icon="inline-start" />
             Under Review
           </Badge>
@@ -94,10 +101,10 @@ export function KycStatusCard({
     );
   }
 
-  // Verified - Success state
+  // Verified — Success state
   if (kycStatusId === KYC_STATUS.VERIFIED) {
     return (
-      <Card className="border-success-500/50 bg-success-50/10">
+      <Card variant="success">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ShieldCheck className="size-5 text-success-600" />
@@ -109,7 +116,7 @@ export function KycStatusCard({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Badge className="gap-1.5 bg-success-100 text-success-700 dark:bg-success-900/30 dark:text-success-400">
+          <Badge variant="success">
             <ShieldCheck className="size-3" data-icon="inline-start" />
             Verified
           </Badge>
@@ -118,10 +125,10 @@ export function KycStatusCard({
     );
   }
 
-  // Rejected - Error state with retry
+  // Rejected — Error state with retry
   if (kycStatusId === KYC_STATUS.REJECTED) {
     return (
-      <Card className="border-destructive/50 bg-destructive/5">
+      <Card variant="destructive">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertCircle className="size-5 text-destructive" />
@@ -153,10 +160,10 @@ export function KycStatusCard({
     );
   }
 
-  // Expired - Needs renewal
+  // Expired — Needs renewal
   if (kycStatusId === KYC_STATUS.EXPIRED) {
     return (
-      <Card className="border-highlight-500/50 bg-highlight-50/10">
+      <Card variant="warning">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="size-5 text-highlight-600" />
@@ -164,7 +171,7 @@ export function KycStatusCard({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Alert className="border-highlight-500/30 bg-highlight-50 text-highlight-800 dark:border-highlight-500/20 dark:bg-highlight-950/50 dark:text-highlight-200">
+          <Alert variant="warning">
             <Clock className="size-4" />
             <AlertTitle>Renewal Required</AlertTitle>
             <AlertDescription>
@@ -173,7 +180,7 @@ export function KycStatusCard({
             </AlertDescription>
             <AlertAction>
               <Button
-                className="gap-1.5 border-highlight-600/30 text-highlight-700 hover:bg-highlight-100 dark:border-highlight-500/30 dark:text-highlight-300 dark:hover:bg-highlight-900/30"
+                className="gap-1.5"
                 onClick={onRetryVerification}
                 size="sm"
                 variant="outline"

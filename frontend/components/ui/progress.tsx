@@ -1,6 +1,7 @@
 "use client";
 
 import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
+import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
@@ -38,13 +39,32 @@ function ProgressTrack({ className, ...props }: ProgressPrimitive.Track.Props) {
   );
 }
 
+const progressIndicatorVariants = cva("h-full transition-all", {
+  variants: {
+    /** Colour of the progress bar — matches semantic context of the parent card/alert */
+    color: {
+      default: "bg-primary",
+      success: "bg-success-500",
+      warning: "bg-highlight-500",
+      destructive: "bg-destructive",
+    },
+  },
+  defaultVariants: {
+    color: "default",
+  },
+});
+
+type ProgressIndicatorProps = ProgressPrimitive.Indicator.Props &
+  VariantProps<typeof progressIndicatorVariants>;
+
 function ProgressIndicator({
   className,
+  color,
   ...props
-}: ProgressPrimitive.Indicator.Props) {
+}: ProgressIndicatorProps) {
   return (
     <ProgressPrimitive.Indicator
-      className={cn("h-full bg-primary transition-all", className)}
+      className={cn(progressIndicatorVariants({ color }), className)}
       data-slot="progress-indicator"
       {...props}
     />
@@ -76,6 +96,7 @@ function ProgressValue({ className, ...props }: ProgressPrimitive.Value.Props) {
 
 export {
   Progress,
+  progressIndicatorVariants,
   ProgressTrack,
   ProgressIndicator,
   ProgressLabel,

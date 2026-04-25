@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useConnection } from "wagmi";
 import { KYC_STATUS } from "@/common/constants/kyc";
 import { depositSchema } from "@/common/index";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,12 +127,14 @@ export function DepositForm() {
     >
       {/* Wallet error */}
       {walletError && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-destructive text-sm">
-          Unable to load your wallet:{" "}
-          {walletError instanceof Error
-            ? walletError.message
-            : "Unknown error. Please try again."}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>
+            Unable to load your wallet:{" "}
+            {walletError instanceof Error
+              ? walletError.message
+              : "Unknown error. Please try again."}
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* TanStack Form Field */}
@@ -147,18 +150,19 @@ export function DepositForm() {
               Amount (USD)
             </Label>
 
-            {/* Massive FinTech Input Design */}
+            {/* Hero amount input — intentionally oversized for FinTech clarity */}
             <div className="relative flex items-center">
-              <span className="absolute left-4 font-semibold text-2xl text-muted-foreground">
+              <span className="absolute left-4 select-none font-semibold text-2xl text-muted-foreground">
                 $
               </span>
               <Input
-                className="h-16 rounded-xl border-2 pl-10 font-bold text-3xl focus-visible:border-primary focus-visible:ring-primary"
+                className="h-16 rounded-xl border-2 pl-10 font-bold text-3xl"
                 id={field.name}
                 inputMode="decimal"
                 name={field.name}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(Number(e.target.value))}
+                state={field.state.meta.errors.length > 0 ? "error" : "default"}
                 type="number"
                 value={field.state.value}
               />
@@ -176,9 +180,9 @@ export function DepositForm() {
 
       {/* Global API Error */}
       {globalError && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-destructive text-sm">
-          {globalError}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{globalError}</AlertDescription>
+        </Alert>
       )}
 
       {/* Submit Button */}
@@ -187,7 +191,7 @@ export function DepositForm() {
       >
         {([canSubmit, isSubmitting]) => (
           <Button
-            className="h-12 w-full rounded-xl font-semibold text-base"
+            className="w-full rounded-xl"
             disabled={
               !canSubmit ||
               isSubmitting ||
@@ -195,7 +199,9 @@ export function DepositForm() {
               !isVerified ||
               isWalletLoading
             }
+            size="lg"
             type="submit"
+            variant="primary"
           >
             <SubmitButtonLabel
               isSubmitting={isSubmitting as boolean}

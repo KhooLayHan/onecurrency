@@ -8,9 +8,20 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
+        /* ── Shadcn base variants (kept for backward compatibility) ── */
         default: "bg-card text-card-foreground",
         destructive:
           "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+
+        /* ── Design system semantic variants ── */
+        /** Amber — pending, expiring, caution */
+        warning:
+          "border-highlight-200 bg-highlight-50 text-highlight-800 *:data-[slot=alert-description]:text-highlight-700 *:[svg]:text-highlight-600 dark:border-highlight-500/30 dark:bg-highlight-950/50 dark:text-highlight-200 dark:*:data-[slot=alert-description]:text-highlight-300 dark:*:[svg]:text-highlight-400",
+        /** Emerald — completed, verified, healthy */
+        success:
+          "border-success-200 bg-success-50 text-success-800 *:data-[slot=alert-description]:text-success-700 *:[svg]:text-success-600 dark:border-success-500/30 dark:bg-success-900/20 dark:text-success-200 dark:*:data-[slot=alert-description]:text-success-300 dark:*:[svg]:text-success-400",
+        /** Trust Blue — informational, processing */
+        info: "border-primary-200 bg-primary-50 text-primary-800 *:data-[slot=alert-description]:text-primary-700 *:[svg]:text-primary-600 dark:border-primary-500/30 dark:bg-primary-900/20 dark:text-primary-200 dark:*:data-[slot=alert-description]:text-primary-300 dark:*:[svg]:text-primary-400",
       },
     },
     defaultVariants: {

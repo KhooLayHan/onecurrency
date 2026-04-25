@@ -8,6 +8,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        /* ── Shadcn base variants (kept for backward compatibility) ── */
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
@@ -18,6 +19,14 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+
+        /* ── Design system named variants ── */
+        /** Trust Blue filled — primary CTA (add money, submit, confirm) */
+        primary:
+          "bg-primary text-primary-foreground hover:bg-primary-700 active:bg-primary-800 focus-visible:ring-primary-500/50",
+        /** Red surface — destructive / irreversible actions */
+        danger:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/80 focus-visible:border-destructive/40 focus-visible:ring-destructive/30",
       },
       size: {
         default: "min-h-11 gap-1.5 px-2.5 sm:h-8 sm:min-h-0 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
