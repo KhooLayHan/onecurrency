@@ -53,7 +53,7 @@ export class DepositRepository {
         publicId: row.publicId,
         type: "add_money" as const,
         amountCents: Number(row.amountCents ?? 0n),
-        status: row.status as DepositHistoryItem["status"],
+        status: row.status.toLocaleLowerCase() as DepositHistoryItem["status"],
         createdAt: row.createdAt,
       }))
     );
