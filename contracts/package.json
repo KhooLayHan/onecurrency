@@ -4,8 +4,9 @@
   "scripts": {
     "hh:clean": "pnpm hardhat clean",
     "hh:build": "pnpm hardhat build",
-    "hh:deploy": "pnpm hardhat run scripts/deploy.ts --network localhost",
-    "hh:prod-deploy": "pnpm hardhat run scripts/deploy.ts --network sepolia",
+    "hh:node": "pnpm hardhat node",
+    "hh:deploy": "pnpm hardhat ignition deploy ignition/modules/OneCurrency.ts",
+    "hh:prod-deploy": "pnpm hardhat ignition deploy ignition/modules/OneCurrency.ts --network sepolia",
     "hh:test": "pnpm hardhat test",
     "format": "biome format --write .",
     "test:watch": "vitest"

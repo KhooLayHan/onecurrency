@@ -21,3 +21,9 @@
 
 deployments/localhost.json
 deployments/hardhat.json
+
+# Environment variables
+.env
+
+# Ignition local deployment state
+ignition/deployments/chain-31337
