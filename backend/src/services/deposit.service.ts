@@ -4,9 +4,11 @@ import type { AppError } from "@/common/errors/base";
 import { DepositKycRequiredError } from "@/common/errors/deposit";
 import { ExternalServiceError } from "@/common/errors/infrastructure";
 import { KYC_STATUS } from "../constants/kyc-status";
+import { TRANSACTION_STATUS } from "../constants/transaction-status";
 import type { Database } from "../db";
 import { env } from "../env";
 import { logger } from "../lib/logger";
+import { DepositRepository } from "../repositories/deposit.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { WalletRepository } from "../repositories/wallet.repository";
 import {
@@ -19,7 +21,7 @@ import {
   recordWebhookEvent,
 } from "../routes/deposits/helpers";
 import { mintTokens } from "./blockchain";
-import { stripe } from "./stripe.service";
+import { calculateTokenAmountWei, stripe } from "./stripe.service";
 
 export class DepositService {
   private readonly db: Database;
@@ -87,7 +89,19 @@ export class DepositService {
             )
           );
         }
-        return okAsync({ checkoutUrl: session.url });
+
+        const tokenAmountWei = calculateTokenAmountWei(amountCents);
+
+        return new DepositRepository(this.db)
+          .create({
+            userId,
+            walletId,
+            amountCents: BigInt(amountCents),
+            tokenAmount: tokenAmountWei,
+            stripeSessionId: session.id,
+            statusId: TRANSACTION_STATUS.PENDING,
+          })
+          .map(() => ({ checkoutUrl: session.url as string }));
       });
   }
 

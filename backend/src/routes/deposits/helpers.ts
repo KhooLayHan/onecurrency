@@ -18,7 +18,7 @@ import { DepositRepository } from "@/src/repositories/deposit.repository";
 import { WalletRepository } from "@/src/repositories/wallet.repository";
 import { WebhookEventRepository } from "@/src/repositories/webhook-event.repository";
 import { mintTokens } from "@/src/services/blockchain";
-import { calculateTokenAmountWei, stripe } from "@/src/services/stripe.service";
+import { stripe } from "@/src/services/stripe.service";
 
 // --- Pure helpers (no database dependency) ---
 
@@ -125,8 +125,8 @@ export function recordWebhookEvent(
 }
 
 /**
- * Phase 2: Creates the deposit record in PROCESSING state.
- * Also calculates the token amount (Wei) from the fiat amount.
+ * Phase 2: Activates the existing PENDING deposit record (created at checkout time)
+ * by setting the payment intent ID and advancing its status to PROCESSING.
  */
 export function createDepositRecord(
   db: Database,
@@ -138,26 +138,29 @@ export function createDepositRecord(
     stripePaymentIntentId: string;
   }
 ): ResultAsync<{ deposit: { id: bigint }; tokenAmountWei: string }, AppError> {
-  const {
-    userId,
-    walletId,
-    amountCents,
-    stripeSessionId,
-    stripePaymentIntentId,
-  } = params;
-  const tokenAmountWei = calculateTokenAmountWei(amountCents);
-
   return new DepositRepository(db)
-    .create({
-      userId: BigInt(userId),
-      walletId: BigInt(walletId),
-      amountCents: BigInt(amountCents),
-      tokenAmount: tokenAmountWei,
-      stripePaymentIntentId,
-      statusId: TRANSACTION_STATUS.PROCESSING,
-      stripeSessionId,
-    })
-    .map((deposit) => ({ deposit: { id: deposit.id }, tokenAmountWei }));
+    .activateFromWebhook(
+      params.stripeSessionId,
+      params.stripePaymentIntentId,
+      TRANSACTION_STATUS.PROCESSING
+    )
+    .andThen((deposit) => {
+      if (!deposit) {
+        logger.error(
+          { stripeSessionId: params.stripeSessionId },
+          "CRITICAL: No PENDING deposit found for webhook — checkout may not have created a record"
+        );
+        return errAsync(
+          new InternalError("Deposit record not found for webhook processing", {
+            context: { stripeSessionId: params.stripeSessionId },
+          })
+        );
+      }
+      return okAsync({
+        deposit: { id: deposit.id },
+        tokenAmountWei: deposit.tokenAmount,
+      });
+    });
 }
 
 /**

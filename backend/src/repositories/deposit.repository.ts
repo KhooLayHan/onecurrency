@@ -63,6 +63,43 @@ export class DepositRepository {
     );
   }
 
+  findByStripeSessionId(
+    stripeSessionId: string
+  ): ResultAsync<Deposit | null, InternalError> {
+    return ResultAsync.fromPromise(
+      this.db
+        .select()
+        .from(deposits)
+        .where(eq(deposits.stripeSessionId, stripeSessionId))
+        .then((rows) => rows[0] ?? null),
+      (e): InternalError =>
+        new InternalError("Failed to find deposit by Stripe session", {
+          cause: e,
+          context: { stripeSessionId },
+        })
+    );
+  }
+
+  activateFromWebhook(
+    stripeSessionId: string,
+    stripePaymentIntentId: string,
+    statusId: TransactionStatusId
+  ): ResultAsync<{ id: bigint; tokenAmount: string } | null, InternalError> {
+    return ResultAsync.fromPromise(
+      this.db
+        .update(deposits)
+        .set({ stripePaymentIntentId, statusId })
+        .where(eq(deposits.stripeSessionId, stripeSessionId))
+        .returning({ id: deposits.id, tokenAmount: deposits.tokenAmount })
+        .then((rows) => rows[0] ?? null),
+      (e): InternalError =>
+        new InternalError("Failed to activate deposit from webhook", {
+          cause: e,
+          context: { stripeSessionId },
+        })
+    );
+  }
+
   create(data: NewDeposit): ResultAsync<Deposit, InternalError> {
     return ResultAsync.fromPromise(
       this.db
