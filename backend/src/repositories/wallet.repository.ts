@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
 import { WalletNotFoundError } from "@/common/errors/wallet";
@@ -58,6 +58,30 @@ export class WalletRepository {
       }
       return okAsync(wallet);
     });
+  }
+
+  demotePrimaryWallet(
+    userId: bigint,
+    networkId: number
+  ): ResultAsync<void, InternalError> {
+    return ResultAsync.fromPromise(
+      this.db
+        .update(wallets)
+        .set({ isPrimary: false })
+        .where(
+          and(
+            eq(wallets.userId, userId),
+            eq(wallets.networkId, networkId),
+            eq(wallets.isPrimary, true),
+            isNull(wallets.deletedAt)
+          )
+        ),
+      (e): InternalError =>
+        new InternalError("Failed to demote primary wallet", {
+          cause: e,
+          context: { userId: userId.toString(), networkId: String(networkId) },
+        })
+    ).andThen(() => okAsync(undefined));
   }
 
   create(data: NewWallet): ResultAsync<Wallet, InternalError> {

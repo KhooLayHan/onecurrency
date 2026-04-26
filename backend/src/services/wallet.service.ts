@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { AppError } from "@/common/errors/base";
@@ -50,6 +50,7 @@ export class WalletService {
         .select()
         .from(networks)
         .where(eq(networks.isActive, true))
+        .orderBy(asc(networks.id))
         .limit(1)
         .then((rows) => rows[0] ?? null),
       (e): AppError =>
@@ -61,6 +62,8 @@ export class WalletService {
         );
       }
 
+      const walletRepo = new WalletRepository(this.db);
+
       return ResultAsync.fromPromise(
         this.db
           .select()
@@ -69,6 +72,7 @@ export class WalletService {
             and(
               eq(wallets.userId, userId),
               eq(wallets.networkId, network.id),
+              eq(wallets.walletType, "CUSTODIAL"),
               eq(wallets.isPrimary, true),
               isNull(wallets.deletedAt)
             )
@@ -76,14 +80,14 @@ export class WalletService {
           .limit(1)
           .then((rows) => rows[0] ?? null),
         (e): AppError =>
-          new InternalError("Failed to check existing primary wallet", {
+          new InternalError("Failed to check existing custodial wallet", {
             cause: e,
           })
       ).andThen((existing) => {
         if (existing) {
           logger.warn(
             { userId: userId.toString(), walletId: existing.id.toString() },
-            "User already has a primary wallet — skipping provisioning"
+            "User already has a custodial primary wallet — skipping provisioning"
           );
           return okAsync(existing);
         }
@@ -113,15 +117,17 @@ export class WalletService {
           );
         }
 
-        return new WalletRepository(this.db).create({
-          userId,
-          networkId: network.id,
-          address,
-          walletType: "CUSTODIAL",
-          isPrimary: true,
-          encryptedPrivateKey,
-          providerName: "internal",
-        });
+        return walletRepo.demotePrimaryWallet(userId, network.id).andThen(() =>
+          walletRepo.create({
+            userId,
+            networkId: network.id,
+            address,
+            walletType: "CUSTODIAL",
+            isPrimary: true,
+            encryptedPrivateKey,
+            providerName: "internal",
+          })
+        );
       });
     });
   }

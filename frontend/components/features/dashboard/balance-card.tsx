@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Send, Wallet } from "lucide-react";
+import { Plus, RefreshCw, Send, Wallet } from "lucide-react";
 import { formatUnits } from "viem";
 import { useConnection, useReadContract } from "wagmi";
 import {
@@ -24,6 +24,7 @@ import { DepositForm } from "../deposit/deposit-form";
 const MYR_EXCHANGE_RATE = 4.72;
 const TOKEN_DECIMALS = 18;
 const BALANCE_REFRESH_INTERVAL_MS = 5000;
+const BALANCE_REFRESH_INTERVAL_SLOW_MS = 15_000;
 
 export function BalanceCard() {
   const { address, isConnected } = useConnection();
@@ -32,6 +33,7 @@ export function BalanceCard() {
     data: balanceWei,
     isLoading,
     isError,
+    refetch,
   } = useReadContract({
     address: ONECURRENCY_ADDRESS as `0x${string}`,
     abi: OneCurrencyABI,
@@ -41,7 +43,7 @@ export function BalanceCard() {
       enabled: !!address,
       refetchInterval: (query) => {
         if (query.state.error) {
-          return false;
+          return BALANCE_REFRESH_INTERVAL_SLOW_MS;
         }
         return BALANCE_REFRESH_INTERVAL_MS;
       },
@@ -93,14 +95,21 @@ export function BalanceCard() {
     );
   } else if (isError) {
     balanceContent = (
-      <div className="flex flex-col gap-1">
-        <AmountDisplay
-          align="left"
-          localAmount={0}
-          localCurrency="RM"
-          size="xl"
-          usdAmount={0}
-        />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-3xl text-muted-foreground tabular-nums">
+            —
+          </span>
+          <Button
+            className="size-7"
+            onClick={() => refetch()}
+            size="icon-sm"
+            title="Retry"
+            variant="ghost"
+          >
+            <RefreshCw className="size-3.5" />
+          </Button>
+        </div>
         <span className="flex items-center gap-1 text-muted-foreground text-xs">
           <span className="inline-block size-1.5 rounded-full bg-highlight-500" />
           Network unavailable
