@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { ArrowDownLeft, ArrowUpRight, MoreHorizontal } from "lucide-react";
+import { ArrowDownLeft, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 export type Transaction = {
   id: string;
   publicId: string;
-  type: "add_money" | "cash_out";
+  type: "add_money";
   amountCents: number;
   status: "pending" | "processing" | "completed" | "failed" | "refunded";
   createdAt: Date;
@@ -56,7 +56,6 @@ const TYPE_LABELS: Record<
   { label: string; icon: typeof ArrowDownLeft }
 > = {
   add_money: { label: "Add Money", icon: ArrowDownLeft },
-  cash_out: { label: "Cash Out", icon: ArrowUpRight },
 };
 
 export const transactionColumns: ColumnDef<Transaction>[] = [

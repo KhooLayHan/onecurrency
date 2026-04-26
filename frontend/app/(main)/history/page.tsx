@@ -2,10 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import {
-  type Transaction,
-  transactionColumns,
-} from "@/components/features/history/transaction-columns";
+import { transactionColumns } from "@/components/features/history/transaction-columns";
 import { TransactionDataTable } from "@/components/features/history/transaction-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { orpcClient } from "@/lib/api";
@@ -13,7 +10,7 @@ import { orpcClient } from "@/lib/api";
 const HISTORY_QUERY_KEY = "deposit-history";
 
 export default function HistoryPage() {
-  const { data = [], isLoading } = useQuery<Transaction[]>({
+  const { data = [], isLoading } = useQuery({
     queryKey: [HISTORY_QUERY_KEY],
     queryFn: () => orpcClient.deposits.getHistory({}),
   });
@@ -23,10 +20,11 @@ export default function HistoryPage() {
     [data]
   );
 
-  const cashOutTransactions = useMemo(
-    () => data.filter((t) => t.type === "cash_out"),
-    [data]
-  );
+  // TODO: Re-enable when withdrawals/cash-out backend is wired
+  // const cashOutTransactions = useMemo(
+  //   () => data.filter((t) => t.type === "cash_out"),
+  //   [data]
+  // );
 
   return (
     <div className="fade-in mx-auto flex w-full max-w-4xl animate-in flex-col gap-6 duration-300 ease-out">
@@ -43,7 +41,8 @@ export default function HistoryPage() {
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="add-money">Add Money</TabsTrigger>
-          <TabsTrigger value="cash-out">Cash Out</TabsTrigger>
+          {/* TODO: Re-enable when cash-out backend is wired
+          <TabsTrigger value="cash-out">Cash Out</TabsTrigger> */}
         </TabsList>
 
         <TabsContent className="mt-6" value="all">
@@ -62,13 +61,14 @@ export default function HistoryPage() {
           />
         </TabsContent>
 
+        {/* TODO: Re-enable when cash-out backend is wired
         <TabsContent className="mt-6" value="cash-out">
           <TransactionDataTable
             columns={transactionColumns}
             data={cashOutTransactions}
             isLoading={isLoading}
           />
-        </TabsContent>
+        </TabsContent> */}
       </Tabs>
     </div>
   );
