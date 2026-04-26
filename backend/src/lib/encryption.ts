@@ -19,10 +19,7 @@ function getMasterKey(): string {
  * Returns a colon-separated hex string: "IV:AuthTag:Ciphertext".
  */
 export function encrypt(plaintext: string): string {
-  const key = Buffer.from(
-    getMasterKey().replace("0x", ""),
-    "hex"
-  );
+  const key = Buffer.from(getMasterKey().replace("0x", ""), "hex");
   const iv = randomBytes(IV_LENGTH_BYTES);
   const cipher = createCipheriv(ALGORITHM, key, iv);
   const encrypted = Buffer.concat([
@@ -43,10 +40,7 @@ export function encrypt(plaintext: string): string {
  * Throws if the format is invalid or if authentication fails (tampered data).
  */
 export function decrypt(encryptedData: string): string {
-  const key = Buffer.from(
-    getMasterKey().replace("0x", ""),
-    "hex"
-  );
+  const key = Buffer.from(getMasterKey().replace("0x", ""), "hex");
   const parts = encryptedData.split(SEPARATOR);
   if (parts.length !== EXPECTED_PARTS_COUNT) {
     throw new Error(

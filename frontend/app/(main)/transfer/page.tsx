@@ -25,7 +25,7 @@ export default function TransferPage() {
             Cash Out to Bank
           </CardTitle>
           <CardDescription>
-            Burns your ONE tokens and sends the equivalent USD to your bank
+            Converts your OneCurrency balance and sends the USD to your bank
             account.
           </CardDescription>
         </CardHeader>

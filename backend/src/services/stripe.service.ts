@@ -27,15 +27,21 @@ export function calculateTokenAmountWei(amountCents: number): string {
  * Note: Custom accounts require agreeing to Stripe's terms on behalf of the
  * connected account. In production, ensure ToS acceptance is collected.
  */
-export async function createConnectedAccount(email: string): Promise<string> {
-  const account = await stripe.accounts.create({
-    type: "custom",
-    country: "US",
-    email,
-    capabilities: {
-      transfers: { requested: true },
+export async function createConnectedAccount(
+  email: string,
+  idempotencyKey: string
+): Promise<string> {
+  const account = await stripe.accounts.create(
+    {
+      type: "custom",
+      country: "US",
+      email,
+      capabilities: {
+        transfers: { requested: true },
+      },
     },
-  });
+    { idempotencyKey }
+  );
   return account.id;
 }
 
@@ -51,7 +57,8 @@ export async function addBankAccount(
     accountNumber: string;
     accountHolderName: string;
     accountHolderType: "individual" | "company";
-  }
+  },
+  idempotencyKey: string
 ): Promise<string> {
   const bankAccount = await stripe.accounts.createExternalAccount(
     connectedAccountId,
@@ -65,7 +72,8 @@ export async function addBankAccount(
         account_holder_name: bankDetails.accountHolderName,
         account_holder_type: bankDetails.accountHolderType,
       },
-    }
+    },
+    { idempotencyKey }
   );
   return bankAccount.id;
 }
@@ -97,12 +105,14 @@ export async function createTransfer(
 export async function createPayout(
   netAmountCents: number,
   connectedAccountId: string,
+  bankAccountId: string,
   idempotencyKey: string
 ): Promise<string> {
   const payout = await stripe.payouts.create(
     {
       amount: netAmountCents,
       currency: "usd",
+      destination: bankAccountId,
     },
     {
       stripeAccount: connectedAccountId,

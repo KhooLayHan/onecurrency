@@ -29,7 +29,8 @@ import {
   createTransfer,
 } from "./stripe.service";
 
-const WITHDRAWAL_FEE_MULTIPLIER = 0.005;
+const WITHDRAWAL_FEE_NUMERATOR = 5n;
+const WITHDRAWAL_FEE_DENOMINATOR = 1000n;
 
 export class WithdrawalService {
   private readonly db: Database;
@@ -48,7 +49,10 @@ export class WithdrawalService {
     const blockchainTxRepo = new BlockchainTransactionRepository(this.db);
 
     const grossAmountCents = input.amountCents;
-    const feeCents = Math.floor(grossAmountCents * WITHDRAWAL_FEE_MULTIPLIER);
+    const feeCents = Number(
+      (BigInt(grossAmountCents) * WITHDRAWAL_FEE_NUMERATOR) /
+        WITHDRAWAL_FEE_DENOMINATOR
+    );
     const netAmountCents = grossAmountCents - feeCents;
     const tokenAmountWei = calculateTokenAmountWei(grossAmountCents);
 
@@ -113,24 +117,27 @@ export class WithdrawalService {
           return errAsync(new WalletNotCustodialError(wallet.id.toString()));
         }
         return burnTokens(privateKey, tokenAmountWei)
-          .mapErr((burnError) => {
+          .orElse((burnError) =>
             withdrawalRepo
               .updateStatus(withdrawal.id, TRANSACTION_STATUS.FAILED)
-              .mapErr((err) =>
+              .orElse((dbErr) => {
                 logger.error(
-                  { error: err.toLog() },
+                  { error: dbErr.toLog() },
                   "Failed to mark withdrawal as FAILED after burn error"
-                )
-              );
-            logger.error(
-              {
-                error: burnError.toLog(),
-                withdrawalId: withdrawal.id.toString(),
-              },
-              "Token burn failed — withdrawal marked FAILED"
-            );
-            return burnError;
-          })
+                );
+                return okAsync(undefined);
+              })
+              .andThen(() => {
+                logger.error(
+                  {
+                    error: burnError.toLog(),
+                    withdrawalId: withdrawal.id.toString(),
+                  },
+                  "Token burn failed — withdrawal marked FAILED"
+                );
+                return errAsync(burnError);
+              })
+          )
           .map((txHash) => ({ user, wallet, withdrawal, txHash }));
       })
       .andThen(({ user, wallet, withdrawal, txHash }) =>
@@ -170,7 +177,7 @@ export class WithdrawalService {
           });
         }
         return ResultAsync.fromPromise(
-          createConnectedAccount(user.email),
+          createConnectedAccount(user.email, `acct-${userId.toString()}`),
           (e): AppError =>
             new ExternalServiceError(
               "Stripe",
@@ -200,12 +207,16 @@ export class WithdrawalService {
           connectAccountId,
         }) =>
           ResultAsync.fromPromise(
-            addBankAccount(connectAccountId, {
-              routingNumber: input.bankRoutingNumber,
-              accountNumber: input.bankAccountNumber,
-              accountHolderName: input.bankAccountHolderName,
-              accountHolderType: input.bankAccountHolderType,
-            }),
+            addBankAccount(
+              connectAccountId,
+              {
+                routingNumber: input.bankRoutingNumber,
+                accountNumber: input.bankAccountNumber,
+                accountHolderName: input.bankAccountHolderName,
+                accountHolderType: input.bankAccountHolderType,
+              },
+              `bank-${withdrawal.id.toString()}`
+            ),
             (e): AppError =>
               new ExternalServiceError(
                 "Stripe",
@@ -222,48 +233,58 @@ export class WithdrawalService {
             bankAccountId,
           }))
       )
-      .andThen(({ withdrawal, blockchainTx, connectAccountId }) => {
-        const idempotencyBase = `withdrawal-${withdrawal.id.toString()}`;
-        return ResultAsync.fromPromise(
-          createTransfer(
-            netAmountCents,
-            connectAccountId,
-            `${idempotencyBase}-transfer`
-          ),
-          (e): AppError =>
-            new ExternalServiceError(
-              "Stripe",
-              "Failed to create platform transfer",
-              { cause: e }
-            )
-        ).andThen((transferId) =>
-          ResultAsync.fromPromise(
-            createPayout(
+      .andThen(
+        ({ withdrawal, blockchainTx, connectAccountId, bankAccountId }) => {
+          const idempotencyBase = `withdrawal-${withdrawal.id.toString()}`;
+          return ResultAsync.fromPromise(
+            createTransfer(
               netAmountCents,
               connectAccountId,
-              `${idempotencyBase}-payout`
+              `${idempotencyBase}-transfer`
             ),
             (e): AppError =>
               new ExternalServiceError(
                 "Stripe",
-                "Failed to initiate bank payout",
+                "Failed to create platform transfer",
                 { cause: e }
               )
-          ).map((payoutId) => ({
-            withdrawal,
-            blockchainTx,
-            transferId,
-            payoutId,
-          }))
-        );
-      })
+          ).andThen((transferId) =>
+            ResultAsync.fromPromise(
+              createPayout(
+                netAmountCents,
+                connectAccountId,
+                bankAccountId,
+                `${idempotencyBase}-payout`
+              ),
+              (e): AppError =>
+                new ExternalServiceError(
+                  "Stripe",
+                  "Failed to initiate bank payout",
+                  { cause: e }
+                )
+            ).map((payoutId) => ({
+              withdrawal,
+              blockchainTx,
+              transferId,
+              payoutId,
+            }))
+          );
+        }
+      )
       .andThen(({ withdrawal, transferId, payoutId }) =>
         withdrawalRepo
-          .complete(withdrawal.id, transferId, payoutId)
+          .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
           .map(() => ({
             withdrawalId: withdrawal.publicId,
             status: "processing" as const,
           }))
-      );
+      )
+      .mapErr((err) => {
+        logger.error(
+          { error: err.toLog() },
+          "CRITICAL: Post-burn step failed — manual reconciliation required"
+        );
+        return err;
+      });
   }
 }

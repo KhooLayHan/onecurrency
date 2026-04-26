@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -55,14 +56,8 @@ export const withdrawals = pgTable(
   },
   (table) => [
     check("chk_withdrawal_token_positive", sql`${table.tokenAmount} > 0`),
-    check(
-      "chk_withdrawal_fiat_positive",
-      sql`${table.fiatAmountCents} > 0`
-    ),
-    check(
-      "chk_withdrawal_fee_nonnegative",
-      sql`${table.feeCents} >= 0`
-    ),
+    check("chk_withdrawal_fiat_positive", sql`${table.fiatAmountCents} > 0`),
+    check("chk_withdrawal_fee_nonnegative", sql`${table.feeCents} >= 0`),
     check(
       "chk_withdrawal_fee_lte_fiat",
       sql`${table.feeCents} <= ${table.fiatAmountCents}`
@@ -72,6 +67,12 @@ export const withdrawals = pgTable(
     index("idx_withdrawals_status").on(table.statusId),
     index("idx_withdrawals_blockchain_tx").on(table.blockchainTxId),
     index("idx_withdrawals_created").on(table.createdAt),
+    uniqueIndex("uq_withdrawals_stripe_transfer_id")
+      .on(table.stripeTransferId)
+      .where(sql`${table.stripeTransferId} IS NOT NULL`),
+    uniqueIndex("uq_withdrawals_stripe_payout_id")
+      .on(table.stripePayoutId)
+      .where(sql`${table.stripePayoutId} IS NOT NULL`),
   ]
 );
 

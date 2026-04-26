@@ -54,8 +54,9 @@ export class WithdrawalRepository {
           cause: e,
           context: { userId: userId.toString() },
         })
-    ).map((rows) =>
-      rows.map((row) => {
+    ).andThen((rows) => {
+      const mapped: WithdrawalHistoryItem[] = [];
+      for (const row of rows) {
         const status = row.status.toLowerCase();
         if (
           status !== "pending" &&
@@ -64,20 +65,23 @@ export class WithdrawalRepository {
           status !== "failed" &&
           status !== "refunded"
         ) {
-          throw new InternalError("Unknown transaction status from DB", {
-            context: { status: row.status },
-          });
+          return errAsync(
+            new InternalError("Unknown transaction status from DB", {
+              context: { status: row.status },
+            })
+          );
         }
-        return {
+        mapped.push({
           id: row.id.toString(),
           publicId: row.publicId,
           type: "cash_out" as const,
           amountCents: Number(row.amountCents ?? 0n),
           status,
           createdAt: row.createdAt,
-        };
-      })
-    );
+        });
+      }
+      return okAsync(mapped);
+    });
   }
 
   create(data: NewWithdrawal): ResultAsync<Withdrawal, InternalError> {
@@ -159,7 +163,7 @@ export class WithdrawalRepository {
     });
   }
 
-  complete(
+  recordPayoutInitiated(
     id: bigint,
     stripeTransferId: string,
     stripePayoutId: string
@@ -168,15 +172,13 @@ export class WithdrawalRepository {
       this.db
         .update(withdrawals)
         .set({
-          statusId: TRANSACTION_STATUS.COMPLETED,
           stripeTransferId,
           stripePayoutId,
-          completedAt: new Date(),
         })
         .where(eq(withdrawals.id, id))
         .returning({ id: withdrawals.id }),
       (e): InternalError =>
-        new InternalError("Failed to complete withdrawal", {
+        new InternalError("Failed to record payout initiation on withdrawal", {
           cause: e,
           context: { withdrawalId: id.toString() },
         })

@@ -27,10 +27,7 @@ export class WithdrawalKycRequiredError extends AppError {
   readonly isOperational = true;
 
   constructor(options?: ConstructorParameters<typeof AppError>[1]) {
-    super(
-      "Identity verification is required before cashing out.",
-      options
-    );
+    super("Identity verification is required before cashing out.", options);
   }
 }
 

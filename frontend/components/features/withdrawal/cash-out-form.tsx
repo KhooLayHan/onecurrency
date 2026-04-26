@@ -4,7 +4,7 @@ import { useForm } from "@tanstack/react-form";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { KYC_STATUS } from "@/common/constants/kyc";
-import { withdrawalSchema, WITHDRAWAL_FEE_PERCENT } from "@/common/index";
+import { WITHDRAWAL_FEE_PERCENT, withdrawalSchema } from "@/common/index";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ const FEE_DISPLAY_PERCENT =
 
 type SuccessState = {
   withdrawalId: string;
-  netAmountDollars: number;
+  netAmountCents: number;
 };
 
 function formatUsd(cents: number): string {
@@ -61,7 +61,7 @@ export function CashOutForm() {
         });
         setSuccess({
           withdrawalId: result.withdrawalId,
-          netAmountDollars: netAmountCents / CENTS_PER_DOLLAR,
+          netAmountCents,
         });
       } catch (error) {
         const message =
@@ -85,8 +85,8 @@ export function CashOutForm() {
         </div>
         <h2 className="font-semibold text-xl">Cash-out submitted</h2>
         <p className="text-muted-foreground text-sm">
-          {formatUsd(success.netAmountDollars * CENTS_PER_DOLLAR)} will arrive
-          in your bank account within 2–5 business days.
+          {formatUsd(success.netAmountCents)} will arrive in your bank account
+          within 2-5 business days.
         </p>
         <p className="font-mono text-muted-foreground text-xs">
           Reference: {success.withdrawalId}
@@ -284,8 +284,8 @@ export function CashOutForm() {
       </form.Subscribe>
 
       <p className="mt-4 text-center text-muted-foreground text-xs">
-        Payouts take 2–5 business days. Tokens are burned immediately on
-        submission.
+        Payouts take 2-5 business days. Your balance will be updated immediately
+        after submission.
       </p>
     </form>
   );
