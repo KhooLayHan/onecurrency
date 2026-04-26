@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { ArrowDownLeft, ArrowUpRight, MoreHorizontal } from "lucide-react";
+import { ArrowDownLeft, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 export type Transaction = {
   id: string;
   publicId: string;
-  type: "add_money" | "cash_out";
+  type: "add_money";
   amountCents: number;
   status: "pending" | "processing" | "completed" | "failed" | "refunded";
   createdAt: Date;
@@ -56,7 +56,6 @@ const TYPE_LABELS: Record<
   { label: string; icon: typeof ArrowDownLeft }
 > = {
   add_money: { label: "Add Money", icon: ArrowDownLeft },
-  cash_out: { label: "Cash Out", icon: ArrowUpRight },
 };
 
 export const transactionColumns: ColumnDef<Transaction>[] = [
@@ -78,13 +77,13 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const type = row.getValue("type") as Transaction["type"];
       const { label, icon: Icon } = TYPE_LABELS[type];
-      const isIncoming = type === "add_money";
+      const isAddMoney = type === "add_money";
 
       return (
         <div className="flex items-center gap-2">
           <div
             className={`flex size-8 items-center justify-center rounded-full ${
-              isIncoming
+              isAddMoney
                 ? "bg-success-100 text-success-600 dark:bg-success-900/30 dark:text-success-400"
                 : "bg-muted text-muted-foreground"
             }`}
@@ -102,7 +101,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const amountCents = row.getValue("amountCents") as number;
       const type = row.original.type;
-      const isIncoming = type === "add_money";
+      const isAddMoney = type === "add_money";
 
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -112,12 +111,10 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
       return (
         <div
           className={`text-right font-medium tabular-nums ${
-            isIncoming
-              ? "text-success-600 dark:text-success-400"
-              : "text-destructive"
+            isAddMoney ? "text-success-600 dark:text-success-400" : ""
           }`}
         >
-          {isIncoming ? "+" : "-"}
+          {isAddMoney ? "+" : "-"}
           {formatted}
         </div>
       );

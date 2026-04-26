@@ -19,7 +19,6 @@ export type ErrorDomain =
   | "auth"
   | "user"
   | "deposit"
-  | "withdrawal"
   | "compliance"
   | "market"
   | "infrastructure"
