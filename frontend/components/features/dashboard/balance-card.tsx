@@ -101,13 +101,14 @@ export function BalanceCard() {
             —
           </span>
           <Button
-            className="size-7"
+            aria-label="Retry loading balance"
+            className="min-h-11 min-w-11"
             onClick={() => refetch()}
-            size="icon-sm"
+            size="icon"
             title="Retry"
             variant="ghost"
           >
-            <RefreshCw className="size-3.5" />
+            <RefreshCw className="size-4" />
           </Button>
         </div>
         <span className="flex items-center gap-1 text-muted-foreground text-xs">
