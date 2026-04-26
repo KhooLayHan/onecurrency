@@ -21,15 +21,18 @@ import {
   RpcUnavailableError,
 } from "@/common/errors/infrastructure";
 import { TransactionRevertedError } from "@/common/errors/transaction";
-import { InvalidAddressError, WalletSigningError } from "@/common/errors/wallet";
+import {
+  InvalidAddressError,
+  WalletSigningError,
+} from "@/common/errors/wallet";
 import {
   HARDHAT_CHAIN_ID,
   MIN_CONFIRMATIONS,
   SEPOLIA_CHAIN_ID,
 } from "../constants/blockchain";
 import { env } from "../env";
-import { logger } from "../lib/logger";
 import { decrypt } from "../lib/encryption";
+import { logger } from "../lib/logger";
 
 // 1. Determine the correct chain and RPC Provider
 const isProd = env.NODE_ENV === "production";
@@ -170,10 +173,7 @@ const handleNetworkError = (e: unknown): AppError => {
   });
 };
 
-function handleContractRevert(
-  e: unknown,
-  functionName: string
-): AppError {
+function handleContractRevert(e: unknown, functionName: string): AppError {
   const reason = isErrorMessage(e) ? e.message : "Unknown error occurred.";
   return new ContractCallRevertedError(functionName, undefined, reason, {
     cause: e,
