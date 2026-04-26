@@ -22,10 +22,20 @@ export const chainIdSchema = z.enum(["31337", "11155111"]);
 
 export const AMOUNT_CENTS = 1000;
 export const DEPOSIT_MAX = 10_000;
+export const WITHDRAWAL_MIN = 10;
+export const WITHDRAWAL_MAX = 10_000;
+export const WITHDRAWAL_FEE_PERCENT = 0.005; // 0.5%
 
 export const depositSchema = z.object({
   amount: z
     .number()
     .min(10, "Minimum deposit is $10.00")
     .max(DEPOSIT_MAX, "Maximum is $10,000.00"),
+});
+
+export const withdrawalSchema = z.object({
+  amount: z
+    .number()
+    .min(WITHDRAWAL_MIN, `Minimum cash-out is $${WITHDRAWAL_MIN}.00`)
+    .max(WITHDRAWAL_MAX, "Maximum is $10,000.00"),
 });

@@ -44,6 +44,9 @@ export const users = pgTable(
     depositLimitCents: bigint("deposit_limit_cents", { mode: "bigint" })
       .notNull()
       .default(MAX_DEPOSIT_LIMIT_CENTS),
+    stripeConnectAccountId: varchar("stripe_connect_account_id", {
+      length: 255,
+    }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
