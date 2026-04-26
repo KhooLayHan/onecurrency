@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
   type Transaction,
@@ -7,20 +8,24 @@ import {
 } from "@/components/features/history/transaction-columns";
 import { TransactionDataTable } from "@/components/features/history/transaction-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { orpcClient } from "@/lib/api";
 
-// Mock data for demonstration - in production this would come from API
-const MOCK_TRANSACTIONS: Transaction[] = [];
+const HISTORY_QUERY_KEY = "deposit-history";
 
 export default function HistoryPage() {
-  // Filter transactions by type
+  const { data = [], isLoading } = useQuery<Transaction[]>({
+    queryKey: [HISTORY_QUERY_KEY],
+    queryFn: () => orpcClient.deposits.getHistory({}),
+  });
+
   const addMoneyTransactions = useMemo(
-    () => MOCK_TRANSACTIONS.filter((t) => t.type === "add_money"),
-    []
+    () => data.filter((t) => t.type === "add_money"),
+    [data]
   );
 
   const cashOutTransactions = useMemo(
-    () => MOCK_TRANSACTIONS.filter((t) => t.type === "cash_out"),
-    []
+    () => data.filter((t) => t.type === "cash_out"),
+    [data]
   );
 
   return (
@@ -44,7 +49,8 @@ export default function HistoryPage() {
         <TabsContent className="mt-6" value="all">
           <TransactionDataTable
             columns={transactionColumns}
-            data={MOCK_TRANSACTIONS}
+            data={data}
+            isLoading={isLoading}
           />
         </TabsContent>
 
@@ -52,6 +58,7 @@ export default function HistoryPage() {
           <TransactionDataTable
             columns={transactionColumns}
             data={addMoneyTransactions}
+            isLoading={isLoading}
           />
         </TabsContent>
 
@@ -59,6 +66,7 @@ export default function HistoryPage() {
           <TransactionDataTable
             columns={transactionColumns}
             data={cashOutTransactions}
+            isLoading={isLoading}
           />
         </TabsContent>
       </Tabs>
