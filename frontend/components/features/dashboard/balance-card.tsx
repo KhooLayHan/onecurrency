@@ -39,7 +39,13 @@ export function BalanceCard() {
     args: address ? [address] : undefined,
     query: {
       enabled: !!address,
-      refetchInterval: BALANCE_REFRESH_INTERVAL_MS,
+      refetchInterval: (query) => {
+        if (query.state.error) {
+          return false;
+        }
+        return BALANCE_REFRESH_INTERVAL_MS;
+      },
+      retry: 2,
     },
   });
 
@@ -87,8 +93,18 @@ export function BalanceCard() {
     );
   } else if (isError) {
     balanceContent = (
-      <div className="font-medium text-destructive text-sm">
-        Unable to load balance. Retrying...
+      <div className="flex flex-col gap-1">
+        <AmountDisplay
+          align="left"
+          localAmount={0}
+          localCurrency="RM"
+          size="xl"
+          usdAmount={0}
+        />
+        <span className="flex items-center gap-1 text-muted-foreground text-xs">
+          <span className="inline-block size-1.5 rounded-full bg-highlight-500" />
+          Network unavailable
+        </span>
       </div>
     );
   } else {

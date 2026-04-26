@@ -7,12 +7,14 @@ import {
 } from "@/src/dto/deposit.dto";
 import { env } from "@/src/env";
 import { logger } from "@/src/lib/logger";
+import { DepositRepository } from "@/src/repositories/deposit.repository";
 import { DepositService } from "@/src/services/deposit.service";
 import { base } from "../context";
 import { mapToORPCError } from "../errors";
 import { requireAuth } from "../middleware";
 
 const depositService = new DepositService(db);
+const depositRepository = new DepositRepository(db);
 
 // Only available in non-production environments
 const isProduction = env.NODE_ENV === "production";
@@ -73,6 +75,49 @@ export const checkout = base
       input.amountCents,
       BigInt(input.walletId)
     );
+    if (result.isErr()) {
+      throw mapToORPCError(result.error);
+    }
+    return result.value;
+  });
+
+export const getHistory = base
+  .use(requireAuth)
+  .route({
+    method: "GET",
+    path: "/deposits/history",
+    summary: "Get deposit history for the authenticated user",
+    tags: ["Deposits"],
+  })
+  .output(
+    z.array(
+      z.object({
+        id: z.string(),
+        publicId: z.string(),
+        type: z.literal("add_money"),
+        amountCents: z.number(),
+        status: z.enum([
+          "pending",
+          "processing",
+          "completed",
+          "failed",
+          "refunded",
+        ]),
+        createdAt: z.date(),
+      })
+    )
+  )
+  .handler(async ({ context }) => {
+    const userId = context.session?.userId;
+    if (!userId) {
+      logger.warn("getHistory called without authenticated session");
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Authentication required",
+      });
+    }
+
+    logger.info({ userId }, "Fetching deposit history");
+    const result = await depositRepository.findByUserId(BigInt(userId));
     if (result.isErr()) {
       throw mapToORPCError(result.error);
     }

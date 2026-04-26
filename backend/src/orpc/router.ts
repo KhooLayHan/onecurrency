@@ -1,10 +1,11 @@
-import { checkout, testMint } from "./procedures/deposits";
+import { checkout, getHistory, testMint } from "./procedures/deposits";
 import { getPrimaryWallet, simulateKyc, submitKyc } from "./procedures/users";
 
 export const appRouter = {
   deposits: {
     testMint,
     checkout,
+    getHistory,
   },
   users: {
     submitKyc,
