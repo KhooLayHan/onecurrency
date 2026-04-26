@@ -21,10 +21,15 @@ import {
   RpcUnavailableError,
 } from "@/common/errors/infrastructure";
 import { TransactionRevertedError } from "@/common/errors/transaction";
-import { InvalidAddressError } from "@/common/errors/wallet";
-import { HARDHAT_CHAIN_ID, SEPOLIA_CHAIN_ID } from "../constants/blockchain";
+import { InvalidAddressError, WalletSigningError } from "@/common/errors/wallet";
+import {
+  HARDHAT_CHAIN_ID,
+  MIN_CONFIRMATIONS,
+  SEPOLIA_CHAIN_ID,
+} from "../constants/blockchain";
 import { env } from "../env";
 import { logger } from "../lib/logger";
+import { decrypt } from "../lib/encryption";
 
 // 1. Determine the correct chain and RPC Provider
 const isProd = env.NODE_ENV === "production";
@@ -133,7 +138,7 @@ export function mintTokens(
         return handleNetworkError(e);
       }
       if (e instanceof ContractFunctionRevertedError) {
-        return handleContractRevert(e);
+        return handleContractRevert(e, "mint");
       }
 
       // Fallback for unknown errors
@@ -165,9 +170,136 @@ const handleNetworkError = (e: unknown): AppError => {
   });
 };
 
-const handleContractRevert = (e: unknown): AppError => {
+function handleContractRevert(
+  e: unknown,
+  functionName: string
+): AppError {
   const reason = isErrorMessage(e) ? e.message : "Unknown error occurred.";
-  return new ContractCallRevertedError("mint", undefined, reason, {
+  return new ContractCallRevertedError(functionName, undefined, reason, {
     cause: e,
   });
-};
+}
+
+/**
+ * Reads the on-chain ONE token balance for an address.
+ *
+ * @param address The user's Ethereum address
+ * @returns ResultAsync containing the balance in Wei as a string
+ */
+export function getOnChainBalance(
+  address: string
+): ResultAsync<string, AppError> {
+  return ResultAsync.fromPromise(
+    publicClient.readContract({
+      address: ONECURRENCY_ADDRESS as `0x${string}`,
+      abi: OneCurrencyABI,
+      functionName: "balanceOf",
+      args: [address as `0x${string}`],
+    }) as Promise<bigint>,
+    (e): AppError => {
+      if (e instanceof HttpRequestError || e instanceof TimeoutError) {
+        return handleNetworkError(e);
+      }
+      return new InternalError("Failed to read on-chain token balance", {
+        cause: e,
+        context: { address },
+      });
+    }
+  ).map((balance) => balance.toString());
+}
+
+/**
+ * Burns ONE tokens from a custodial wallet by decrypting the wallet's
+ * private key and submitting a self-burn transaction.
+ *
+ * @param encryptedPrivateKey The user's encrypted private key (IV:AuthTag:Ciphertext)
+ * @param amountWei The exact amount to burn in Wei
+ * @returns ResultAsync containing the confirmed transaction hash
+ */
+export function burnTokens(
+  encryptedPrivateKey: string,
+  amountWei: string
+): ResultAsync<string, AppError> {
+  return ResultAsync.fromPromise(
+    (async () => {
+      let decryptedKey: string;
+      try {
+        decryptedKey = decrypt(encryptedPrivateKey);
+      } catch (decryptErr) {
+        throw new WalletSigningError(
+          "Failed to decrypt custodial wallet private key",
+          { cause: decryptErr }
+        );
+      }
+
+      const formattedKey = decryptedKey.startsWith("0x")
+        ? decryptedKey
+        : `0x${decryptedKey}`;
+      const userAccount = privateKeyToAccount(formattedKey as `0x${string}`);
+
+      logger.info(
+        { address: userAccount.address, amountWei },
+        "Initiating burn transaction..."
+      );
+
+      const userWalletClient = createWalletClient({
+        account: userAccount,
+        chain,
+        transport: http(rpcUrl),
+      });
+
+      const { request } = await publicClient.simulateContract({
+        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        abi: OneCurrencyABI,
+        functionName: "burn",
+        args: [BigInt(amountWei)],
+        chain,
+        account: userAccount,
+      });
+
+      logger.info("Burn simulation successful. Broadcasting transaction...");
+
+      const txHash = await userWalletClient.writeContract(request);
+
+      logger.info(
+        { txHash },
+        "Burn transaction broadcasted. Waiting for confirmation..."
+      );
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: MIN_CONFIRMATIONS,
+      });
+
+      if (receipt.status === "reverted") {
+        throw new TransactionRevertedError(
+          txHash,
+          "Burn transaction reverted on-chain after broadcast."
+        );
+      }
+
+      logger.info(
+        { txHash: receipt.transactionHash, blockNumber: receipt.blockNumber },
+        "Burn transaction successfully confirmed!"
+      );
+
+      return receipt.transactionHash;
+    })(),
+
+    (e): AppError => {
+      if (e instanceof AppError) {
+        return e;
+      }
+      if (e instanceof HttpRequestError || e instanceof TimeoutError) {
+        return handleNetworkError(e);
+      }
+      if (e instanceof ContractFunctionRevertedError) {
+        return handleContractRevert(e, "burn");
+      }
+      return new InternalError(
+        "An unhandled exception was caught during token burn.",
+        { cause: e }
+      );
+    }
+  );
+}

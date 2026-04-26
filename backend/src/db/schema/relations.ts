@@ -16,6 +16,7 @@ import { users } from "./users";
 import { verifications } from "./verifications";
 import { wallets } from "./wallets";
 import { webhookEvents } from "./webhook-events";
+import { withdrawals } from "./withdrawals";
 
 export const relations = defineRelations(
   {
@@ -36,6 +37,7 @@ export const relations = defineRelations(
     verifications,
     wallets,
     webhookEvents,
+    withdrawals,
   },
   (r) => ({
     users: {
@@ -51,6 +53,7 @@ export const relations = defineRelations(
       auditLogs: r.many.auditLogs(),
       blacklistedAddressesAdded: r.many.blacklistedAddresses(),
       kycSubmissions: r.many.kycSubmissions(),
+      withdrawals: r.many.withdrawals(),
     },
     sessions: {
       user: r.one.users({
@@ -92,6 +95,7 @@ export const relations = defineRelations(
         to: r.networks.id,
       }),
       deposits: r.many.deposits(),
+      withdrawals: r.many.withdrawals(),
     },
     networks: {
       wallets: r.many.wallets(),
@@ -118,6 +122,7 @@ export const relations = defineRelations(
     },
     transactionStatuses: {
       deposits: r.many.deposits(),
+      withdrawals: r.many.withdrawals(),
     },
     blockchainTransactions: {
       network: r.one.networks({
@@ -127,6 +132,24 @@ export const relations = defineRelations(
       type: r.one.transactionTypes({
         from: r.blockchainTransactions.transactionTypeId,
         to: r.transactionTypes.id,
+      }),
+    },
+    withdrawals: {
+      user: r.one.users({
+        from: r.withdrawals.userId,
+        to: r.users.id,
+      }),
+      wallet: r.one.wallets({
+        from: r.withdrawals.walletId,
+        to: r.wallets.id,
+      }),
+      status: r.one.transactionStatuses({
+        from: r.withdrawals.statusId,
+        to: r.transactionStatuses.id,
+      }),
+      blockchainTransaction: r.one.blockchainTransactions({
+        from: r.withdrawals.blockchainTxId,
+        to: r.blockchainTransactions.id,
       }),
     },
     transactionTypes: {
