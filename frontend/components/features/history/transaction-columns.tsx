@@ -112,7 +112,9 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
       return (
         <div
           className={`text-right font-medium tabular-nums ${
-            isIncoming ? "text-success-600 dark:text-success-400" : "text-destructive"
+            isIncoming
+              ? "text-success-600 dark:text-success-400"
+              : "text-destructive"
           }`}
         >
           {isIncoming ? "+" : "-"}

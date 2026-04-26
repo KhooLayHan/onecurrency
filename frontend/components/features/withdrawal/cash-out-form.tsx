@@ -134,9 +134,7 @@ export function CashOutForm() {
                 name={field.name}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(Number(e.target.value))}
-                state={
-                  field.state.meta.errors.length > 0 ? "error" : "default"
-                }
+                state={field.state.meta.errors.length > 0 ? "error" : "default"}
                 type="number"
                 value={field.state.value}
               />
