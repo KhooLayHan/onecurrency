@@ -1,8 +1,11 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { DepositNotFoundError } from "@/common/errors/deposit";
 import { InternalError } from "@/common/errors/infrastructure";
-import type { TransactionStatusId } from "../constants/transaction-status";
+import {
+  TRANSACTION_STATUS,
+  type TransactionStatusId,
+} from "../constants/transaction-status";
 import type { Database } from "../db";
 import { type Deposit, deposits, type NewDeposit } from "../db/schema/deposits";
 import { transactionStatuses } from "../db/schema/transaction-statuses";
@@ -48,14 +51,30 @@ export class DepositRepository {
           context: { userId: userId.toString() },
         })
     ).map((rows) =>
-      rows.map((row) => ({
-        id: row.id.toString(),
-        publicId: row.publicId,
-        type: "add_money" as const,
-        amountCents: Number(row.amountCents ?? 0n),
-        status: row.status.toLocaleLowerCase() as DepositHistoryItem["status"],
-        createdAt: row.createdAt,
-      }))
+      rows.map((row) => {
+        const status = row.status.toLowerCase();
+
+        if (
+          status !== "pending" &&
+          status !== "processing" &&
+          status !== "completed" &&
+          status !== "failed" &&
+          status !== "refunded"
+        ) {
+          throw new InternalError("Unknown transaction status from DB", {
+            context: { status: row.status },
+          });
+        }
+
+        return {
+          id: row.id.toString(),
+          publicId: row.publicId,
+          type: "add_money" as const,
+          amountCents: Number(row.amountCents ?? 0n),
+          status,
+          createdAt: row.createdAt,
+        };
+      })
     );
   }
 
@@ -85,7 +104,12 @@ export class DepositRepository {
       this.db
         .update(deposits)
         .set({ stripePaymentIntentId, statusId })
-        .where(eq(deposits.stripeSessionId, stripeSessionId))
+        .where(
+          and(
+            eq(deposits.stripeSessionId, stripeSessionId),
+            eq(deposits.statusId, TRANSACTION_STATUS.PENDING)
+          )
+        )
         .returning({ id: deposits.id, tokenAmount: deposits.tokenAmount })
         .then((rows) => rows[0] ?? null),
       (e): InternalError =>
