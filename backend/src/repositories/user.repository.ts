@@ -51,21 +51,4 @@ export class UserRepository {
       return okAsync(undefined);
     });
   }
-
-  updateStripeConnectAccountId(
-    id: bigint,
-    stripeConnectAccountId: string
-  ): ResultAsync<void, InternalError> {
-    return ResultAsync.fromPromise(
-      this.db
-        .update(users)
-        .set({ stripeConnectAccountId, updatedAt: new Date() })
-        .where(eq(users.id, id)),
-      (e): InternalError =>
-        new InternalError("Failed to save Stripe Connect account ID", {
-          cause: e,
-          context: { userId: id.toString() },
-        })
-    ).andThen(() => okAsync(undefined));
-  }
 }
