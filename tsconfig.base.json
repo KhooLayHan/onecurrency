@@ -20,8 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "rootDir": ".",
     "paths": {
-      "@onecurrency/common": ["packages/common/src"],
-      "@onecurrency/backend": ["backend/src"]
+      "@onecurrency/common": ["./packages/common/src"],
+      "@onecurrency/backend": ["./backend/src"]
     }
   }
 }

@@ -1,10 +1,17 @@
 "use client";
 
+import { ORPCError } from "@orpc/client";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, Send, UserCheck } from "lucide-react";
 import { useCallback, useState } from "react";
+import { formatUnits } from "viem";
+import { useConnection, useReadContract } from "wagmi";
 import { KYC_STATUS } from "@/common/constants/kyc";
+import {
+  ONECURRENCY_ADDRESS,
+  OneCurrencyABI,
+} from "@/common/contracts/one-currency";
 import {
   P2P_TRANSFER_MAX,
   P2P_TRANSFER_MIN,
@@ -23,6 +30,8 @@ const CENTS_PER_DOLLAR = 100;
 const NOTE_MAX_LENGTH = 140;
 const RECIPIENT_LOOKUP_DEBOUNCE_MS = 600;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TOKEN_DECIMALS = 18;
+const BALANCE_REFRESH_INTERVAL_MS = 5000;
 
 function formatUsd(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -46,6 +55,23 @@ export function SendForm() {
   > | null>(null);
 
   const isVerified = session?.user?.kycStatusId === KYC_STATUS.VERIFIED;
+
+  const { address } = useConnection();
+  const { data: rawBalanceWei } = useReadContract({
+    address: ONECURRENCY_ADDRESS as `0x${string}`,
+    abi: OneCurrencyABI,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address,
+      refetchInterval: BALANCE_REFRESH_INTERVAL_MS,
+    },
+  });
+
+  const balanceUsd =
+    rawBalanceWei != null
+      ? Number(formatUnits(rawBalanceWei as bigint, TOKEN_DECIMALS))
+      : null;
 
   const {
     data: recipient,
@@ -94,11 +120,18 @@ export function SendForm() {
           amountCents,
         });
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to send money. Please try again.";
-        setGlobalError(message);
+        if (error instanceof ORPCError) {
+          const FRIENDLY: Record<string, string> = {
+            WALLET_INSUFFICIENT_BALANCE:
+              "You don't have enough balance. Add money first.",
+            TRANSFER_KYC_REQUIRED:
+              "Identity verification required before sending.",
+            RECIPIENT_NOT_FOUND: "Recipient not found.",
+          };
+          setGlobalError(FRIENDLY[error.code] ?? error.message);
+        } else {
+          setGlobalError("Failed to send money. Please try again.");
+        }
       }
     },
   });
@@ -138,7 +171,7 @@ export function SendForm() {
     );
   }
 
-  const canSubmit =
+  const isRecipientValid =
     !!recipient &&
     !recipientNotFound &&
     !isLookingUp &&
@@ -222,6 +255,8 @@ export function SendForm() {
       <form.Subscribe selector={(s) => s.values.amount}>
         {(amount) => {
           const cents = Math.round((amount || 0) * CENTS_PER_DOLLAR);
+          const hasBalance = balanceUsd !== null;
+          const insufficient = hasBalance && (amount || 0) > balanceUsd;
           return (
             <div className="space-y-2 rounded-lg bg-muted/50 p-4 text-sm">
               <div className="flex justify-between">
@@ -234,6 +269,21 @@ export function SendForm() {
                   Free
                 </span>
               </div>
+              {hasBalance && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Your balance</span>
+                  <span
+                    className={`tabular-nums ${insufficient ? "font-medium text-destructive" : ""}`}
+                  >
+                    {formatUsd(Math.round(balanceUsd * CENTS_PER_DOLLAR))}
+                  </span>
+                </div>
+              )}
+              {insufficient && (
+                <p className="text-destructive text-xs">
+                  Amount exceeds your balance.
+                </p>
+              )}
               <Separator className="my-1" />
               <div className="flex justify-between font-semibold">
                 <span>Recipient receives</span>
@@ -287,31 +337,44 @@ export function SendForm() {
       )}
 
       <form.Subscribe
-        selector={(state) => [state.canSubmit, state.isSubmitting]}
+        selector={(state) => ({
+          canSubmit: state.canSubmit,
+          isSubmitting: state.isSubmitting,
+          amount: state.values.amount,
+        })}
       >
-        {([formCanSubmit, isSubmitting]) => (
-          <Button
-            className="w-full rounded-xl"
-            disabled={
-              !formCanSubmit || isSubmitting || !isVerified || !canSubmit
-            }
-            size="lg"
-            type="submit"
-            variant="primary"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-4 w-4" />
-                Send Money
-              </>
-            )}
-          </Button>
-        )}
+        {(state) => {
+          const { canSubmit: formCanSubmit, isSubmitting, amount } = state;
+          const insufficient =
+            balanceUsd !== null && (amount || 0) > balanceUsd;
+          return (
+            <Button
+              className="w-full rounded-xl"
+              disabled={
+                !formCanSubmit ||
+                isSubmitting ||
+                !isVerified ||
+                !isRecipientValid ||
+                insufficient
+              }
+              size="lg"
+              type="submit"
+              variant="primary"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Money
+                </>
+              )}
+            </Button>
+          );
+        }}
       </form.Subscribe>
 
       <p className="mt-4 text-center text-muted-foreground text-xs">
