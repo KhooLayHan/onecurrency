@@ -220,28 +220,48 @@ function UploadZone({ uploaded, uploading, onUpload, label }: UploadZoneProps) {
       onClick={onUpload}
       type="button"
     >
-      {uploading ? (
-        <>
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-          <span className="font-medium text-sm">Uploading...</span>
-        </>
-      ) : uploaded ? (
-        <>
-          <CheckCircle className="size-8" />
-          <span className="font-medium text-sm">Document uploaded</span>
-          <span className="text-muted-foreground text-xs">
-            Click to replace
-          </span>
-        </>
-      ) : (
-        <>
-          <Upload className="size-8 text-muted-foreground" />
-          <span className="font-medium text-sm">{label}</span>
-          <span className="text-muted-foreground text-xs">
-            Click to select or drag and drop
-          </span>
-        </>
-      )}
+      <UploadZoneContent
+        label={label}
+        uploaded={uploaded}
+        uploading={uploading}
+      />
     </button>
+  );
+}
+
+function UploadZoneContent({
+  uploading,
+  uploaded,
+  label,
+}: {
+  uploading: boolean;
+  uploaded: boolean;
+  label: string;
+}) {
+  if (uploading) {
+    return (
+      <>
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <span className="font-medium text-sm">Uploading...</span>
+      </>
+    );
+  }
+  if (uploaded) {
+    return (
+      <>
+        <CheckCircle className="size-8" />
+        <span className="font-medium text-sm">Document uploaded</span>
+        <span className="text-muted-foreground text-xs">Click to replace</span>
+      </>
+    );
+  }
+  return (
+    <>
+      <Upload className="size-8 text-muted-foreground" />
+      <span className="font-medium text-sm">{label}</span>
+      <span className="text-muted-foreground text-xs">
+        Click to select or drag and drop
+      </span>
+    </>
   );
 }

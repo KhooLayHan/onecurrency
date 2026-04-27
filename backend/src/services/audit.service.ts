@@ -22,9 +22,8 @@ export class AuditService {
 
   log(input: LogInput): ResultAsync<void, InternalError> {
     return ResultAsync.fromPromise(
-      this.db
-        .insert(auditLogs)
-        .values({
+      (async () => {
+        await this.db.insert(auditLogs).values({
           userId: input.userId,
           action: input.action,
           entityType: input.entityType,
@@ -32,8 +31,8 @@ export class AuditService {
           oldValues: input.oldValues ?? null,
           newValues: input.newValues ?? null,
           metadata: input.metadata ?? null,
-        })
-        .then((): void => {}),
+        });
+      })(),
       (e): InternalError =>
         new InternalError("Failed to write audit log", {
           cause: e,

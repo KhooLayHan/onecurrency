@@ -7,7 +7,7 @@ import { userRoles } from "@/src/db/schema/user-roles";
 import { logger } from "@/src/lib/logger";
 import { KycRepository } from "@/src/repositories/kyc.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
-import * as r2 from "@/src/services/r2.service";
+import { generateUploadUrl } from "@/src/services/r2.service";
 import { UserService } from "@/src/services/user.service";
 import { WalletService } from "@/src/services/wallet.service";
 import { base } from "../context";
@@ -236,7 +236,7 @@ export const getKycUploadUrl = base
       ? "pdf"
       : input.contentType.split("/")[1];
     const key = `${FILE_TYPE_TO_PREFIX[input.fileType]}/${userId}/${Date.now()}.${ext}`;
-    const uploadUrl = await r2.generateUploadUrl(key, input.contentType);
+    const uploadUrl = await generateUploadUrl(key, input.contentType);
     return { uploadUrl, key };
   });
 

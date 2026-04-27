@@ -73,35 +73,7 @@ export function SelfieStep({ formData, updateFormData }: SelfieStepProps) {
         onClick={() => fileRef.current?.click()}
         type="button"
       >
-        {uploading ? (
-          <>
-            <Loader2 className="size-12 animate-spin text-muted-foreground" />
-            <span className="font-medium">Uploading photo...</span>
-          </>
-        ) : uploaded ? (
-          <>
-            <CheckCircle className="size-12" />
-            <span className="font-medium">Photo uploaded successfully</span>
-            <span className="text-muted-foreground text-sm">
-              Click to retake
-            </span>
-          </>
-        ) : (
-          <>
-            <div className="relative">
-              <div className="flex size-20 items-center justify-center rounded-full bg-muted">
-                <User className="size-10 text-muted-foreground" />
-              </div>
-              <div className="-right-1 -bottom-1 absolute flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Camera className="size-4" />
-              </div>
-            </div>
-            <span className="font-medium">Take a selfie or upload a photo</span>
-            <span className="text-muted-foreground text-sm">
-              We&apos;ll compare this with your ID photo
-            </span>
-          </>
-        )}
+        <SelfieButtonContent uploaded={uploaded} uploading={uploading} />
       </button>
 
       <div className="rounded-lg bg-muted/50 p-4">
@@ -136,5 +108,47 @@ export function SelfieStep({ formData, updateFormData }: SelfieStepProps) {
         </Button>
       )}
     </div>
+  );
+}
+
+function SelfieButtonContent({
+  uploading,
+  uploaded,
+}: {
+  uploading: boolean;
+  uploaded: boolean;
+}) {
+  if (uploading) {
+    return (
+      <>
+        <Loader2 className="size-12 animate-spin text-muted-foreground" />
+        <span className="font-medium">Uploading photo...</span>
+      </>
+    );
+  }
+  if (uploaded) {
+    return (
+      <>
+        <CheckCircle className="size-12" />
+        <span className="font-medium">Photo uploaded successfully</span>
+        <span className="text-muted-foreground text-sm">Click to retake</span>
+      </>
+    );
+  }
+  return (
+    <>
+      <div className="relative">
+        <div className="flex size-20 items-center justify-center rounded-full bg-muted">
+          <User className="size-10 text-muted-foreground" />
+        </div>
+        <div className="-right-1 -bottom-1 absolute flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <Camera className="size-4" />
+        </div>
+      </div>
+      <span className="font-medium">Take a selfie or upload a photo</span>
+      <span className="text-muted-foreground text-sm">
+        We&apos;ll compare this with your ID photo
+      </span>
+    </>
   );
 }

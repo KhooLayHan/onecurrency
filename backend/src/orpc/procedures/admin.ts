@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { privateKeyToAccount } from "viem/accounts";
 import z from "zod";
 import { db } from "@/src/db";
 import { env } from "@/src/env";
@@ -13,6 +14,15 @@ const blacklistService = new BlacklistService(db);
 
 const KYC_PAGE_SIZE = 20;
 const BLACKLIST_PAGE_SIZE = 20;
+const BLACKLIST_REASON_MIN_LENGTH = 5;
+
+const TREASURY_ADDRESS: `0x${string}` | null = env.SEPOLIA_PRIVATE_KEY
+  ? privateKeyToAccount(
+      (env.SEPOLIA_PRIVATE_KEY.startsWith("0x")
+        ? env.SEPOLIA_PRIVATE_KEY
+        : `0x${env.SEPOLIA_PRIVATE_KEY}`) as `0x${string}`
+    ).address
+  : null;
 
 // ─── KYC Procedures ─────────────────────────────────────────────────────────
 
@@ -197,7 +207,7 @@ export const addToBlacklist = base
         .string()
         .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
       networkId: z.number().int(),
-      reason: z.string().min(5, "Reason is required"),
+      reason: z.string().min(BLACKLIST_REASON_MIN_LENGTH, "Reason is required"),
       source: z.string().optional(),
     })
   )
@@ -236,17 +246,7 @@ export const seizeTokens = base
   .input(z.object({ publicId: z.string().uuid() }))
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
-    const treasuryAddress = env.SEPOLIA_PRIVATE_KEY
-      ? (() => {
-          const { privateKeyToAccount } = require("viem/accounts");
-          const key = env.SEPOLIA_PRIVATE_KEY?.startsWith("0x")
-            ? env.SEPOLIA_PRIVATE_KEY!
-            : `0x${env.SEPOLIA_PRIVATE_KEY}`;
-          return privateKeyToAccount(key as `0x${string}`).address;
-        })()
-      : null;
-
-    if (!treasuryAddress) {
+    if (!TREASURY_ADDRESS) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "Treasury wallet not configured",
       });
@@ -254,7 +254,7 @@ export const seizeTokens = base
 
     const result = await blacklistService.seize(
       input.publicId,
-      treasuryAddress,
+      TREASURY_ADDRESS,
       BigInt(context.session.userId)
     );
     if (result.isErr()) {

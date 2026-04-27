@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, type SQL, sql } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
 import type { Database } from "../db";
@@ -43,7 +43,7 @@ export class BlacklistRepository {
     { items: BlacklistedAddressWithMeta[]; total: number },
     InternalError
   > {
-    const conditions = [];
+    const conditions: SQL[] = [];
     if (filters.networkId) {
       conditions.push(eq(blacklistedAddresses.networkId, filters.networkId));
     }
@@ -133,11 +133,17 @@ export class BlacklistRepository {
       addedByUserId: input.addedByUserId,
     };
     return ResultAsync.fromPromise(
-      this.db
-        .insert(blacklistedAddresses)
-        .values(record)
-        .returning()
-        .then((rows) => rows[0]!),
+      (async () => {
+        const rows = await this.db
+          .insert(blacklistedAddresses)
+          .values(record)
+          .returning();
+        const row = rows[0];
+        if (!row) {
+          throw new Error("Insert returned no rows");
+        }
+        return row;
+      })(),
       (e): InternalError =>
         new InternalError("Failed to create blacklist entry", { cause: e })
     );
@@ -145,10 +151,11 @@ export class BlacklistRepository {
 
   deleteByPublicId(publicId: string): ResultAsync<void, InternalError> {
     return ResultAsync.fromPromise(
-      this.db
-        .delete(blacklistedAddresses)
-        .where(eq(blacklistedAddresses.publicId, publicId))
-        .then((): void => {}),
+      (async () => {
+        await this.db
+          .delete(blacklistedAddresses)
+          .where(eq(blacklistedAddresses.publicId, publicId));
+      })(),
       (e): InternalError =>
         new InternalError("Failed to delete blacklist entry", { cause: e })
     );

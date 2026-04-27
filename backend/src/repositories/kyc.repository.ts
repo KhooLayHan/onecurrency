@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
 import { ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
 import type { Database } from "../db";
@@ -60,10 +60,9 @@ export class KycRepository {
     };
 
     return ResultAsync.fromPromise(
-      this.db
-        .insert(kycSubmissions)
-        .values(record)
-        .then((): void => {}),
+      (async () => {
+        await this.db.insert(kycSubmissions).values(record);
+      })(),
       (e): InternalError =>
         new InternalError("Failed to create KYC submission record", {
           cause: e,
@@ -109,7 +108,7 @@ export class KycRepository {
     { items: KycSubmissionWithUser[]; total: number },
     InternalError
   > {
-    const conditions = [];
+    const conditions: SQL[] = [];
     if (filters.kycStatusId) {
       conditions.push(eq(kycSubmissions.kycStatusId, filters.kycStatusId));
     }
@@ -118,7 +117,7 @@ export class KycRepository {
         or(
           ilike(kycSubmissions.fullName, `%${filters.search}%`),
           ilike(users.email, `%${filters.search}%`)
-        )
+        ) as SQL
       );
     }
 
@@ -176,16 +175,17 @@ export class KycRepository {
     }
   ): ResultAsync<void, InternalError> {
     return ResultAsync.fromPromise(
-      this.db
-        .update(kycSubmissions)
-        .set({
-          kycStatusId: update.kycStatusId,
-          reviewedByUserId: update.reviewedByUserId,
-          rejectionReason: update.rejectionReason ?? null,
-          reviewedAt: new Date(),
-        })
-        .where(eq(kycSubmissions.id, id))
-        .then((): void => {}),
+      (async () => {
+        await this.db
+          .update(kycSubmissions)
+          .set({
+            kycStatusId: update.kycStatusId,
+            reviewedByUserId: update.reviewedByUserId,
+            rejectionReason: update.rejectionReason ?? null,
+            reviewedAt: new Date(),
+          })
+          .where(eq(kycSubmissions.id, id));
+      })(),
       (e): InternalError =>
         new InternalError("Failed to update KYC submission review", {
           cause: e,
