@@ -85,6 +85,10 @@ export const getHistory = base
 
     const result = await withdrawalRepository.findByUserId(BigInt(userId));
     if (result.isErr()) {
+      logger.error(
+        { error: result.error.toLog() },
+        "Withdrawal history query failed"
+      );
       throw mapToORPCError(result.error);
     }
     return result.value;

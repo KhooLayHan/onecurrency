@@ -1,9 +1,9 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
 import { WalletNotFoundError } from "@/common/errors/wallet";
 import type { Database } from "../db";
-import { type Wallet, wallets } from "../db/schema/wallets";
+import { type NewWallet, type Wallet, wallets } from "../db/schema/wallets";
 
 export class WalletRepository {
   private readonly db: Database;
@@ -55,6 +55,54 @@ export class WalletRepository {
       }
       if (wallet.userId !== userId) {
         return errAsync(new WalletNotFoundError(id.toString()));
+      }
+      return okAsync(wallet);
+    });
+  }
+
+  demotePrimaryWallet(
+    userId: bigint,
+    networkId: number
+  ): ResultAsync<void, InternalError> {
+    return ResultAsync.fromPromise(
+      this.db
+        .update(wallets)
+        .set({ isPrimary: false })
+        .where(
+          and(
+            eq(wallets.userId, userId),
+            eq(wallets.networkId, networkId),
+            eq(wallets.isPrimary, true),
+            isNull(wallets.deletedAt)
+          )
+        ),
+      (e): InternalError =>
+        new InternalError("Failed to demote primary wallet", {
+          cause: e,
+          context: { userId: userId.toString(), networkId: String(networkId) },
+        })
+    ).andThen(() => okAsync(undefined));
+  }
+
+  create(data: NewWallet): ResultAsync<Wallet, InternalError> {
+    return ResultAsync.fromPromise(
+      this.db
+        .insert(wallets)
+        .values(data)
+        .returning()
+        .then((rows) => rows[0]),
+      (e): InternalError =>
+        new InternalError("Failed to create wallet", {
+          cause: e,
+          context: { userId: data.userId?.toString() },
+        })
+    ).andThen((wallet) => {
+      if (!wallet) {
+        return errAsync(
+          new InternalError("Wallet not returned after insert", {
+            context: { userId: data.userId?.toString() },
+          })
+        );
       }
       return okAsync(wallet);
     });

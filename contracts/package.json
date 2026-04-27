@@ -4,25 +4,26 @@
   "scripts": {
     "hh:clean": "pnpm hardhat clean",
     "hh:build": "pnpm hardhat build",
-    "hh:deploy": "pnpm hardhat run scripts/deploy.ts --network localhost",
-    "hh:prod-deploy": "pnpm hardhat run scripts/deploy.ts --network sepolia",
+    "hh:node": "pnpm hardhat node",
+    "hh:deploy": "pnpm hardhat ignition deploy ignition/modules/OneCurrency.ts --network localhost",
+    "hh:prod-deploy": "pnpm hardhat ignition deploy ignition/modules/OneCurrency.ts --network sepolia",
     "hh:test": "pnpm hardhat test",
     "format": "biome format --write .",
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-ignition": "^3.0.8",
-    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.2",
-    "@types/node": "^22.19.13",
-    "hardhat": "^3.1.10",
+    "@nomicfoundation/hardhat-ignition": "^3.1.3",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.4",
+    "@types/node": "^22.19.17",
+    "hardhat": "^3.4.1",
     "typescript": "~5.8.3",
-    "viem": "^2.47.0",
+    "viem": "^2.48.4",
     "vitest": "4.1.0"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.6.1",
-    "@t3-oss/env-core": "^0.13.10",
-    "dotenv": "^17.3.1",
+    "@t3-oss/env-core": "^0.13.11",
+    "dotenv": "^17.4.2",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
     "zod": "^4.3.6"

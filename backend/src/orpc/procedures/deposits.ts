@@ -119,6 +119,10 @@ export const getHistory = base
     logger.info({ userId }, "Fetching deposit history");
     const result = await depositRepository.findByUserId(BigInt(userId));
     if (result.isErr()) {
+      logger.error(
+        { error: result.error.toLog() },
+        "Deposit history query failed"
+      );
       throw mapToORPCError(result.error);
     }
     return result.value;

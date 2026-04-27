@@ -6,6 +6,10 @@ import { sessions } from "./db/schema/sessions";
 import { users } from "./db/schema/users";
 import { verifications } from "./db/schema/verifications";
 import { env } from "./env";
+import { logger } from "./lib/logger";
+import { WalletService } from "./services/wallet.service";
+
+const walletService = new WalletService(db);
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -42,9 +46,35 @@ export const auth = betterAuth({
     },
   },
 
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          const result = await walletService.provisionCustodialWallet(
+            BigInt(user.id)
+          );
+          if (result.isErr()) {
+            logger.error(
+              { err: result.error, userId: user.id },
+              "Failed to provision custodial wallet after registration"
+            );
+          } else {
+            logger.info(
+              {
+                userId: user.id,
+                address: result.value.address,
+              },
+              "Custodial wallet provisioned for new user"
+            );
+          }
+        },
+      },
+    },
+  },
+
   advanced: {
     database: {
-      generateId: false, // Let PostgreSQL generate BIGINT IDs
+      generateId: false,
     },
   },
 });

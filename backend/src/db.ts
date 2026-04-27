@@ -19,6 +19,7 @@ import { users } from "./db/schema/users";
 import { verifications } from "./db/schema/verifications";
 import { wallets } from "./db/schema/wallets";
 import { webhookEvents } from "./db/schema/webhook-events";
+import { withdrawals } from "./db/schema/withdrawals";
 import { env } from "./env";
 
 neonConfig.webSocketConstructor = ws;
@@ -54,6 +55,7 @@ export const db = drizzle({
     auditLogs,
     blacklistedAddresses,
     webhookEvents,
+    withdrawals,
     relations,
   },
   logger: env.NODE_ENV !== "production",
