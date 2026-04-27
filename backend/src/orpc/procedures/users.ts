@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import z from "zod";
 import { db } from "@/src/db";
 import { logger } from "@/src/lib/logger";
+import { UserRepository } from "@/src/repositories/user.repository";
 import { UserService } from "@/src/services/user.service";
 import { WalletService } from "@/src/services/wallet.service";
 import { base } from "../context";
@@ -171,4 +172,53 @@ export const simulateKyc = base
     }
     logger.info({ userId }, "User successfully completed KYC simulation");
     return result.value;
+  });
+
+export const findRecipient = base
+  .use(requireAuth)
+  .route({
+    method: "GET",
+    path: "/users/find-recipient",
+    summary: "Look up a user by email to preview recipient before sending",
+    tags: ["Users"],
+  })
+  .input(z.object({ email: z.string().email() }))
+  .output(z.object({ name: z.string() }))
+  .handler(async ({ input, context }) => {
+    const userId = context.session?.userId;
+    if (!userId) {
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Authentication required",
+      });
+    }
+
+    const userRepo = new UserRepository(db);
+    const result = await userRepo.findByEmail(input.email);
+    if (result.isErr()) {
+      throw mapToORPCError(result.error);
+    }
+
+    const recipient = result.value;
+    const NO_ELIGIBLE_RECIPIENT = new ORPCError("NOT_FOUND", {
+      message: "No eligible recipient found for this email.",
+    });
+
+    if (!recipient || recipient.id.toString() === userId) {
+      logger.info(
+        {
+          userId,
+          lookupEmail: input.email,
+          reason: recipient ? "self_transfer" : "not_found",
+        },
+        "Recipient lookup rejected — collapsing to generic error"
+      );
+      throw NO_ELIGIBLE_RECIPIENT;
+    }
+
+    logger.info(
+      { userId, lookupEmail: input.email },
+      "Recipient lookup successful"
+    );
+
+    return { name: recipient.name };
   });

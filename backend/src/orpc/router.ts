@@ -3,7 +3,13 @@ import {
   getHistory as getDepositHistory,
   testMint,
 } from "./procedures/deposits";
-import { getPrimaryWallet, simulateKyc, submitKyc } from "./procedures/users";
+import { getHistory as getTransferHistory, send } from "./procedures/transfers";
+import {
+  findRecipient,
+  getPrimaryWallet,
+  simulateKyc,
+  submitKyc,
+} from "./procedures/users";
 import {
   getHistory as getWithdrawalHistory,
   initiate,
@@ -19,10 +25,15 @@ export const appRouter = {
     submitKyc,
     simulateKyc,
     getPrimaryWallet,
+    findRecipient,
   },
   withdrawals: {
     initiate,
     getHistory: getWithdrawalHistory,
+  },
+  transfers: {
+    send,
+    getHistory: getTransferHistory,
   },
 };
 

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
 import { UserNotFoundError } from "@/common/errors/user";
@@ -22,6 +22,21 @@ export class UserRepository {
         new InternalError("Failed to fetch user from database", {
           cause: e,
           context: { userId: id.toString() },
+        })
+    ).map((user) => user ?? null);
+  }
+
+  findByEmail(email: string): ResultAsync<User | null, InternalError> {
+    return ResultAsync.fromPromise(
+      this.db._query.users
+        .findFirst({
+          where: and(eq(users.email, email), isNull(users.deletedAt)),
+        })
+        .then((user) => user ?? null),
+      (e): InternalError =>
+        new InternalError("Failed to fetch user by email", {
+          cause: e,
+          context: { email },
         })
     ).map((user) => user ?? null);
   }

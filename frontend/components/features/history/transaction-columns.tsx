@@ -2,7 +2,13 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { ArrowDownLeft, ArrowUpRight, MoreHorizontal } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Inbox,
+  MoreHorizontal,
+  Send,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -10,11 +16,13 @@ import { Button } from "@/components/ui/button";
 export type Transaction = {
   id: string;
   publicId: string;
-  type: "add_money" | "cash_out";
+  type: "add_money" | "cash_out" | "transfer_sent" | "transfer_received";
   amountCents: number;
   status: "pending" | "processing" | "completed" | "failed" | "refunded";
   createdAt: Date;
   description?: string;
+  counterpartyName?: string;
+  note?: string | null;
 };
 
 // Conversion factor for cents to dollars
@@ -57,6 +65,8 @@ const TYPE_LABELS: Record<
 > = {
   add_money: { label: "Add Money", icon: ArrowDownLeft },
   cash_out: { label: "Cash Out", icon: ArrowUpRight },
+  transfer_sent: { label: "Sent", icon: Send },
+  transfer_received: { label: "Received", icon: Inbox },
 };
 
 export const transactionColumns: ColumnDef<Transaction>[] = [
@@ -78,7 +88,8 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const type = row.getValue("type") as Transaction["type"];
       const { label, icon: Icon } = TYPE_LABELS[type];
-      const isIncoming = type === "add_money";
+      const isIncoming = type === "add_money" || type === "transfer_received";
+      const counterpartyName = row.original.counterpartyName;
 
       return (
         <div className="flex items-center gap-2">
@@ -91,7 +102,14 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
           >
             <Icon className="size-4" />
           </div>
-          <span className="font-medium">{label}</span>
+          <div>
+            <span className="font-medium">{label}</span>
+            {counterpartyName && (
+              <p className="text-muted-foreground text-xs">
+                {counterpartyName}
+              </p>
+            )}
+          </div>
         </div>
       );
     },
@@ -102,7 +120,7 @@ export const transactionColumns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const amountCents = row.getValue("amountCents") as number;
       const type = row.original.type;
-      const isIncoming = type === "add_money";
+      const isIncoming = type === "add_money" || type === "transfer_received";
 
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",

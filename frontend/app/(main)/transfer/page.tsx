@@ -1,4 +1,5 @@
 import { ArrowRight, Send } from "lucide-react";
+import { SendForm } from "@/components/features/transfer/send-form";
 import { CashOutForm } from "@/components/features/withdrawal/cash-out-form";
 import {
   Card,
@@ -14,9 +15,25 @@ export default function TransferPage() {
       <div>
         <h1 className="font-bold text-2xl tracking-tight">Send Money</h1>
         <p className="mt-1 text-muted-foreground text-sm">
-          Cash out your balance to a bank account.
+          Send to another user or cash out to your bank account.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Send className="size-5 text-primary" />
+            Send to Contact
+          </CardTitle>
+          <CardDescription>
+            Send money instantly to any OneCurrency user by email. No platform
+            fees.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SendForm />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -31,18 +48,6 @@ export default function TransferPage() {
         </CardHeader>
         <CardContent>
           <CashOutForm />
-        </CardContent>
-      </Card>
-
-      <Card className="border-dashed opacity-60">
-        <CardContent className="flex items-center gap-4 p-4">
-          <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-            <Send className="size-5 text-muted-foreground" />
-          </div>
-          <div>
-            <h3 className="font-medium text-sm">Send to Contact</h3>
-            <p className="text-muted-foreground text-xs">Coming soon</p>
-          </div>
         </CardContent>
       </Card>
     </div>

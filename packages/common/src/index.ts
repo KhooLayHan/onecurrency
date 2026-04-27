@@ -39,3 +39,13 @@ export const withdrawalSchema = z.object({
     .min(WITHDRAWAL_MIN, `Minimum cash-out is $${WITHDRAWAL_MIN}.00`)
     .max(WITHDRAWAL_MAX, "Maximum is $10,000.00"),
 });
+
+export const P2P_TRANSFER_MIN = 1;
+export const P2P_TRANSFER_MAX = 10_000;
+
+export const transferSchema = z.object({
+  amount: z
+    .number()
+    .min(P2P_TRANSFER_MIN, `Minimum transfer is $${P2P_TRANSFER_MIN}.00`)
+    .max(P2P_TRANSFER_MAX, `Maximum transfer is $${P2P_TRANSFER_MAX}.00`),
+});

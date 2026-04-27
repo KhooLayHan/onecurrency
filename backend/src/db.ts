@@ -14,6 +14,7 @@ import { roles } from "./db/schema/roles";
 import { sessions } from "./db/schema/sessions";
 import { transactionStatuses } from "./db/schema/transaction-statuses";
 import { transactionTypes } from "./db/schema/transaction-types";
+import { transfers } from "./db/schema/transfers";
 import { userRoles } from "./db/schema/user-roles";
 import { users } from "./db/schema/users";
 import { verifications } from "./db/schema/verifications";
@@ -42,6 +43,7 @@ export const db = drizzle({
     kycSubmissions,
     transactionStatuses,
     transactionTypes,
+    transfers,
     networks,
     roles,
     userRoles,
