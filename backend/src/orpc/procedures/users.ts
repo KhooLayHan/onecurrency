@@ -1,7 +1,9 @@
 import { ORPCError } from "@orpc/server";
 import z from "zod";
+import { RecipientNotFoundError } from "@/common/errors/transfer";
 import { db } from "@/src/db";
 import { logger } from "@/src/lib/logger";
+import { UserRepository } from "@/src/repositories/user.repository";
 import { UserService } from "@/src/services/user.service";
 import { WalletService } from "@/src/services/wallet.service";
 import { base } from "../context";
@@ -171,4 +173,41 @@ export const simulateKyc = base
     }
     logger.info({ userId }, "User successfully completed KYC simulation");
     return result.value;
+  });
+
+export const findRecipient = base
+  .use(requireAuth)
+  .route({
+    method: "GET",
+    path: "/users/find-recipient",
+    summary: "Look up a user by email to preview recipient before sending",
+    tags: ["Users"],
+  })
+  .input(z.object({ email: z.string().email() }))
+  .output(z.object({ name: z.string() }))
+  .handler(async ({ input, context }) => {
+    const userId = context.session?.userId;
+    if (!userId) {
+      throw new ORPCError("UNAUTHORIZED", {
+        message: "Authentication required",
+      });
+    }
+
+    const userRepo = new UserRepository(db);
+    const result = await userRepo.findByEmail(input.email);
+    if (result.isErr()) {
+      throw mapToORPCError(result.error);
+    }
+
+    const recipient = result.value;
+    if (!recipient) {
+      throw mapToORPCError(new RecipientNotFoundError(input.email));
+    }
+    if (recipient.id.toString() === userId) {
+      throw new ORPCError("UNPROCESSABLE_ENTITY", {
+        message: "You cannot send money to yourself.",
+      });
+    }
+
+    return { name: recipient.name };
   });

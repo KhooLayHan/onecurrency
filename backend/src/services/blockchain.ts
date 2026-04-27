@@ -303,3 +303,114 @@ export function burnTokens(
     }
   );
 }
+
+/**
+ * Transfers ONE tokens from one custodial wallet to another address
+ * by decrypting the sender's private key and calling ERC-20 transfer().
+ *
+ * @param encryptedPrivateKey The sender's encrypted private key
+ * @param toAddress The recipient's Ethereum address
+ * @param amountWei The exact amount to transfer in Wei
+ * @returns ResultAsync containing the confirmed transaction hash
+ */
+export function transferTokens(
+  encryptedPrivateKey: string,
+  toAddress: string,
+  amountWei: string
+): ResultAsync<string, AppError> {
+  return ResultAsync.fromPromise(
+    (async () => {
+      if (!isAddress(toAddress)) {
+        throw new InvalidAddressError(toAddress);
+      }
+
+      let decryptedKey: string;
+      try {
+        decryptedKey = decrypt(encryptedPrivateKey);
+      } catch (decryptErr) {
+        throw new WalletSigningError(
+          "Failed to decrypt custodial wallet private key",
+          { cause: decryptErr }
+        );
+      }
+
+      const formattedKey = decryptedKey.startsWith("0x")
+        ? decryptedKey
+        : `0x${decryptedKey}`;
+      const senderAccount = privateKeyToAccount(formattedKey as `0x${string}`);
+
+      logger.info(
+        {
+          from: senderAccount.address,
+          to: toAddress,
+          amountWei,
+        },
+        "Initiating P2P transfer transaction..."
+      );
+
+      const senderWalletClient = createWalletClient({
+        account: senderAccount,
+        chain,
+        transport: http(rpcUrl),
+      });
+
+      const { request } = await publicClient.simulateContract({
+        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        abi: OneCurrencyABI,
+        functionName: "transfer",
+        args: [toAddress as `0x${string}`, BigInt(amountWei)],
+        chain,
+        account: senderAccount,
+      });
+
+      logger.info(
+        "Transfer simulation successful. Broadcasting transaction..."
+      );
+
+      const txHash = await senderWalletClient.writeContract(request);
+
+      logger.info(
+        { txHash },
+        "Transfer transaction broadcasted. Waiting for confirmation..."
+      );
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: MIN_CONFIRMATIONS,
+      });
+
+      if (receipt.status === "reverted") {
+        throw new TransactionRevertedError(
+          txHash,
+          "Transfer transaction reverted on-chain after broadcast."
+        );
+      }
+
+      logger.info(
+        {
+          txHash: receipt.transactionHash,
+          blockNumber: receipt.blockNumber,
+        },
+        "P2P transfer transaction successfully confirmed!"
+      );
+
+      return receipt.transactionHash;
+    })(),
+
+    (e): AppError => {
+      if (e instanceof AppError) {
+        return e;
+      }
+      if (e instanceof HttpRequestError || e instanceof TimeoutError) {
+        return handleNetworkError(e);
+      }
+      if (e instanceof ContractFunctionRevertedError) {
+        return handleContractRevert(e, "transfer");
+      }
+      return new InternalError(
+        "An unhandled exception was caught during token transfer.",
+        { cause: e }
+      );
+    }
+  );
+}

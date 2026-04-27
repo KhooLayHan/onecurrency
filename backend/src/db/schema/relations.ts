@@ -11,6 +11,7 @@ import { roles } from "./roles";
 import { sessions } from "./sessions";
 import { transactionStatuses } from "./transaction-statuses";
 import { transactionTypes } from "./transaction-types";
+import { transfers } from "./transfers";
 import { userRoles } from "./user-roles";
 import { users } from "./users";
 import { verifications } from "./verifications";
@@ -32,6 +33,7 @@ export const relations = defineRelations(
     sessions,
     transactionStatuses,
     transactionTypes,
+    transfers,
     userRoles,
     users,
     verifications,
@@ -54,6 +56,8 @@ export const relations = defineRelations(
       blacklistedAddressesAdded: r.many.blacklistedAddresses(),
       kycSubmissions: r.many.kycSubmissions(),
       withdrawals: r.many.withdrawals(),
+      transfersSent: r.many.transfers({ alias: "senderUser" }),
+      transfersReceived: r.many.transfers({ alias: "receiverUser" }),
     },
     sessions: {
       user: r.one.users({
@@ -96,6 +100,8 @@ export const relations = defineRelations(
       }),
       deposits: r.many.deposits(),
       withdrawals: r.many.withdrawals(),
+      transfersSent: r.many.transfers({ alias: "senderWallet" }),
+      transfersReceived: r.many.transfers({ alias: "receiverWallet" }),
     },
     networks: {
       wallets: r.many.wallets(),
@@ -123,6 +129,7 @@ export const relations = defineRelations(
     transactionStatuses: {
       deposits: r.many.deposits(),
       withdrawals: r.many.withdrawals(),
+      transfers: r.many.transfers(),
     },
     blockchainTransactions: {
       network: r.one.networks({
@@ -149,6 +156,36 @@ export const relations = defineRelations(
       }),
       blockchainTransaction: r.one.blockchainTransactions({
         from: r.withdrawals.blockchainTxId,
+        to: r.blockchainTransactions.id,
+      }),
+    },
+    transfers: {
+      sender: r.one.users({
+        from: r.transfers.senderUserId,
+        to: r.users.id,
+        alias: "senderUser",
+      }),
+      receiver: r.one.users({
+        from: r.transfers.receiverUserId,
+        to: r.users.id,
+        alias: "receiverUser",
+      }),
+      senderWallet: r.one.wallets({
+        from: r.transfers.senderWalletId,
+        to: r.wallets.id,
+        alias: "senderWallet",
+      }),
+      receiverWallet: r.one.wallets({
+        from: r.transfers.receiverWalletId,
+        to: r.wallets.id,
+        alias: "receiverWallet",
+      }),
+      status: r.one.transactionStatuses({
+        from: r.transfers.statusId,
+        to: r.transactionStatuses.id,
+      }),
+      blockchainTransaction: r.one.blockchainTransactions({
+        from: r.transfers.blockchainTxId,
         to: r.blockchainTransactions.id,
       }),
     },

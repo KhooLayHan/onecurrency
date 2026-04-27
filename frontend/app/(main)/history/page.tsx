@@ -12,6 +12,7 @@ import { orpcClient } from "@/lib/api";
 
 const DEPOSIT_HISTORY_QUERY_KEY = "deposit-history";
 const WITHDRAWAL_HISTORY_QUERY_KEY = "withdrawal-history";
+const TRANSFER_HISTORY_QUERY_KEY = "transfer-history";
 
 export default function HistoryPage() {
   const { data: deposits = [], isLoading: isLoadingDeposits } = useQuery({
@@ -24,15 +25,36 @@ export default function HistoryPage() {
     queryFn: () => orpcClient.withdrawals.getHistory({}),
   });
 
-  const isLoading = isLoadingDeposits || isLoadingWithdrawals;
+  const { data: transfersRaw = [], isLoading: isLoadingTransfers } = useQuery({
+    queryKey: [TRANSFER_HISTORY_QUERY_KEY],
+    queryFn: () => orpcClient.transfers.getHistory({}),
+  });
+
+  const isLoading =
+    isLoadingDeposits || isLoadingWithdrawals || isLoadingTransfers;
+
+  const transferTransactions: Transaction[] = useMemo(
+    () =>
+      transfersRaw.map((t) => ({
+        id: t.id,
+        publicId: t.publicId,
+        type: t.type,
+        amountCents: t.amountCents,
+        status: t.status,
+        createdAt: new Date(t.createdAt),
+        counterpartyName: t.counterpartyName,
+        note: t.note,
+      })),
+    [transfersRaw]
+  );
 
   const allTransactions: Transaction[] = useMemo(
     () =>
-      [...deposits, ...withdrawals].sort(
+      [...deposits, ...withdrawals, ...transferTransactions].sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       ),
-    [deposits, withdrawals]
+    [deposits, withdrawals, transferTransactions]
   );
 
   const addMoneyTransactions = useMemo(
@@ -61,6 +83,7 @@ export default function HistoryPage() {
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="add-money">Add Money</TabsTrigger>
           <TabsTrigger value="cash-out">Cash Out</TabsTrigger>
+          <TabsTrigger value="transfers">Transfers</TabsTrigger>
         </TabsList>
 
         <TabsContent className="mt-6" value="all">
@@ -83,6 +106,14 @@ export default function HistoryPage() {
           <TransactionDataTable
             columns={transactionColumns}
             data={cashOutTransactions}
+            isLoading={isLoading}
+          />
+        </TabsContent>
+
+        <TabsContent className="mt-6" value="transfers">
+          <TransactionDataTable
+            columns={transactionColumns}
+            data={transferTransactions}
             isLoading={isLoading}
           />
         </TabsContent>
