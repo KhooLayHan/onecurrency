@@ -460,16 +460,25 @@ export function blacklistAddress(
         account,
       });
       const txHash = await walletClient.writeContract(request);
-      await publicClient.waitForTransactionReceipt({
+      const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
-        confirmations: 1,
+        confirmations: MIN_CONFIRMATIONS,
       });
+      if (receipt.status === "reverted") {
+        throw new TransactionRevertedError(
+          txHash,
+          "Transaction reverted on-chain after broadcast."
+        );
+      }
       logger.info({ address, txHash }, "Address blacklisted on-chain");
-      return txHash;
+      return receipt.transactionHash;
     })(),
     (e): AppError => {
       if (e instanceof AppError) {
         return e;
+      }
+      if (e instanceof HttpRequestError || e instanceof TimeoutError) {
+        return handleNetworkError(e);
       }
       if (e instanceof ContractFunctionRevertedError) {
         return handleContractRevert(e, "blacklistAccount");
@@ -499,19 +508,28 @@ export function unblacklistAddress(
         account,
       });
       const txHash = await walletClient.writeContract(request);
-      await publicClient.waitForTransactionReceipt({
+      const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
-        confirmations: 1,
+        confirmations: MIN_CONFIRMATIONS,
       });
+      if (receipt.status === "reverted") {
+        throw new TransactionRevertedError(
+          txHash,
+          "Transaction reverted on-chain after broadcast."
+        );
+      }
       logger.info(
         { address, txHash },
         "Address removed from on-chain blacklist"
       );
-      return txHash;
+      return receipt.transactionHash;
     })(),
     (e): AppError => {
       if (e instanceof AppError) {
         return e;
+      }
+      if (e instanceof HttpRequestError || e instanceof TimeoutError) {
+        return handleNetworkError(e);
       }
       if (e instanceof ContractFunctionRevertedError) {
         return handleContractRevert(e, "unblacklistAccount");
@@ -545,16 +563,25 @@ export function seizeAddressTokens(
         account,
       });
       const txHash = await walletClient.writeContract(request);
-      await publicClient.waitForTransactionReceipt({
+      const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
-        confirmations: 1,
+        confirmations: MIN_CONFIRMATIONS,
       });
+      if (receipt.status === "reverted") {
+        throw new TransactionRevertedError(
+          txHash,
+          "Transaction reverted on-chain after broadcast."
+        );
+      }
       logger.info({ fromAddress, toAddress, txHash }, "Tokens seized on-chain");
-      return txHash;
+      return receipt.transactionHash;
     })(),
     (e): AppError => {
       if (e instanceof AppError) {
         return e;
+      }
+      if (e instanceof HttpRequestError || e instanceof TimeoutError) {
+        return handleNetworkError(e);
       }
       if (e instanceof ContractFunctionRevertedError) {
         return handleContractRevert(e, "seizeTokens");

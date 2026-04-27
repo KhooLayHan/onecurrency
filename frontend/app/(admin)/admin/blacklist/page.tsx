@@ -35,8 +35,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { orpcClient } from "@/lib/api";
-
-const DEFAULT_NETWORK_ID = 1;
+import { ACTIVE_NETWORK_ID } from "@/lib/config";
 
 type PendingAction =
   | { type: "remove"; publicId: string; address: string }
@@ -67,7 +66,7 @@ export default function BlacklistPage() {
     mutationFn: () =>
       orpcClient.admin.blacklist.add({
         address: newAddress,
-        networkId: DEFAULT_NETWORK_ID,
+        networkId: ACTIVE_NETWORK_ID,
         reason: newReason,
         source: newSource || undefined,
       }),

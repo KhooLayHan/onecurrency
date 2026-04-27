@@ -1,6 +1,9 @@
 import { errAsync, type ResultAsync } from "neverthrow";
 import type { AppError } from "@/common/errors/base";
-import { InternalError } from "@/common/errors/infrastructure";
+import {
+  BlacklistAddressAlreadyBlacklistedError,
+  BlacklistEntryNotFoundError,
+} from "@/common/errors/compliance";
 import type { Database } from "../db";
 import { BlacklistRepository } from "../repositories/blacklist.repository";
 import { AuditService } from "./audit.service";
@@ -43,13 +46,11 @@ export class BlacklistService {
       .andThen((existing) => {
         if (existing) {
           return errAsync(
-            new InternalError("Address is already blacklisted", {
-              context: { address: input.address },
-            })
+            new BlacklistAddressAlreadyBlacklistedError(input.address)
           );
         }
-        return repo.create(input).andThen((entry) =>
-          blacklistAddress(input.address).andThen((txHash) =>
+        return blacklistAddress(input.address).andThen((txHash) =>
+          repo.create(input).andThen((entry) =>
             auditService.log({
               userId: input.addedByUserId,
               action: "blacklist.add",
@@ -75,14 +76,10 @@ export class BlacklistService {
 
     return repo.findByPublicId(publicId).andThen((entry) => {
       if (!entry) {
-        return errAsync(
-          new InternalError("Blacklist entry not found", {
-            context: { publicId },
-          })
-        );
+        return errAsync(new BlacklistEntryNotFoundError(publicId));
       }
-      return unblacklistAddress(entry.address).andThen((txHash) =>
-        repo.deleteByPublicId(publicId).andThen(() =>
+      return repo.deleteByPublicId(publicId).andThen(() =>
+        unblacklistAddress(entry.address).andThen((txHash) =>
           auditService.log({
             userId: removedByUserId,
             action: "blacklist.remove",
@@ -106,11 +103,7 @@ export class BlacklistService {
 
     return repo.findByPublicId(publicId).andThen((entry) => {
       if (!entry) {
-        return errAsync(
-          new InternalError("Blacklist entry not found", {
-            context: { publicId },
-          })
-        );
+        return errAsync(new BlacklistEntryNotFoundError(publicId));
       }
       return seizeAddressTokens(entry.address, treasuryAddress).andThen(
         (txHash) =>

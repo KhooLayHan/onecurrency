@@ -8,6 +8,7 @@ import { KycRepository } from "../repositories/kyc.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { AuditService } from "./audit.service";
 import { generateDownloadUrl } from "./r2.service";
+import { withTransaction } from "../lib/transaction";
 
 type ListFilters = {
   kycStatusId?: number;
@@ -75,27 +76,30 @@ export class KycAdminService {
     publicId: string,
     reviewerUserId: bigint
   ): ResultAsync<void, AppError> {
-    const kycRepo = new KycRepository(this.db);
-    const userRepo = new UserRepository(this.db);
     const auditService = new AuditService(this.db);
 
-    return kycRepo.findByPublicId(publicId).andThen((submission) => {
-      if (!submission) {
-        return errAsync(
-          new InternalError("KYC submission not found", {
-            context: { publicId },
-          })
-        );
-      }
-      return kycRepo
-        .updateSubmissionReview(submission.id, {
-          kycStatusId: KYC_STATUS.VERIFIED,
-          reviewedByUserId: reviewerUserId,
-        })
-        .andThen(() =>
-          userRepo.updateKycStatus(submission.userId, KYC_STATUS.VERIFIED)
-        )
-        .andThen(() =>
+    return new KycRepository(this.db)
+      .findByPublicId(publicId)
+      .andThen((submission) => {
+        if (!submission) {
+          return errAsync(
+            new InternalError("KYC submission not found", {
+              context: { publicId },
+            })
+          );
+        }
+        return withTransaction(this.db, (tx) => {
+          const txKycRepo = new KycRepository(tx);
+          const txUserRepo = new UserRepository(tx);
+          return txKycRepo
+            .updateSubmissionReview(submission.id, {
+              kycStatusId: KYC_STATUS.VERIFIED,
+              reviewedByUserId: reviewerUserId,
+            })
+            .andThen(() =>
+              txUserRepo.updateKycStatus(submission.userId, KYC_STATUS.VERIFIED)
+            );
+        }).andThen(() =>
           auditService.log({
             userId: reviewerUserId,
             action: "kyc.approve",
@@ -105,7 +109,7 @@ export class KycAdminService {
             newValues: { kycStatusId: KYC_STATUS.VERIFIED },
           })
         );
-    });
+      });
   }
 
   reject(
@@ -113,28 +117,31 @@ export class KycAdminService {
     reviewerUserId: bigint,
     reason: string
   ): ResultAsync<void, AppError> {
-    const kycRepo = new KycRepository(this.db);
-    const userRepo = new UserRepository(this.db);
     const auditService = new AuditService(this.db);
 
-    return kycRepo.findByPublicId(publicId).andThen((submission) => {
-      if (!submission) {
-        return errAsync(
-          new InternalError("KYC submission not found", {
-            context: { publicId },
-          })
-        );
-      }
-      return kycRepo
-        .updateSubmissionReview(submission.id, {
-          kycStatusId: KYC_STATUS.REJECTED,
-          reviewedByUserId: reviewerUserId,
-          rejectionReason: reason,
-        })
-        .andThen(() =>
-          userRepo.updateKycStatus(submission.userId, KYC_STATUS.REJECTED)
-        )
-        .andThen(() =>
+    return new KycRepository(this.db)
+      .findByPublicId(publicId)
+      .andThen((submission) => {
+        if (!submission) {
+          return errAsync(
+            new InternalError("KYC submission not found", {
+              context: { publicId },
+            })
+          );
+        }
+        return withTransaction(this.db, (tx) => {
+          const txKycRepo = new KycRepository(tx);
+          const txUserRepo = new UserRepository(tx);
+          return txKycRepo
+            .updateSubmissionReview(submission.id, {
+              kycStatusId: KYC_STATUS.REJECTED,
+              reviewedByUserId: reviewerUserId,
+              rejectionReason: reason,
+            })
+            .andThen(() =>
+              txUserRepo.updateKycStatus(submission.userId, KYC_STATUS.REJECTED)
+            );
+        }).andThen(() =>
           auditService.log({
             userId: reviewerUserId,
             action: "kyc.reject",
@@ -147,6 +154,6 @@ export class KycAdminService {
             },
           })
         );
-    });
+      });
   }
 }

@@ -132,3 +132,45 @@ export class KycAlreadyVerifiedError extends AppError {
     );
   }
 }
+
+/**
+ * Thrown when a blacklist entry cannot be found by ID or address.
+ */
+export class BlacklistEntryNotFoundError extends AppError {
+  readonly code = "COMPLIANCE_BLACKLIST_NOT_FOUND";
+  readonly statusCode = StatusCodes.NOT_FOUND;
+  readonly domain = "compliance" as const;
+  readonly severity = "low" as const;
+  readonly isOperational = true;
+
+  constructor(
+    identifier: string,
+    options?: ConstructorParameters<typeof AppError>[1]
+  ) {
+    super(`Blacklist entry '${identifier}' was not found.`, {
+      ...options,
+      context: { identifier, ...options?.context },
+    });
+  }
+}
+
+/**
+ * Thrown when attempting to blacklist an address that is already blacklisted.
+ */
+export class BlacklistAddressAlreadyBlacklistedError extends AppError {
+  readonly code = "COMPLIANCE_BLACKLIST_DUPLICATE";
+  readonly statusCode = StatusCodes.CONFLICT;
+  readonly domain = "compliance" as const;
+  readonly severity = "low" as const;
+  readonly isOperational = true;
+
+  constructor(
+    address: string,
+    options?: ConstructorParameters<typeof AppError>[1]
+  ) {
+    super(`Address '${address}' is already blacklisted.`, {
+      ...options,
+      context: { address, ...options?.context },
+    });
+  }
+}

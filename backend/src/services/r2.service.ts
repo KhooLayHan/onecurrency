@@ -37,9 +37,6 @@ export function getPublicUrl(key: string): string {
 }
 
 export function generateDownloadUrl(key: string): Promise<string> {
-  if (env.R2_PUBLIC_URL) {
-    return Promise.resolve(getPublicUrl(key));
-  }
   const client = createClient();
   const command = new GetObjectCommand({
     Bucket: env.R2_BUCKET_NAME,

@@ -226,15 +226,20 @@ export const getKycUploadUrl = base
       fileType: z.enum(["front", "back", "selfie"]),
       contentType: z
         .string()
-        .regex(/^image\/(jpeg|png|webp|heic)|application\/pdf$/),
+        .regex(/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/),
     })
   )
   .output(z.object({ uploadUrl: z.string(), key: z.string() }))
   .handler(async ({ context, input }) => {
     const userId = context.session.userId;
-    const ext = input.contentType.includes("pdf")
-      ? "pdf"
-      : input.contentType.split("/")[1];
+    const CONTENT_TYPE_TO_EXT: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/heic": "heic",
+      "application/pdf": "pdf",
+    };
+    const ext = CONTENT_TYPE_TO_EXT[input.contentType] ?? "bin";
     const key = `${FILE_TYPE_TO_PREFIX[input.fileType]}/${userId}/${Date.now()}.${ext}`;
     const uploadUrl = await generateUploadUrl(key, input.contentType);
     return { uploadUrl, key };

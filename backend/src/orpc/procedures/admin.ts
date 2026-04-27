@@ -16,13 +16,22 @@ const KYC_PAGE_SIZE = 20;
 const BLACKLIST_PAGE_SIZE = 20;
 const BLACKLIST_REASON_MIN_LENGTH = 5;
 
-const TREASURY_ADDRESS: `0x${string}` | null = env.SEPOLIA_PRIVATE_KEY
-  ? privateKeyToAccount(
-      (env.SEPOLIA_PRIVATE_KEY.startsWith("0x")
-        ? env.SEPOLIA_PRIVATE_KEY
-        : `0x${env.SEPOLIA_PRIVATE_KEY}`) as `0x${string}`
-    ).address
-  : null;
+const TREASURY_ADDRESS: `0x${string}` | null =
+  (env.TREASURY_ADDRESS as `0x${string}`) ?? null;
+
+// Safety: treasury must not be the same wallet as the operator
+if (TREASURY_ADDRESS && env.SEPOLIA_PRIVATE_KEY) {
+  const operatorAddress = privateKeyToAccount(
+    (env.SEPOLIA_PRIVATE_KEY.startsWith("0x")
+      ? env.SEPOLIA_PRIVATE_KEY
+      : `0x${env.SEPOLIA_PRIVATE_KEY}`) as `0x${string}`
+  ).address;
+  if (operatorAddress.toLowerCase() === TREASURY_ADDRESS.toLowerCase()) {
+    throw new Error(
+      "TREASURY_ADDRESS must not be the same as the operator wallet (SEPOLIA_PRIVATE_KEY)"
+    );
+  }
+}
 
 // ─── KYC Procedures ─────────────────────────────────────────────────────────
 

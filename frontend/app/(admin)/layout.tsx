@@ -46,10 +46,17 @@ export default function AdminLayout({
   const isAdmin = roles?.includes("admin") ?? false;
 
   useEffect(() => {
-    if (!(sessionLoading || rolesLoading) && session && !hasAccess) {
+    if (sessionLoading) {
+      return;
+    }
+    if (!session) {
+      router.replace(`/login?returnTo=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    if (!(rolesLoading || hasAccess)) {
       router.replace("/dashboard");
     }
-  }, [sessionLoading, rolesLoading, session, hasAccess, router]);
+  }, [sessionLoading, rolesLoading, session, hasAccess, router, pathname]);
 
   if (sessionLoading || rolesLoading) {
     return (
@@ -59,7 +66,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!hasAccess) {
+  if (!(session && hasAccess)) {
     return null;
   }
 
