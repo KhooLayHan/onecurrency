@@ -17,6 +17,8 @@
     "db:prod:seed": "NODE_ENV=production DB_SEEDING=true bun --env-file=.env.production run src/seeding.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1038.0",
+    "@aws-sdk/s3-request-presigner": "^3.1038.0",
     "@hono/standard-validator": "^0.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@orpc/openapi": "^1.14.0",
