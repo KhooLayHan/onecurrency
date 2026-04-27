@@ -20,8 +20,8 @@ import {
   InternalError,
   RpcUnavailableError,
 } from "@/common/errors/infrastructure";
-import { InsufficientGasError } from "@/common/errors/transfer";
 import { TransactionRevertedError } from "@/common/errors/transaction";
+import { InsufficientGasError } from "@/common/errors/transfer";
 import {
   InvalidAddressError,
   WalletSigningError,
