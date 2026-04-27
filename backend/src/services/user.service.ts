@@ -18,9 +18,9 @@ export type KycSubmissionData = {
   dateOfBirth: Date;
   nationality: string;
   documentType: "passport" | "drivers_license" | "national_id";
-  documentFrontUploaded: boolean;
-  documentBackUploaded: boolean;
-  selfieUploaded: boolean;
+  documentFrontKey: string;
+  documentBackKey: string;
+  selfieKey: string;
 };
 
 export class UserService {
@@ -83,6 +83,9 @@ export class UserService {
             dateOfBirth: data.dateOfBirth,
             nationality: data.nationality,
             documentType: data.documentType,
+            documentFrontKey: data.documentFrontKey,
+            documentBackKey: data.documentBackKey || undefined,
+            selfieKey: data.selfieKey,
           })
           .andThen(() =>
             new UserRepository(tx).updateKycStatus(userId, KYC_STATUS.PENDING)

@@ -57,9 +57,9 @@ export type KycFormData = {
   dateOfBirth: Date | undefined;
   nationality: string;
   documentType: string;
-  documentFrontUploaded: boolean;
-  documentBackUploaded: boolean;
-  selfieUploaded: boolean;
+  documentFrontKey: string;
+  documentBackKey: string;
+  selfieKey: string;
 };
 
 const INITIAL_FORM_DATA: KycFormData = {
@@ -67,9 +67,9 @@ const INITIAL_FORM_DATA: KycFormData = {
   dateOfBirth: undefined,
   nationality: "",
   documentType: "",
-  documentFrontUploaded: false,
-  documentBackUploaded: false,
-  selfieUploaded: false,
+  documentFrontKey: "",
+  documentBackKey: "",
+  selfieKey: "",
 };
 
 type KycVerificationWizardProps = {
@@ -148,10 +148,11 @@ export function KycVerificationWizard({
 
   const isStep2Valid =
     formData.documentType.length > 0 &&
-    formData.documentFrontUploaded &&
-    (formData.documentType === "passport" || formData.documentBackUploaded);
+    formData.documentFrontKey.length > 0 &&
+    (formData.documentType === "passport" ||
+      formData.documentBackKey.length > 0);
 
-  const isStep3Valid = formData.selfieUploaded;
+  const isStep3Valid = formData.selfieKey.length > 0;
 
   const canProceed =
     (currentStep === STEP_PERSONAL_INFO && isStep1Valid) ||

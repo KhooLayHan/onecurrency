@@ -441,3 +441,127 @@ export function transferTokens(
     }
   );
 }
+
+export function blacklistAddress(
+  address: string
+): ResultAsync<string, AppError> {
+  return ResultAsync.fromPromise(
+    (async () => {
+      if (!isAddress(address)) {
+        throw new InvalidAddressError(address);
+      }
+      logger.info({ address }, "Blacklisting address on-chain...");
+      const { request } = await publicClient.simulateContract({
+        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        abi: OneCurrencyABI,
+        functionName: "blacklistAccount",
+        args: [address as `0x${string}`],
+        chain,
+        account,
+      });
+      const txHash = await walletClient.writeContract(request);
+      await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+      });
+      logger.info({ address, txHash }, "Address blacklisted on-chain");
+      return txHash;
+    })(),
+    (e): AppError => {
+      if (e instanceof AppError) {
+        return e;
+      }
+      if (e instanceof ContractFunctionRevertedError) {
+        return handleContractRevert(e, "blacklistAccount");
+      }
+      return new InternalError("Failed to blacklist address on-chain", {
+        cause: e,
+      });
+    }
+  );
+}
+
+export function unblacklistAddress(
+  address: string
+): ResultAsync<string, AppError> {
+  return ResultAsync.fromPromise(
+    (async () => {
+      if (!isAddress(address)) {
+        throw new InvalidAddressError(address);
+      }
+      logger.info({ address }, "Removing address from on-chain blacklist...");
+      const { request } = await publicClient.simulateContract({
+        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        abi: OneCurrencyABI,
+        functionName: "unblacklistAccount",
+        args: [address as `0x${string}`],
+        chain,
+        account,
+      });
+      const txHash = await walletClient.writeContract(request);
+      await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+      });
+      logger.info(
+        { address, txHash },
+        "Address removed from on-chain blacklist"
+      );
+      return txHash;
+    })(),
+    (e): AppError => {
+      if (e instanceof AppError) {
+        return e;
+      }
+      if (e instanceof ContractFunctionRevertedError) {
+        return handleContractRevert(e, "unblacklistAccount");
+      }
+      return new InternalError("Failed to unblacklist address on-chain", {
+        cause: e,
+      });
+    }
+  );
+}
+
+export function seizeAddressTokens(
+  fromAddress: string,
+  toAddress: string
+): ResultAsync<string, AppError> {
+  return ResultAsync.fromPromise(
+    (async () => {
+      if (!isAddress(fromAddress)) {
+        throw new InvalidAddressError(fromAddress);
+      }
+      if (!isAddress(toAddress)) {
+        throw new InvalidAddressError(toAddress);
+      }
+      logger.info({ fromAddress, toAddress }, "Seizing tokens on-chain...");
+      const { request } = await publicClient.simulateContract({
+        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        abi: OneCurrencyABI,
+        functionName: "seizeTokens",
+        args: [fromAddress as `0x${string}`, toAddress as `0x${string}`],
+        chain,
+        account,
+      });
+      const txHash = await walletClient.writeContract(request);
+      await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+      });
+      logger.info({ fromAddress, toAddress, txHash }, "Tokens seized on-chain");
+      return txHash;
+    })(),
+    (e): AppError => {
+      if (e instanceof AppError) {
+        return e;
+      }
+      if (e instanceof ContractFunctionRevertedError) {
+        return handleContractRevert(e, "seizeTokens");
+      }
+      return new InternalError("Failed to seize tokens on-chain", {
+        cause: e,
+      });
+    }
+  );
+}
