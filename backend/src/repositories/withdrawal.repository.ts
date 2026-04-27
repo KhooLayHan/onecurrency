@@ -47,7 +47,12 @@ export class WithdrawalRepository {
           transactionStatuses,
           eq(withdrawals.statusId, transactionStatuses.id)
         )
-        .where(eq(withdrawals.userId, userId))
+        .where(
+          eq(
+            withdrawals.userId,
+            userId.toString() as unknown as bigint
+          )
+        )
         .orderBy(desc(withdrawals.createdAt)),
       (e): InternalError =>
         new InternalError("Failed to fetch withdrawal history", {
