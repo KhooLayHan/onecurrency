@@ -171,7 +171,7 @@ export function SendForm() {
     );
   }
 
-  const canSubmit =
+  const isRecipientValid =
     !!recipient &&
     !recipientNotFound &&
     !isLookingUp &&
@@ -337,13 +337,14 @@ export function SendForm() {
       )}
 
       <form.Subscribe
-        selector={(state) => [
-          state.canSubmit,
-          state.isSubmitting,
-          state.values.amount,
-        ]}
+        selector={(state) => ({
+          canSubmit: state.canSubmit,
+          isSubmitting: state.isSubmitting,
+          amount: state.values.amount,
+        })}
       >
-        {([formCanSubmit, isSubmitting, amount]) => {
+        {(state) => {
+          const { canSubmit: formCanSubmit, isSubmitting, amount } = state;
           const insufficient =
             balanceUsd !== null && (amount || 0) > balanceUsd;
           return (
@@ -353,7 +354,7 @@ export function SendForm() {
                 !formCanSubmit ||
                 isSubmitting ||
                 !isVerified ||
-                !canSubmit ||
+                !isRecipientValid ||
                 insufficient
               }
               size="lg"
