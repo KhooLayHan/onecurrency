@@ -26,7 +26,7 @@ export default function TransferPage() {
             Send to Contact
           </CardTitle>
           <CardDescription>
-            Send money instantly to any OneCurrency user by email. Free, no
+            Send money instantly to any OneCurrency user by email. No platform
             fees.
           </CardDescription>
         </CardHeader>

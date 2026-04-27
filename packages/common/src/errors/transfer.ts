@@ -24,10 +24,22 @@ export class RecipientNotFoundError extends AppError {
     email: string,
     options?: ConstructorParameters<typeof AppError>[1]
   ) {
-    super(`No account found for '${email}'.`, {
+    super("Recipient not found.", {
       ...options,
       context: { email, ...options?.context },
     });
+  }
+}
+
+export class InsufficientGasError extends AppError {
+  readonly code = "INSUFFICIENT_GAS";
+  readonly statusCode = StatusCodes.UNPROCESSABLE_ENTITY;
+  readonly domain = "transaction" as const;
+  readonly severity = "high" as const;
+  readonly isOperational = true;
+
+  constructor(options?: ConstructorParameters<typeof AppError>[1]) {
+    super("Unable to process transfer. Please try again shortly.", options);
   }
 }
 

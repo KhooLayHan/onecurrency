@@ -20,6 +20,7 @@ import {
   InternalError,
   RpcUnavailableError,
 } from "@/common/errors/infrastructure";
+import { InsufficientGasError } from "@/common/errors/transfer";
 import { TransactionRevertedError } from "@/common/errors/transaction";
 import {
   InvalidAddressError,
@@ -338,6 +339,32 @@ export function transferTokens(
         ? decryptedKey
         : `0x${decryptedKey}`;
       const senderAccount = privateKeyToAccount(formattedKey as `0x${string}`);
+
+      // Check sender has ETH for gas before attempting to simulate
+      const TRANSFER_GAS_ESTIMATE = 65_000n;
+      const nativeBalance = await publicClient.getBalance({
+        address: senderAccount.address,
+      });
+      const gasPrice = await publicClient.getGasPrice();
+      const estimatedGasCost = TRANSFER_GAS_ESTIMATE * gasPrice;
+
+      if (nativeBalance < estimatedGasCost) {
+        logger.error(
+          {
+            address: senderAccount.address,
+            nativeBalance: nativeBalance.toString(),
+            estimatedGasCost: estimatedGasCost.toString(),
+          },
+          "Custodial wallet has insufficient ETH for gas"
+        );
+        throw new InsufficientGasError({
+          context: {
+            address: senderAccount.address,
+            nativeBalance: nativeBalance.toString(),
+            estimatedGasCost: estimatedGasCost.toString(),
+          },
+        });
+      }
 
       logger.info(
         {

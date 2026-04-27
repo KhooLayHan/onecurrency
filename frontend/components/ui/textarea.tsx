@@ -47,6 +47,7 @@ function Textarea({
 }: TextareaProps) {
   return (
     <textarea
+      aria-invalid={error ? true : undefined}
       data-slot="textarea"
       className={cn(
         textareaVariants({

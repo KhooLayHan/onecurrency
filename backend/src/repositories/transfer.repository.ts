@@ -1,4 +1,4 @@
-import { desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
@@ -124,6 +124,99 @@ export class TransferRepository {
     });
   }
 
+  findByIdempotencyKey(
+    senderUserId: bigint,
+    idempotencyKey: string
+  ): ResultAsync<Transfer | null, InternalError> {
+    return ResultAsync.fromPromise(
+      this.db
+        .select()
+        .from(transfers)
+        .where(
+          and(
+            eq(transfers.senderUserId, senderUserId),
+            eq(transfers.idempotencyKey, idempotencyKey)
+          )
+        )
+        .limit(1)
+        .then((rows) => rows[0] ?? null),
+      (e): InternalError =>
+        new InternalError("Failed to check idempotency key", {
+          cause: e,
+          context: {
+            senderUserId: senderUserId.toString(),
+            idempotencyKey,
+          },
+        })
+    );
+  }
+
+  private validateAndMapRow(
+    row: {
+      id: bigint;
+      publicId: string;
+      senderUserId: bigint;
+      amountCents: bigint | null;
+      status: string;
+      senderName: string | null;
+      receiverName: string | null;
+      note: string | null;
+      createdAt: Date;
+    },
+    userId: bigint
+  ):
+    | { ok: true; item: TransferHistoryItem }
+    | { ok: false; error: InternalError } {
+    const status = row.status.toLowerCase();
+    if (!VALID_STATUSES.has(status)) {
+      return {
+        ok: false,
+        error: new InternalError("Unknown transaction status from DB", {
+          context: { status: row.status },
+        }),
+      };
+    }
+    if (row.amountCents == null) {
+      return {
+        ok: false,
+        error: new InternalError("Transfer amountCents is null in DB", {
+          context: { transferId: row.id.toString() },
+        }),
+      };
+    }
+    const amountCentsNum = Number(row.amountCents);
+    if (!Number.isSafeInteger(amountCentsNum)) {
+      return {
+        ok: false,
+        error: new InternalError(
+          "Transfer amountCents exceeds safe integer range",
+          {
+            context: {
+              transferId: row.id.toString(),
+              amountCents: row.amountCents.toString(),
+            },
+          }
+        ),
+      };
+    }
+    const isSender = row.senderUserId === userId;
+    return {
+      ok: true,
+      item: {
+        id: row.id.toString(),
+        publicId: row.publicId,
+        type: isSender ? "transfer_sent" : "transfer_received",
+        amountCents: amountCentsNum,
+        status: status as TransferHistoryItem["status"],
+        counterpartyName: isSender
+          ? (row.receiverName ?? "Unknown")
+          : (row.senderName ?? "Unknown"),
+        note: row.note,
+        createdAt: row.createdAt,
+      },
+    };
+  }
+
   findByUserId(
     userId: bigint
   ): ResultAsync<TransferHistoryItem[], InternalError> {
@@ -165,27 +258,11 @@ export class TransferRepository {
     ).andThen((rows) => {
       const mapped: TransferHistoryItem[] = [];
       for (const row of rows) {
-        const status = row.status.toLowerCase();
-        if (!VALID_STATUSES.has(status)) {
-          return errAsync(
-            new InternalError("Unknown transaction status from DB", {
-              context: { status: row.status },
-            })
-          );
+        const result = this.validateAndMapRow(row, userId);
+        if (!result.ok) {
+          return errAsync(result.error);
         }
-        const isSender = row.senderUserId === userId;
-        mapped.push({
-          id: row.id.toString(),
-          publicId: row.publicId,
-          type: isSender ? "transfer_sent" : "transfer_received",
-          amountCents: Number(row.amountCents ?? 0n),
-          status: status as TransferHistoryItem["status"],
-          counterpartyName: isSender
-            ? (row.receiverName ?? "Unknown")
-            : (row.senderName ?? "Unknown"),
-          note: row.note,
-          createdAt: row.createdAt,
-        });
+        mapped.push(result.item);
       }
       return okAsync(mapped);
     });

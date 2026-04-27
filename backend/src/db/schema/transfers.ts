@@ -8,7 +8,9 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { blockchainTransactions } from "./blockchain-transactions";
 import { transactionStatuses } from "./transaction-statuses";
@@ -46,6 +48,7 @@ export const transfers = pgTable(
     blockchainTxId: bigint("blockchain_tx_id", { mode: "bigint" }).references(
       () => blockchainTransactions.id
     ),
+    idempotencyKey: varchar("idempotency_key", { length: 36 }),
     note: text("note"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -69,6 +72,9 @@ export const transfers = pgTable(
     index("idx_transfers_status").on(table.statusId),
     index("idx_transfers_blockchain_tx").on(table.blockchainTxId),
     index("idx_transfers_created").on(table.createdAt),
+    uniqueIndex("uq_transfers_sender_idempotency_key")
+      .on(table.senderUserId, table.idempotencyKey)
+      .where(sql`${table.idempotencyKey} IS NOT NULL`),
   ]
 );
 

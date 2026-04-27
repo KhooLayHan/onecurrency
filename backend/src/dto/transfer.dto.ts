@@ -14,6 +14,10 @@ export const initiateTransferSchema = z.object({
     .min(TRANSFER_MIN_CENTS, `Minimum transfer is $${P2P_TRANSFER_MIN}.00`)
     .max(TRANSFER_MAX_CENTS, `Maximum transfer is $${P2P_TRANSFER_MAX}.00`),
   note: z.string().max(NOTE_MAX_LENGTH).optional(),
+  idempotencyKey: z
+    .string()
+    .uuid("Idempotency key must be a valid UUID")
+    .optional(),
 });
 
 export type InitiateTransferRequest = z.infer<typeof initiateTransferSchema>;

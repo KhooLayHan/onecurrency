@@ -1,6 +1,5 @@
 import { ORPCError } from "@orpc/server";
 import z from "zod";
-import { RecipientNotFoundError } from "@/common/errors/transfer";
 import { db } from "@/src/db";
 import { logger } from "@/src/lib/logger";
 import { UserRepository } from "@/src/repositories/user.repository";
@@ -200,14 +199,26 @@ export const findRecipient = base
     }
 
     const recipient = result.value;
-    if (!recipient) {
-      throw mapToORPCError(new RecipientNotFoundError(input.email));
+    const NO_ELIGIBLE_RECIPIENT = new ORPCError("NOT_FOUND", {
+      message: "No eligible recipient found for this email.",
+    });
+
+    if (!recipient || recipient.id.toString() === userId) {
+      logger.info(
+        {
+          userId,
+          lookupEmail: input.email,
+          reason: recipient ? "self_transfer" : "not_found",
+        },
+        "Recipient lookup rejected — collapsing to generic error"
+      );
+      throw NO_ELIGIBLE_RECIPIENT;
     }
-    if (recipient.id.toString() === userId) {
-      throw new ORPCError("UNPROCESSABLE_ENTITY", {
-        message: "You cannot send money to yourself.",
-      });
-    }
+
+    logger.info(
+      { userId, lookupEmail: input.email },
+      "Recipient lookup successful"
+    );
 
     return { name: recipient.name };
   });

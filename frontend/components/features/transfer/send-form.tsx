@@ -86,6 +86,7 @@ export function SendForm() {
           recipientEmail,
           amountCents,
           note: value.note || undefined,
+          idempotencyKey: crypto.randomUUID(),
         });
         setSuccess({
           transferId: result.transferId,
@@ -137,7 +138,11 @@ export function SendForm() {
     );
   }
 
-  const canSubmit = !!recipient && !recipientNotFound;
+  const canSubmit =
+    !!recipient &&
+    !recipientNotFound &&
+    !isLookingUp &&
+    recipientEmail === debouncedEmail;
 
   return (
     <form
@@ -251,7 +256,7 @@ export function SendForm() {
               </span>
             </Label>
             <Textarea
-              className="min-h-[80px]"
+              className="min-h-20"
               id={field.name}
               maxLength={NOTE_MAX_LENGTH}
               name={field.name}
@@ -310,8 +315,8 @@ export function SendForm() {
       </form.Subscribe>
 
       <p className="mt-4 text-center text-muted-foreground text-xs">
-        Transfers are instant and free. The recipient's balance updates
-        immediately.
+        Transfers are instant with no platform fees. The recipient's balance
+        updates immediately.
       </p>
     </form>
   );
