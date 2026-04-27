@@ -280,10 +280,18 @@ export class WithdrawalService {
           }))
       )
       .mapErr((err) => {
-        logger.error(
-          { error: err.toLog() },
-          "CRITICAL: Post-burn step failed — manual reconciliation required"
-        );
+        const isPreBurnError =
+          err instanceof InsufficientBalanceError ||
+          err instanceof WithdrawalKycRequiredError ||
+          err instanceof WalletNotFoundError ||
+          err instanceof WalletNotCustodialError;
+
+        if (!isPreBurnError) {
+          logger.error(
+            { error: err.toLog() },
+            "CRITICAL: Post-burn step failed — manual reconciliation required"
+          );
+        }
         return err;
       });
   }

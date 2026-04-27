@@ -43,7 +43,7 @@ export class DepositRepository {
           transactionStatuses,
           eq(deposits.statusId, transactionStatuses.id)
         )
-        .where(eq(deposits.userId, userId.toString() as unknown as bigint))
+        .where(eq(deposits.userId, userId))
         .orderBy(desc(deposits.createdAt)),
       (e): InternalError =>
         new InternalError("Failed to fetch deposit history", {

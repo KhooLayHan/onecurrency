@@ -1,4 +1,6 @@
 import { neonConfig, Pool } from "@neondatabase/serverless";
+import { Cache } from "drizzle-orm/cache/core/cache";
+import { entityKind } from "drizzle-orm/entity";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 import { accounts } from "./db/schema/accounts";
@@ -22,6 +24,26 @@ import { wallets } from "./db/schema/wallets";
 import { webhookEvents } from "./db/schema/webhook-events";
 import { withdrawals } from "./db/schema/withdrawals";
 import { env } from "./env";
+
+class NoQueryCache extends Cache {
+  static override readonly [entityKind] = "NoQueryCache";
+
+  override strategy(): "explicit" {
+    return "explicit";
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: must have empty block
+  override get(): Promise<any[] | undefined> {
+    return Promise.resolve(undefined);
+  }
+
+  override put(): Promise<void> {
+    return Promise.resolve();
+  }
+  override onMutate(): Promise<void> {
+    return Promise.resolve();
+  }
+}
 
 neonConfig.webSocketConstructor = ws;
 
@@ -62,6 +84,7 @@ export const db = drizzle({
   },
   logger: env.NODE_ENV !== "production",
   casing: "snake_case",
+  cache: new NoQueryCache(),
 });
 
 export type Database = typeof db;
