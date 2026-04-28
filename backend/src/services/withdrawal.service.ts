@@ -21,13 +21,12 @@ import { UserRepository } from "../repositories/user.repository";
 import { WalletRepository } from "../repositories/wallet.repository";
 import { WithdrawalRepository } from "../repositories/withdrawal.repository";
 import { burnTokens, getOnChainBalance } from "./blockchain";
-import {
-  addBankAccount,
-  calculateTokenAmountWei,
-  createConnectedAccount,
-  createPayout,
-  createTransfer,
-} from "./stripe.service";
+import * as stripeService from "./stripe.service";
+import * as stripeMockService from "./stripe-mock.service";
+import { env } from "../env";
+
+const stripe =
+  env.NODE_ENV === "production" ? stripeService : stripeMockService;
 
 const WITHDRAWAL_FEE_NUMERATOR = 5n;
 const WITHDRAWAL_FEE_DENOMINATOR = 1000n;
@@ -54,7 +53,7 @@ export class WithdrawalService {
         WITHDRAWAL_FEE_DENOMINATOR
     );
     const netAmountCents = grossAmountCents - feeCents;
-    const tokenAmountWei = calculateTokenAmountWei(grossAmountCents);
+    const tokenAmountWei = stripe.calculateTokenAmountWei(grossAmountCents);
 
     return userRepo
       .findById(userId)
@@ -177,7 +176,7 @@ export class WithdrawalService {
           });
         }
         return ResultAsync.fromPromise(
-          createConnectedAccount(user.email, `acct-${userId.toString()}`),
+          stripe.createConnectedAccount(user.email, `acct-${userId.toString()}`),
           (e): AppError =>
             new ExternalServiceError(
               "Stripe",
@@ -207,7 +206,7 @@ export class WithdrawalService {
           connectAccountId,
         }) =>
           ResultAsync.fromPromise(
-            addBankAccount(
+            stripe.addBankAccount(
               connectAccountId,
               {
                 routingNumber: input.bankRoutingNumber,
@@ -237,7 +236,7 @@ export class WithdrawalService {
         ({ withdrawal, blockchainTx, connectAccountId, bankAccountId }) => {
           const idempotencyBase = `withdrawal-${withdrawal.id.toString()}`;
           return ResultAsync.fromPromise(
-            createTransfer(
+            stripe.createTransfer(
               netAmountCents,
               connectAccountId,
               `${idempotencyBase}-transfer`
@@ -250,7 +249,7 @@ export class WithdrawalService {
               )
           ).andThen((transferId) =>
             ResultAsync.fromPromise(
-              createPayout(
+              stripe.createPayout(
                 netAmountCents,
                 connectAccountId,
                 bankAccountId,
@@ -274,10 +273,20 @@ export class WithdrawalService {
       .andThen(({ withdrawal, transferId, payoutId }) =>
         withdrawalRepo
           .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
-          .map(() => ({
-            withdrawalId: withdrawal.publicId,
-            status: "processing" as const,
-          }))
+          .andThen(() => {
+            if (env.NODE_ENV !== "production") {
+              return withdrawalRepo
+                .updateStatus(withdrawal.id, TRANSACTION_STATUS.COMPLETED)
+                .map(() => ({
+                  withdrawalId: withdrawal.publicId,
+                  status: "completed" as const,
+                }));
+            }
+            return okAsync({
+              withdrawalId: withdrawal.publicId,
+              status: "processing" as const,
+            });
+          })
       )
       .mapErr((err) => {
         const isPreBurnError =

@@ -62,7 +62,7 @@ const formattedPrivateKey = env.SEPOLIA_PRIVATE_KEY?.startsWith("0x")
 const account = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
 
 // 4. Initialize the Wallet Client (For signing and sending txs)
-const walletClient = createWalletClient({
+export const walletClient = createWalletClient({
   account,
   chain,
   transport: http(rpcUrl),

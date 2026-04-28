@@ -115,6 +115,30 @@ export class DepositService {
               { depositId: String(deposit.id), stripeSessionId: session.id },
               "createCheckoutSession: deposit row inserted"
             );
+
+            // DEV ONLY: bypass Stripe checkout UI by processing the payment directly.
+            // In production, this is handled by the Stripe webhook.
+            if (env.NODE_ENV !== "production") {
+              const devEvent = {
+                id: `evt_dev_${deposit.id}`,
+                object: "event",
+                type: "checkout.session.completed",
+                // biome-ignore lint/style/noMagicNumbers: temp
+                created: Math.floor(Date.now() / 1000),
+                livemode: false,
+                pending_webhooks: 0,
+                request: null,
+                api_version: null,
+                data: { object: { ...session, payment_status: "paid" } },
+              } as unknown as Stripe.Event;
+
+              logger.info(
+                { depositId: String(deposit.id) },
+                "DEV: directly processing payment without Stripe webhook"
+              );
+
+              this.processSuccessfulPayment(devEvent);
+            }
             return { checkoutUrl: session.url as string };
           });
       });
@@ -137,6 +161,8 @@ export class DepositService {
       );
       return okAsync(undefined);
     }
+
+    logger.info("DDD");
 
     const checkoutSession = event.data.object as Stripe.Checkout.Session;
     logger.info(
@@ -180,6 +206,7 @@ export class DepositService {
       );
     }
 
+    logger.info("DDD");
     return checkWebhookIdempotency(this.db, event.id).andThen(
       (alreadyProcessed) => {
         logger.info(
@@ -192,6 +219,7 @@ export class DepositService {
           return okAsync<void, AppError>(undefined);
         }
 
+        logger.info("DDDWADAD");
         // Attempt to record event atomically; null = duplicate (another request is processing)
         return recordWebhookEvent(this.db, event).andThen((recordedEvent) => {
           logger.info(
@@ -207,6 +235,7 @@ export class DepositService {
             return okAsync<void, AppError>(undefined);
           }
 
+          logger.info("dawp3r3");
           return createDepositRecord(this.db, {
             userId,
             walletId,

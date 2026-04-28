@@ -178,9 +178,9 @@ export class DepositRepository {
       this.db
         .update(deposits)
         .set({
+          statusId: TRANSACTION_STATUS.COMPLETED,
           blockchainTxId,
           completedAt: new Date(),
-          statusId: TRANSACTION_STATUS.COMPLETED,
         })
         .where(eq(deposits.id, id))
         .returning({ id: deposits.id }),

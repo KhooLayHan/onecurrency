@@ -24,7 +24,7 @@ export const initiate = base
   .output(
     z.object({
       withdrawalId: z.string(),
-      status: z.literal("processing"),
+      status: z.enum(["processing", "completed"]),
     })
   )
   .handler(async ({ input, context }) => {
