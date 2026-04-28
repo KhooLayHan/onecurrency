@@ -200,7 +200,14 @@ export default function AdminLayout({
         {/* Content skeleton */}
         <div className="flex flex-1 flex-col">
           <div className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 px-4">
-            <Skeleton className="h-5 w-36" />
+            {/* Mobile: burger + logo placeholders */}
+            <Skeleton className="size-8 rounded-md md:hidden" />
+            <Skeleton className="size-7 rounded-md md:hidden" />
+            {/* Desktop: shield icon + title */}
+            <Skeleton className="hidden h-4 w-4 rounded md:block" />
+            <Skeleton className="h-4 w-36" />
+            <div className="flex-1" />
+            <Skeleton className="hidden h-6 w-28 rounded-full md:block" />
           </div>
           <div className="flex flex-1 items-center justify-center">
             <Skeleton className="h-8 w-48" />

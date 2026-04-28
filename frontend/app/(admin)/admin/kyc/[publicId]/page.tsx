@@ -121,6 +121,7 @@ export default function KycDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button
+          className="shrink-0"
           onClick={() => router.push("/admin/kyc")}
           size="sm"
           variant="outline"
@@ -128,8 +129,8 @@ export default function KycDetailPage() {
           <ArrowLeft className="mr-1 size-4" />
           Back
         </Button>
-        <div>
-          <h1 className="font-bold text-2xl tracking-tight">
+        <div className="min-w-0">
+          <h1 className="truncate font-bold text-2xl tracking-tight">
             {submission.fullName}
           </h1>
           <p className="text-muted-foreground text-sm">
