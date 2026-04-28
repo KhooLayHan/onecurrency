@@ -55,7 +55,7 @@ export default function AdminLayout({
       return;
     }
     if (!session) {
-      router.replace(`/login?returnTo=${encodeURIComponent(pathname)}`);
+      router.replace(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
       return;
     }
     if (!(rolesLoading || !rolesFetched || hasAccess)) {
