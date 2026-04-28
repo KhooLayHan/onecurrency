@@ -86,7 +86,16 @@ export function mintTokens(
         throw new InvalidAddressError(toAddress);
       }
 
-      logger.info({ toAddress, amountWei }, "Initiating mint transaction...");
+      logger.info(
+        {
+          toAddress,
+          amountWei,
+          chainId: chain.id,
+          rpcUrl,
+          contractAddress: ONECURRENCY_ADDRESS,
+        },
+        "Initiating mint transaction..."
+      );
 
       // 2. Simulate (Saves gas. Will throw immediately if blacklisted or lacking roles)
       const { request } = await publicClient.simulateContract({

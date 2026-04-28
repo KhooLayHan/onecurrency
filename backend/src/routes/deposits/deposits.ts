@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { StatusCodes } from "http-status-codes";
+import type Stripe from "stripe";
 import { db } from "../../db";
 import { handleApiError } from "../../lib/api-response";
 import { logger } from "../../lib/logger";
@@ -16,6 +17,8 @@ const depositService = new DepositService(db);
  * the unparsed request body — oRPC's handler would consume it first.
  */
 app.post("/webhook", async (c) => {
+  logger.info("Stripe webhook endpoint hit");
+
   const signature = c.req.header("stripe-signature");
   logger.debug({ hasSignature: !!signature }, "Webhook signature check");
 
@@ -40,8 +43,12 @@ app.post("/webhook", async (c) => {
   const event = verifyResult.value;
 
   logger.info(
-    { eventId: event.id, eventType: event.type },
-    "Stripe webhook received"
+    {
+      eventId: event.id,
+      eventType: event.type,
+      sessionId: (event.data.object as Stripe.Checkout.Session)?.id,
+    },
+    "Stripe webhook received and verified"
   );
 
   const result = await depositService.processSuccessfulPayment(event);

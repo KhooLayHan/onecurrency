@@ -42,6 +42,11 @@ export class DepositService {
     amountCents: number,
     walletId: bigint
   ): ResultAsync<{ checkoutUrl: string }, AppError> {
+    logger.info(
+      { userId: String(userId), amountCents, walletId: String(walletId) },
+      "createCheckoutSession: starting"
+    );
+
     return new UserRepository(this.db)
       .findById(userId)
       .andThen((user) => {
@@ -91,6 +96,10 @@ export class DepositService {
         }
 
         const tokenAmountWei = calculateTokenAmountWei(amountCents);
+        logger.info(
+          { sessionId: session.id, tokenAmountWei },
+          "createCheckoutSession: Stripe session created"
+        );
 
         return new DepositRepository(this.db)
           .create({
@@ -101,7 +110,13 @@ export class DepositService {
             stripeSessionId: session.id,
             statusId: TRANSACTION_STATUS.PENDING,
           })
-          .map(() => ({ checkoutUrl: session.url as string }));
+          .map((deposit) => {
+            logger.info(
+              { depositId: String(deposit.id), stripeSessionId: session.id },
+              "createCheckoutSession: deposit row inserted"
+            );
+            return { checkoutUrl: session.url as string };
+          });
       });
   }
 
@@ -110,11 +125,28 @@ export class DepositService {
    * Delegates each phase to the typed helpers in routes/deposits/helpers.ts.
    */
   processSuccessfulPayment(event: Stripe.Event): ResultAsync<void, AppError> {
+    logger.info(
+      { eventId: event.id, eventType: event.type },
+      "processSuccessfulPayment: invoked"
+    );
+
     if (event.type !== "checkout.session.completed") {
+      logger.info(
+        { eventType: event.type },
+        "processSuccessfulPayment: ignored non-checkout event"
+      );
       return okAsync(undefined);
     }
 
     const checkoutSession = event.data.object as Stripe.Checkout.Session;
+    logger.info(
+      {
+        sessionId: checkoutSession.id,
+        paymentStatus: checkoutSession.payment_status,
+      },
+      "processSuccessfulPayment: processing checkout.session.completed"
+    );
+
     const metadata = extractWebhookMetadata(event);
 
     if (metadata.type !== "ok") {
@@ -150,6 +182,11 @@ export class DepositService {
 
     return checkWebhookIdempotency(this.db, event.id).andThen(
       (alreadyProcessed) => {
+        logger.info(
+          { eventId: event.id, alreadyProcessed },
+          "processSuccessfulPayment: idempotency check result"
+        );
+
         if (alreadyProcessed) {
           logger.info({ eventId: event.id }, "Webhook already processed");
           return okAsync<void, AppError>(undefined);
@@ -157,6 +194,11 @@ export class DepositService {
 
         // Attempt to record event atomically; null = duplicate (another request is processing)
         return recordWebhookEvent(this.db, event).andThen((recordedEvent) => {
+          logger.info(
+            { eventId: event.id, recorded: !!recordedEvent },
+            "processSuccessfulPayment: webhook event recorded"
+          );
+
           if (!recordedEvent) {
             logger.info(
               { eventId: event.id },
@@ -171,10 +213,24 @@ export class DepositService {
             amountCents,
             stripeSessionId: checkoutSession.id,
             stripePaymentIntentId: paymentIntentId,
-          }).andThen(({ deposit, tokenAmountWei }) =>
-            fetchWalletForMint(this.db, walletId, deposit.id).andThen(
-              (wallet) =>
-                executeBlockchainMint(this.db, {
+          }).andThen(({ deposit, tokenAmountWei }) => {
+            logger.info(
+              { depositId: String(deposit.id), tokenAmountWei },
+              "processSuccessfulPayment: deposit activated to PROCESSING"
+            );
+
+            return fetchWalletForMint(this.db, walletId, deposit.id).andThen(
+              (wallet) => {
+                logger.info(
+                  {
+                    walletId,
+                    walletAddress: wallet.address,
+                    networkId: wallet.networkId,
+                  },
+                  "processSuccessfulPayment: wallet fetched for mint"
+                );
+
+                return executeBlockchainMint(this.db, {
                   walletAddress: wallet.address,
                   tokenAmountWei,
                   depositId: deposit.id,
@@ -191,9 +247,10 @@ export class DepositService {
                     depositId: deposit.id,
                     eventId: event.id,
                   });
-                })
-            )
-          );
+                });
+              }
+            );
+          });
         });
       }
     );

@@ -180,6 +180,7 @@ export class DepositRepository {
         .set({
           blockchainTxId,
           completedAt: new Date(),
+          statusId: TRANSACTION_STATUS.COMPLETED,
         })
         .where(eq(deposits.id, id))
         .returning({ id: deposits.id }),
