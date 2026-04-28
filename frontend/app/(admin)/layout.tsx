@@ -35,11 +35,16 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, isPending: sessionLoading } = useSession();
+  const userId = session?.user?.id;
 
-  const { data: roles, isLoading: rolesLoading } = useQuery({
-    queryKey: ["my-roles"],
+  const {
+    data: roles,
+    isLoading: rolesLoading,
+    isFetched: rolesFetched,
+  } = useQuery({
+    queryKey: ["my-roles", userId],
     queryFn: () => orpcClient.users.getMyRoles({}),
-    enabled: !!session,
+    enabled: !!userId,
   });
 
   const hasAccess = roles?.some((r) => ADMIN_ROLES.includes(r)) ?? false;
@@ -53,12 +58,12 @@ export default function AdminLayout({
       router.replace(`/login?returnTo=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (!(rolesLoading || hasAccess)) {
+    if (!(rolesLoading || !rolesFetched || hasAccess)) {
       router.replace("/dashboard");
     }
-  }, [sessionLoading, rolesLoading, session, hasAccess, router, pathname]);
+  }, [sessionLoading, rolesLoading, rolesFetched, session, hasAccess, router, pathname]);
 
-  if (sessionLoading || rolesLoading) {
+  if (sessionLoading || rolesLoading || !rolesFetched) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Skeleton className="h-8 w-48" />
@@ -102,11 +107,29 @@ export default function AdminLayout({
         </nav>
       </aside>
 
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pb-16 md:pb-0">
         <div className="container mx-auto max-w-6xl px-4 py-6 sm:px-8 md:py-10">
           {children}
         </div>
       </main>
+
+      <nav className="fixed right-0 bottom-0 left-0 z-50 flex border-t bg-background md:hidden">
+        {visibleNav.map((item) => (
+          <Link
+            className={cn(
+              "flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
+              pathname.startsWith(item.href)
+                ? "font-medium text-foreground"
+                : "text-muted-foreground"
+            )}
+            href={item.href}
+            key={item.href}
+          >
+            <item.icon className="size-5" />
+            {item.label}
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }

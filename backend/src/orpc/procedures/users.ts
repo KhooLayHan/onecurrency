@@ -260,7 +260,7 @@ export const getLatestKycSubmission = base
       BigInt(userId)
     );
     if (result.isErr()) {
-      return null;
+      throw new Error(result.error.message);
     }
     const submission = result.value;
     if (!submission) {
@@ -271,6 +271,7 @@ export const getLatestKycSubmission = base
 
 export const getMyRoles = base
   .use(requireAuth)
+  .input(z.object({}))
   .output(z.array(z.string()))
   .handler(async ({ context }) => {
     const rows = await db

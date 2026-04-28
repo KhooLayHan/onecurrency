@@ -216,6 +216,8 @@ export default function BlacklistPage() {
                     <TableCell>
                       <div className="flex gap-1">
                         <Button
+                          aria-label="Seize tokens"
+                          className="min-h-11 min-w-11"
                           onClick={() =>
                             setPendingAction({
                               type: "seize",
@@ -223,13 +225,14 @@ export default function BlacklistPage() {
                               address: row.address,
                             })
                           }
-                          size="sm"
                           title="Seize tokens"
                           variant="outline"
                         >
                           <Zap className="size-3.5" />
                         </Button>
                         <Button
+                          aria-label="Remove from blacklist"
+                          className="min-h-11 min-w-11"
                           onClick={() =>
                             setPendingAction({
                               type: "remove",
@@ -237,7 +240,6 @@ export default function BlacklistPage() {
                               address: row.address,
                             })
                           }
-                          size="sm"
                           title="Remove from blacklist"
                           variant="outline"
                         >

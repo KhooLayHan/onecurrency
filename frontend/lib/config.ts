@@ -6,6 +6,6 @@
 
 /**
  * Active network ID for on-chain operations.
- * 1 = Hardhat (local dev). Override in .env.local for Sepolia (e.g. 11155111).
+ * 31337 = Hardhat local dev chain. Override in .env.local for Sepolia (e.g. 11155111).
  */
-export const ACTIVE_NETWORK_ID = 1;
+export const ACTIVE_NETWORK_ID = 31_337;

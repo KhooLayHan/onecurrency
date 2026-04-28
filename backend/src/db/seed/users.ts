@@ -99,7 +99,7 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
 
         await tx.insert(userRoles).values({
           userId: inserted.id,
-          roleId: 2,
+          roleId: config.roleId,
         });
       }
 

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle, ExternalLink, XCircle } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -332,7 +333,7 @@ function DocumentViewer({ label, url }: { label: string; url: string | null }) {
     <div className="flex flex-col gap-2">
       <p className="font-medium text-sm">{label}</p>
       {isPdf ? (
-        <a
+        <Link
           className="flex h-40 items-center justify-center gap-2 rounded-lg border bg-muted/50 text-sm hover:bg-muted"
           href={url}
           rel="noopener noreferrer"
@@ -340,9 +341,9 @@ function DocumentViewer({ label, url }: { label: string; url: string | null }) {
         >
           <ExternalLink className="size-4" />
           View PDF
-        </a>
+        </Link>
       ) : (
-        <a
+        <Link
           className="relative block h-40 w-full"
           href={url}
           rel="noopener noreferrer"
@@ -355,7 +356,7 @@ function DocumentViewer({ label, url }: { label: string; url: string | null }) {
             sizes="(max-width: 768px) 100vw, 33vw"
             src={url}
           />
-        </a>
+        </Link>
       )}
     </div>
   );
