@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DepositForm } from "../deposit/deposit-form";
+import { SendForm } from "../transfer/send-form";
 
 const MYR_EXCHANGE_RATE = 4.72;
 const TOKEN_DECIMALS = 18;
@@ -170,14 +171,33 @@ export function BalanceCard() {
             </DialogContent>
           </Dialog>
 
-          <Button
-            className="flex w-full gap-2 bg-secondary/60 font-semibold"
-            size="lg"
-            variant="secondary"
-          >
-            <Send className="size-4.5" />
-            Send
-          </Button>
+          <Dialog>
+            <DialogTrigger
+              render={
+                <Button
+                  className="flex w-full gap-2 bg-secondary/60 font-semibold"
+                  size="lg"
+                  variant="secondary"
+                />
+              }
+            >
+              <Send className="size-4.5" />
+              Send
+            </DialogTrigger>
+
+            <DialogContent className="rounded-2xl sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-bold text-2xl">
+                  Send Money
+                </DialogTitle>
+                <DialogDescription>
+                  Send funds instantly to another OneCurrency user.
+                </DialogDescription>
+              </DialogHeader>
+
+              <SendForm />
+            </DialogContent>
+          </Dialog>
         </div>
       </CardContent>
     </Card>
