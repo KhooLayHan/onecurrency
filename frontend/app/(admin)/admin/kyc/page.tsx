@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/table";
 import { orpcClient } from "@/lib/api";
 
+const ALL_STATUSES_VALUE = "all";
+
 const STATUS_LABEL: Record<number, string> = {
   [KYC_STATUS.NONE]: "None",
   [KYC_STATUS.PENDING]: "Pending",

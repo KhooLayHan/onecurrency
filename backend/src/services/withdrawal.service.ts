@@ -28,7 +28,12 @@ import {
   createConnectedAccount,
   createPayout,
   createTransfer,
-} from "./stripe.service";
+} from "./stripe-mock.service";
+
+const stripe =
+  env.NODE_ENV === "production"
+    ? await import("./stripe.service")
+    : await import("./stripe-mock.service");
 
 const WITHDRAWAL_FEE_NUMERATOR = 5n;
 const WITHDRAWAL_FEE_DENOMINATOR = 1000n;

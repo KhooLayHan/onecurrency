@@ -137,7 +137,18 @@ export class DepositService {
                 "DEV: directly processing payment without Stripe webhook"
               );
 
-              this.processSuccessfulPayment(devEvent);
+              this.processSuccessfulPayment(devEvent).match(
+                () =>
+                  logger.info(
+                    { depositId: String(deposit.id) },
+                    "DEV: payment processed successfully"
+                  ),
+                (err) =>
+                  logger.error(
+                    { depositId: String(deposit.id), error: err },
+                    "DEV: payment processing failed"
+                  )
+              );
             }
             return { checkoutUrl: session.url as string };
           });
@@ -162,7 +173,7 @@ export class DepositService {
       return okAsync(undefined);
     }
 
-    logger.info("DDD");
+    // logger.info("DDD");
 
     const checkoutSession = event.data.object as Stripe.Checkout.Session;
     logger.info(
@@ -206,7 +217,6 @@ export class DepositService {
       );
     }
 
-    logger.info("DDD");
     return checkWebhookIdempotency(this.db, event.id).andThen(
       (alreadyProcessed) => {
         logger.info(
@@ -219,7 +229,7 @@ export class DepositService {
           return okAsync<void, AppError>(undefined);
         }
 
-        logger.info("DDDWADAD");
+        // logger.info("DDDWADAD");
         // Attempt to record event atomically; null = duplicate (another request is processing)
         return recordWebhookEvent(this.db, event).andThen((recordedEvent) => {
           logger.info(
@@ -235,7 +245,6 @@ export class DepositService {
             return okAsync<void, AppError>(undefined);
           }
 
-          logger.info("dawp3r3");
           return createDepositRecord(this.db, {
             userId,
             walletId,

@@ -12,7 +12,9 @@ async function run() {
   const userId = BigInt(process.argv[2] ?? "105");
   const amountCents = Number(process.argv[3] ?? "2000");
 
-  console.log(`Testing withdrawal for user ${userId}, amount ${amountCents} cents`);
+  console.log(
+    `Testing withdrawal for user ${userId}, amount ${amountCents} cents`
+  );
 
   const service = new WithdrawalService(db);
   const result = await service.initiateWithdrawal(userId, {

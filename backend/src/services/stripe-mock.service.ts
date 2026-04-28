@@ -19,7 +19,10 @@ export async function createConnectedAccount(
   _idempotencyKey: string
 ): Promise<string> {
   const id = generateDevId("acct");
-  logger.info({ connectedAccountId: id }, "[MOCK] Created Stripe Connect account");
+  logger.info(
+    { connectedAccountId: id },
+    "[MOCK] Created Stripe Connect account"
+  );
   return id;
 }
 

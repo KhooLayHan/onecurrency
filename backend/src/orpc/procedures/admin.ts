@@ -1,9 +1,12 @@
 import { ORPCError } from "@orpc/server";
+import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import z from "zod";
 import { db } from "@/src/db";
+import { networks } from "@/src/db/schema/networks";
 import { env } from "@/src/env";
 import { BlacklistService } from "@/src/services/blacklist.service";
+import { activeChainId } from "@/src/services/blockchain";
 import { KycAdminService } from "@/src/services/kyc-admin.service";
 import { base } from "../context";
 import { mapToORPCError } from "../errors";
@@ -215,16 +218,27 @@ export const addToBlacklist = base
       address: z
         .string()
         .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"),
-      networkId: z.number().int(),
       reason: z.string().min(BLACKLIST_REASON_MIN_LENGTH, "Reason is required"),
       source: z.string().optional(),
     })
   )
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
+    const [activeNetwork] = await db
+      .select({ id: networks.id })
+      .from(networks)
+      .where(eq(networks.chainId, BigInt(activeChainId)))
+      .limit(1);
+
+    if (!activeNetwork) {
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Active network not configured in database",
+      });
+    }
+
     const result = await blacklistService.add({
       address: input.address,
-      networkId: input.networkId,
+      networkId: activeNetwork.id,
       reason: input.reason,
       source: input.source,
       addedByUserId: BigInt(context.session.userId),
