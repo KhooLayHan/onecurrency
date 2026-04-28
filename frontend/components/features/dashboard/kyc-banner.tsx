@@ -24,7 +24,7 @@ export function KycBanner({ kycStatusId }: KycBannerProps) {
           Verify your identity
         </p>
         <p className="mt-0.5 text-highlight-700 text-xs dark:text-highlight-300">
-          Complete identity verification to unlock deposits and transfers.
+          Complete identity verification to unlock Add Money and Transfers.
         </p>
       </div>
       <Button

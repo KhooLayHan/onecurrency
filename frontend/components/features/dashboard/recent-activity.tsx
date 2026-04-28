@@ -14,6 +14,7 @@ import type { Transaction } from "@/components/features/history/transaction-colu
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { orpcClient } from "@/lib/api";
+import { useSession } from "@/lib/auth-client";
 
 const RECENT_ACTIVITY_LIMIT = 5;
 const CENTS_TO_DOLLARS = 100;
@@ -117,23 +118,42 @@ function ActivityRow({ transaction }: { transaction: Transaction }) {
 }
 
 export function RecentActivityList() {
-  const { data: deposits = [], isLoading: isLoadingDeposits } = useQuery({
-    queryKey: [DEPOSIT_HISTORY_QUERY_KEY],
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+
+  const {
+    data: deposits = [],
+    isLoading: isLoadingDeposits,
+    isError: isDepositsError,
+  } = useQuery({
+    queryKey: [DEPOSIT_HISTORY_QUERY_KEY, userId],
     queryFn: () => orpcClient.deposits.getHistory({}),
+    enabled: !!userId,
   });
 
-  const { data: withdrawals = [], isLoading: isLoadingWithdrawals } = useQuery({
-    queryKey: [WITHDRAWAL_HISTORY_QUERY_KEY],
+  const {
+    data: withdrawals = [],
+    isLoading: isLoadingWithdrawals,
+    isError: isWithdrawalsError,
+  } = useQuery({
+    queryKey: [WITHDRAWAL_HISTORY_QUERY_KEY, userId],
     queryFn: () => orpcClient.withdrawals.getHistory({}),
+    enabled: !!userId,
   });
 
-  const { data: transfersRaw = [], isLoading: isLoadingTransfers } = useQuery({
-    queryKey: [TRANSFER_HISTORY_QUERY_KEY],
+  const {
+    data: transfersRaw = [],
+    isLoading: isLoadingTransfers,
+    isError: isTransfersError,
+  } = useQuery({
+    queryKey: [TRANSFER_HISTORY_QUERY_KEY, userId],
     queryFn: () => orpcClient.transfers.getHistory({}),
+    enabled: !!userId,
   });
 
   const isLoading =
     isLoadingDeposits || isLoadingWithdrawals || isLoadingTransfers;
+  const hasError = isDepositsError || isWithdrawalsError || isTransfersError;
 
   const recentTransactions: Transaction[] = useMemo(() => {
     const transfers: Transaction[] = transfersRaw.map((t) => ({
@@ -172,6 +192,17 @@ export function RecentActivityList() {
             </div>
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="rounded-xl border border-destructive/30 bg-card p-4">
+        <p className="font-medium text-sm">Unable to load recent activity.</p>
+        <p className="text-muted-foreground text-xs">
+          Please retry in a moment.
+        </p>
       </div>
     );
   }
