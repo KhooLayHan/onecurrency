@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,16 +19,20 @@ export default function ProfilePage() {
   const { data: session, isPending, refetch } = useSession();
   const [wizardOpen, setWizardOpen] = useState(false);
 
+  const kycStatusId = session?.user?.kycStatusId ?? KYC_STATUS.NONE;
+
+  const { data: latestSubmission } = useQuery({
+    queryKey: ["kyc-latest-submission"],
+    queryFn: () => orpcClient.users.getLatestKycSubmission({}),
+    enabled: kycStatusId === KYC_STATUS.REJECTED,
+  });
+
   const handleSubmitKyc = async (data: KycFormData) => {
-    // This guard is redundant with wizard validation but satisfies TypeScript strict null checks
     if (!data.dateOfBirth) {
       toast.error("Date of birth is required");
       return;
     }
-
     try {
-      // console.log("dada");
-      // Submit the KYC form data (sets status to PENDING)
       await orpcClient.users.submitKyc({
         fullName: data.fullName,
         dateOfBirth: data.dateOfBirth,
@@ -36,11 +41,9 @@ export default function ProfilePage() {
           | "passport"
           | "drivers_license"
           | "national_id",
-        // documentFrontUploaded: data.documentFrontUploaded,
-        documentFrontUploaded: true,
-        documentBackUploaded: data.documentBackUploaded,
-        // selfieUploaded: data.selfieUploaded,
-        selfieUploaded: true,
+        documentFrontKey: data.documentFrontKey,
+        documentBackKey: data.documentBackKey,
+        selfieKey: data.selfieKey,
       });
       toast.success("Verification submitted", {
         description: "We'll review your documents within 1-2 business days.",
@@ -58,7 +61,6 @@ export default function ProfilePage() {
 
   const handleSimulateKyc = async () => {
     try {
-      // Development helper: immediately set status to VERIFIED
       await orpcClient.users.simulateKyc({});
       toast.success("Identity verified (simulated)");
       await refetch();
@@ -69,14 +71,6 @@ export default function ProfilePage() {
           : "Failed to simulate verification";
       toast.error("Simulation failed", { description: message });
     }
-  };
-
-  const handleStartVerification = () => {
-    setWizardOpen(true);
-  };
-
-  const handleRetryVerification = () => {
-    setWizardOpen(true);
   };
 
   if (isPending) {
@@ -100,9 +94,6 @@ export default function ProfilePage() {
     );
   }
 
-  // Get KYC status ID from session, default to "None" if not present
-  const kycStatusId = session?.user?.kycStatusId ?? KYC_STATUS.NONE;
-
   return (
     <div className="fade-in mx-auto flex w-full max-w-2xl animate-in flex-col gap-6 duration-300 ease-out">
       <div>
@@ -114,7 +105,6 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      {/* Personal Details Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -134,14 +124,13 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* KYC Status Card */}
       <KycStatusCard
         kycStatusId={kycStatusId}
-        onRetryVerification={handleRetryVerification}
-        onStartVerification={handleStartVerification}
+        onRetryVerification={() => setWizardOpen(true)}
+        onStartVerification={() => setWizardOpen(true)}
+        rejectionReason={latestSubmission?.rejectionReason ?? undefined}
       />
 
-      {/* KYC Verification Wizard Dialog */}
       <KycVerificationWizard
         defaultName={session.user.name}
         onOpenChange={setWizardOpen}
@@ -149,7 +138,6 @@ export default function ProfilePage() {
         open={wizardOpen}
       />
 
-      {/* Dev Simulation Button - only shown when status is PENDING */}
       {kycStatusId === KYC_STATUS.PENDING && (
         <Card className="border-dashed">
           <CardHeader>

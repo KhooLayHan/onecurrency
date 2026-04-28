@@ -143,6 +143,37 @@ const KYC_VERIFICATION_DELAY_MS = 2000;
 - Use UPPER_SNAKE_CASE for true constants
 - Include units in constant names when applicable (`_MS`, `_PX`, `_SECONDS`)
 
+#### Avoid Nested Ternaries
+
+Nested ternary expressions (`a ? b : c ? d : e`) hurt readability and are flagged by Biome's `lint/style/noNestedTernary` rule. Never chain more than one ternary level deep.
+
+**Preferred replacements:**
+
+1. **Lookup map / Record** (best for 3+ states based on a single value):
+
+```typescript
+const STATUS_CONFIG: Record<number, { variant: string; label: string }> = {
+  [STATUS.PENDING]: { variant: "warning", label: "Pending Review" },
+  [STATUS.VERIFIED]: { variant: "success", label: "Verified" },
+  [STATUS.REJECTED]: { variant: "destructive", label: "Rejected" },
+};
+
+const config = STATUS_CONFIG[id] ?? { variant: "default", label: "Unknown" };
+```
+
+2. **If/else helper function** (best when logic depends on multiple variables):
+
+```typescript
+function getActionLabel() {
+  if (isPending) return "Processing...";
+  if (type === "seize") return "Seize Tokens";
+  return "Remove";
+}
+```
+
+3. **Extract sub-component** (best in JSX with complex branching UI):
+   Extract the ternary logic into a standalone component like `<StatusBadge kycStatusId={id} />`.
+
 #### General Examples
 
 ```typescript

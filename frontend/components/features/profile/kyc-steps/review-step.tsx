@@ -85,12 +85,12 @@ export function ReviewStep({ formData }: ReviewStepProps) {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Front</span>
-              <UploadedBadge uploaded={formData.documentFrontUploaded} />
+              <UploadedBadge uploaded={formData.documentFrontKey.length > 0} />
             </div>
             {formData.documentType !== "passport" && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Back</span>
-                <UploadedBadge uploaded={formData.documentBackUploaded} />
+                <UploadedBadge uploaded={formData.documentBackKey.length > 0} />
               </div>
             )}
           </div>
@@ -107,7 +107,7 @@ export function ReviewStep({ formData }: ReviewStepProps) {
           <div className="grid gap-2 rounded-lg bg-muted/50 p-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Selfie</span>
-              <UploadedBadge uploaded={formData.selfieUploaded} />
+              <UploadedBadge uploaded={formData.selfieKey.length > 0} />
             </div>
           </div>
         </div>

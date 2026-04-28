@@ -1,8 +1,16 @@
 import { ORPCError } from "@orpc/server";
+import { eq } from "drizzle-orm";
 import z from "zod";
 import { db } from "@/src/db";
+import { roles } from "@/src/db/schema/roles";
+import { userRoles } from "@/src/db/schema/user-roles";
 import { logger } from "@/src/lib/logger";
+import { KycRepository } from "@/src/repositories/kyc.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
+import {
+  checkObjectExists,
+  generateUploadUrl,
+} from "@/src/services/r2.service";
 import { UserService } from "@/src/services/user.service";
 import { WalletService } from "@/src/services/wallet.service";
 import { base } from "../context";
@@ -26,18 +34,18 @@ const kycSubmissionInputSchema = z
       .string()
       .length(2, "Nationality must be a 2-letter ISO code"),
     documentType: z.enum(["passport", "drivers_license", "national_id"]),
-    documentFrontUploaded: z.boolean(),
-    documentBackUploaded: z.boolean(),
-    selfieUploaded: z.boolean(),
+    documentFrontKey: z.string().min(1, "Front document is required"),
+    documentBackKey: z.string().default(""),
+    selfieKey: z.string().min(1, "Selfie is required"),
   })
   .superRefine((data, ctx) => {
     if (
       DOCUMENT_TYPES_REQUIRING_BACK.has(data.documentType) &&
-      !data.documentBackUploaded
+      !data.documentBackKey
     ) {
       ctx.addIssue({
         code: "custom",
-        path: ["documentBackUploaded"],
+        path: ["documentBackKey"],
         message: "Back of document is required for this document type",
       });
     }
@@ -113,34 +121,65 @@ export const submitKyc = base
       });
     }
 
-    // Validate that boolean fields are actually true (business logic check)
-    // if (!input.documentFrontUploaded || !input.selfieUploaded) {
-    //   throw new ORPCError("BAD_REQUEST", {
-    //     message: "Document front and selfie must be uploaded"
-    //   });
-    // }
+    const EXPECTED_PREFIXES = {
+      documentFrontKey: `kyc/documents/front/${userId}/`,
+      documentBackKey: `kyc/documents/back/${userId}/`,
+      selfieKey: `kyc/selfies/${userId}/`,
+    } as const;
+
+    const keysToValidate = [
+      {
+        key: input.documentFrontKey,
+        field: "documentFrontKey",
+        prefix: EXPECTED_PREFIXES.documentFrontKey,
+      },
+      {
+        key: input.selfieKey,
+        field: "selfieKey",
+        prefix: EXPECTED_PREFIXES.selfieKey,
+      },
+      ...(input.documentBackKey
+        ? [
+            {
+              key: input.documentBackKey,
+              field: "documentBackKey",
+              prefix: EXPECTED_PREFIXES.documentBackKey,
+            },
+          ]
+        : []),
+    ];
+
+    for (const { key, field, prefix } of keysToValidate) {
+      if (!key.startsWith(prefix)) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: `Invalid storage key for ${field}`,
+        });
+      }
+    }
+
+    const existenceChecks = await Promise.all(
+      keysToValidate.map(({ key }) => checkObjectExists(key))
+    );
+    if (existenceChecks.some((exists) => !exists)) {
+      throw new ORPCError("BAD_REQUEST", {
+        message:
+          "One or more document files could not be found. Please re-upload and try again.",
+      });
+    }
 
     const result = await userService.submitKyc(BigInt(userId), {
       fullName: input.fullName,
-      dateOfBirth: new Date(input.dateOfBirth), // Convert ISO string to Date
+      dateOfBirth: new Date(input.dateOfBirth),
       nationality: input.nationality,
       documentType: input.documentType,
-      documentFrontUploaded: input.documentFrontUploaded,
-      documentBackUploaded: input.documentBackUploaded,
-      selfieUploaded: input.selfieUploaded,
+      documentFrontKey: input.documentFrontKey,
+      documentBackKey: input.documentBackKey,
+      selfieKey: input.selfieKey,
     });
     if (result.isErr()) {
       logger.info({ context }, "submitKyc received input here failed");
       throw mapToORPCError(result.error);
     }
-    // logger.info(
-    //   {
-    //     userId,
-    //     nationality: input.nationality,
-    //     documentType: input.documentType,
-    //   },
-    //   "User successfully submitted KYC request"
-    // );
     logger.info("User successfully submitted KYC request");
     return result.value;
   });
@@ -221,4 +260,83 @@ export const findRecipient = base
     );
 
     return { name: recipient.name };
+  });
+
+const FILE_TYPE_TO_PREFIX: Record<string, string> = {
+  front: "kyc/documents/front",
+  back: "kyc/documents/back",
+  selfie: "kyc/selfies",
+};
+
+export const getKycUploadUrl = base
+  .use(requireAuth)
+  .input(
+    z
+      .object({
+        fileType: z.enum(["front", "back", "selfie"]),
+        contentType: z
+          .string()
+          .regex(/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/),
+      })
+      .superRefine(({ fileType, contentType }, ctx) => {
+        if (fileType === "selfie" && contentType === "application/pdf") {
+          ctx.addIssue({
+            code: "custom",
+            path: ["contentType"],
+            message: "Selfie uploads must use an image content type",
+          });
+        }
+      })
+  )
+  .output(z.object({ uploadUrl: z.string(), key: z.string() }))
+  .handler(async ({ context, input }) => {
+    const userId = context.session.userId;
+    const CONTENT_TYPE_TO_EXT: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/heic": "heic",
+      "application/pdf": "pdf",
+    };
+    const ext = CONTENT_TYPE_TO_EXT[input.contentType] ?? "bin";
+    const key = `${FILE_TYPE_TO_PREFIX[input.fileType]}/${userId}/${Date.now()}.${ext}`;
+    const uploadUrl = await generateUploadUrl(key, input.contentType);
+    return { uploadUrl, key };
+  });
+
+export const getLatestKycSubmission = base
+  .use(requireAuth)
+  .output(
+    z
+      .object({
+        rejectionReason: z.string().nullable(),
+      })
+      .nullable()
+  )
+  .handler(async ({ context }) => {
+    const userId = context.session.userId;
+    const result = await new KycRepository(db).findLatestByUserId(
+      BigInt(userId)
+    );
+    if (result.isErr()) {
+      throw new Error(result.error.message);
+    }
+    const submission = result.value;
+    if (!submission) {
+      return null;
+    }
+    return { rejectionReason: submission.rejectionReason ?? null };
+  });
+
+export const getMyRoles = base
+  .use(requireAuth)
+  .input(z.object({}))
+  .output(z.array(z.string()))
+  .handler(async ({ context }) => {
+    const rows = await db
+      .select({ name: roles.name })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(userRoles.userId, BigInt(context.session.userId)));
+    return rows.map((r) => r.name);
   });

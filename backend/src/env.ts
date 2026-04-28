@@ -35,6 +35,10 @@ export const env = createEnv({
       .string()
       .regex(/^0x[0-9a-fA-F]{64}$/)
       .optional(),
+    TREASURY_ADDRESS: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address")
+      .optional(),
     ETHERSCAN_API_KEY: z.string().min(1).optional(),
 
     // STRIPE_SECRET_KEY: z.string().startsWith("sk_test"),
@@ -47,7 +51,26 @@ export const env = createEnv({
 
     BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
     BETTERSTACK_INGESTING_HOST: z.string().min(1),
+    R2_ACCOUNT_ID: z.string().min(1).optional(),
+    R2_ACCESS_KEY_ID: z.string().min(1).optional(),
+    R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    R2_BUCKET_NAME: z.string().min(1).optional(),
+    R2_PUBLIC_URL: z.url().optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
 });
+
+// Cross-field validation: R2 variables must be all present or all absent
+const r2Vars = [
+  env.R2_ACCOUNT_ID,
+  env.R2_ACCESS_KEY_ID,
+  env.R2_SECRET_ACCESS_KEY,
+  env.R2_BUCKET_NAME,
+];
+const r2Defined = r2Vars.filter(Boolean).length;
+if (r2Defined > 0 && r2Defined < r2Vars.length) {
+  throw new Error(
+    "R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME must all be set together or not at all."
+  );
+}
