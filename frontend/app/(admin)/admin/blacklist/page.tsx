@@ -195,7 +195,8 @@ export default function BlacklistPage() {
                   <TableRow key={row.publicId}>
                     <TableCell>
                       <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                        {row.address.slice(0, ADDRESS_PREFIX_LENGTH)}...{row.address.slice(-ADDRESS_SUFFIX_LENGTH)}
+                        {row.address.slice(0, ADDRESS_PREFIX_LENGTH)}...
+                        {row.address.slice(-ADDRESS_SUFFIX_LENGTH)}
                       </code>
                     </TableCell>
                     <TableCell>
@@ -335,7 +336,9 @@ export default function BlacklistPage() {
             </Button>
             <Button
               disabled={
-                !isAddressValid || newReason.length < MIN_REASON_LENGTH || addMutation.isPending
+                !isAddressValid ||
+                newReason.length < MIN_REASON_LENGTH ||
+                addMutation.isPending
               }
               onClick={() => addMutation.mutate()}
             >
