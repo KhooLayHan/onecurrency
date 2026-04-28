@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle, ExternalLink, XCircle } from "lucide-react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -167,21 +168,7 @@ export default function KycDetailPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-sm">Status:</span>
-              <Badge
-                variant={
-                  isPending
-                    ? "warning"
-                    : submission.kycStatusId === KYC_STATUS.VERIFIED
-                      ? "success"
-                      : "destructive"
-                }
-              >
-                {isPending
-                  ? "Pending Review"
-                  : submission.kycStatusId === KYC_STATUS.VERIFIED
-                    ? "Verified"
-                    : "Rejected"}
-              </Badge>
+              <StatusBadge kycStatusId={submission.kycStatusId} />
             </div>
 
             {submission.rejectionReason && (
@@ -194,24 +181,10 @@ export default function KycDetailPage() {
             )}
 
             {isPending && (
-              <div className="flex gap-2 pt-2">
-                <Button
-                  className="flex-1 gap-1.5"
-                  onClick={() => setShowApproveDialog(true)}
-                  variant="primary"
-                >
-                  <CheckCircle className="size-4" />
-                  Approve
-                </Button>
-                <Button
-                  className="flex-1 gap-1.5"
-                  onClick={() => setShowRejectDialog(true)}
-                  variant="destructive"
-                >
-                  <XCircle className="size-4" />
-                  Reject
-                </Button>
-              </div>
+              <ReviewActions
+                onApprove={() => setShowApproveDialog(true)}
+                onReject={() => setShowRejectDialog(true)}
+              />
             )}
           </CardContent>
         </Card>
@@ -287,6 +260,51 @@ export default function KycDetailPage() {
   );
 }
 
+const STATUS_CONFIG: Record<
+  number,
+  {
+    variant: "default" | "warning" | "success" | "destructive" | "primary";
+    label: string;
+  }
+> = {
+  [KYC_STATUS.PENDING]: { variant: "warning", label: "Pending Review" },
+  [KYC_STATUS.VERIFIED]: { variant: "success", label: "Verified" },
+  [KYC_STATUS.REJECTED]: { variant: "destructive", label: "Rejected" },
+};
+
+function StatusBadge({ kycStatusId }: { kycStatusId: number }) {
+  const config = STATUS_CONFIG[kycStatusId] ?? {
+    variant: "default",
+    label: "Unknown",
+  };
+  return <Badge variant={config.variant}>{config.label}</Badge>;
+}
+
+function ReviewActions({
+  onApprove,
+  onReject,
+}: {
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="flex gap-2 pt-2">
+      <Button className="flex-1 gap-1.5" onClick={onApprove} variant="primary">
+        <CheckCircle className="size-4" />
+        Approve
+      </Button>
+      <Button
+        className="flex-1 gap-1.5"
+        onClick={onReject}
+        variant="destructive"
+      >
+        <XCircle className="size-4" />
+        Reject
+      </Button>
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
@@ -324,10 +342,17 @@ function DocumentViewer({ label, url }: { label: string; url: string | null }) {
           View PDF
         </a>
       ) : (
-        <a href={url} rel="noopener noreferrer" target="_blank">
-          <img
+        <a
+          className="relative block h-40 w-full"
+          href={url}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <Image
             alt={label}
-            className="h-40 w-full rounded-lg border object-cover"
+            className="rounded-lg border object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
             src={url}
           />
         </a>

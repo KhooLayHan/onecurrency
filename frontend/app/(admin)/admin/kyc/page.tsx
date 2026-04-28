@@ -116,10 +116,12 @@ export default function KycSubmissionsPage() {
           </TableHeader>
           <TableBody>
             {isLoading
-              ? Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
-                      <TableCell key={j}>
+              ? Array.from({ length: 5 }).map((_row, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholders are static
+                  <TableRow key={`skeleton-row-${i}`}>
+                    {Array.from({ length: 6 }).map((_cell, j) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholders are static
+                      <TableCell key={`skeleton-cell-${j}`}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
                     ))}
