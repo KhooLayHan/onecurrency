@@ -308,7 +308,9 @@ export default function BlacklistPage() {
       <Dialog
         onOpenChange={(open) => {
           setAddOpen(open);
-          if (!open) resetAddForm();
+          if (!open) {
+            resetAddForm();
+          }
         }}
         open={addOpen}
       >

@@ -95,16 +95,22 @@ export default function KycSubmissionsPage() {
         </div>
         <Select
           onValueChange={(value) => {
-            setStatusFilter(value ? Number(value) : undefined);
+            setStatusFilter(
+              value === ALL_STATUSES_VALUE ? undefined : Number(value)
+            );
             setPage(1);
           }}
-          value={statusFilter !== undefined ? String(statusFilter) : ""}
+          value={
+            statusFilter !== undefined
+              ? String(statusFilter)
+              : ALL_STATUSES_VALUE
+          }
         >
           <SelectTrigger className="w-full sm:w-44">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All statuses</SelectItem>
+            <SelectItem value={ALL_STATUSES_VALUE}>All statuses</SelectItem>
             <SelectItem value={String(KYC_STATUS.PENDING)}>Pending</SelectItem>
             <SelectItem value={String(KYC_STATUS.VERIFIED)}>
               Verified
