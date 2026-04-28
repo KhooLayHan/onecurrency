@@ -7,7 +7,10 @@ import { userRoles } from "@/src/db/schema/user-roles";
 import { logger } from "@/src/lib/logger";
 import { KycRepository } from "@/src/repositories/kyc.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
-import { generateUploadUrl } from "@/src/services/r2.service";
+import {
+  checkObjectExists,
+  generateUploadUrl,
+} from "@/src/services/r2.service";
 import { UserService } from "@/src/services/user.service";
 import { WalletService } from "@/src/services/wallet.service";
 import { base } from "../context";
@@ -118,6 +121,52 @@ export const submitKyc = base
       });
     }
 
+    const EXPECTED_PREFIXES = {
+      documentFrontKey: `kyc/documents/front/${userId}/`,
+      documentBackKey: `kyc/documents/back/${userId}/`,
+      selfieKey: `kyc/selfies/${userId}/`,
+    } as const;
+
+    const keysToValidate = [
+      {
+        key: input.documentFrontKey,
+        field: "documentFrontKey",
+        prefix: EXPECTED_PREFIXES.documentFrontKey,
+      },
+      {
+        key: input.selfieKey,
+        field: "selfieKey",
+        prefix: EXPECTED_PREFIXES.selfieKey,
+      },
+      ...(input.documentBackKey
+        ? [
+            {
+              key: input.documentBackKey,
+              field: "documentBackKey",
+              prefix: EXPECTED_PREFIXES.documentBackKey,
+            },
+          ]
+        : []),
+    ];
+
+    for (const { key, field, prefix } of keysToValidate) {
+      if (!key.startsWith(prefix)) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: `Invalid storage key for ${field}`,
+        });
+      }
+    }
+
+    const existenceChecks = await Promise.all(
+      keysToValidate.map(({ key }) => checkObjectExists(key))
+    );
+    if (existenceChecks.some((exists) => !exists)) {
+      throw new ORPCError("BAD_REQUEST", {
+        message:
+          "One or more document files could not be found. Please re-upload and try again.",
+      });
+    }
+
     const result = await userService.submitKyc(BigInt(userId), {
       fullName: input.fullName,
       dateOfBirth: new Date(input.dateOfBirth),
@@ -222,12 +271,22 @@ const FILE_TYPE_TO_PREFIX: Record<string, string> = {
 export const getKycUploadUrl = base
   .use(requireAuth)
   .input(
-    z.object({
-      fileType: z.enum(["front", "back", "selfie"]),
-      contentType: z
-        .string()
-        .regex(/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/),
-    })
+    z
+      .object({
+        fileType: z.enum(["front", "back", "selfie"]),
+        contentType: z
+          .string()
+          .regex(/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/),
+      })
+      .superRefine(({ fileType, contentType }, ctx) => {
+        if (fileType === "selfie" && contentType === "application/pdf") {
+          ctx.addIssue({
+            code: "custom",
+            path: ["contentType"],
+            message: "Selfie uploads must use an image content type",
+          });
+        }
+      })
   )
   .output(z.object({ uploadUrl: z.string(), key: z.string() }))
   .handler(async ({ context, input }) => {

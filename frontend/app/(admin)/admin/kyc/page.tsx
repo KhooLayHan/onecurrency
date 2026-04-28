@@ -50,7 +50,7 @@ export default function KycSubmissionsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<number | undefined>();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["admin-kyc-submissions", page, search, statusFilter],
     queryFn: () =>
       orpcClient.admin.kyc.listSubmissions({
@@ -166,6 +166,24 @@ export default function KycSubmissionsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+            {isError && !isLoading && (
+              <TableRow>
+                <TableCell className="py-8 text-center" colSpan={6}>
+                  <p className="text-muted-foreground text-sm">
+                    Failed to load submissions:{" "}
+                    {error instanceof Error ? error.message : "Unknown error"}
+                  </p>
+                  <Button
+                    className="mt-2"
+                    onClick={() => refetch()}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Retry
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )}
             {!isLoading && data?.items.length === 0 && (
               <TableRow>
                 <TableCell

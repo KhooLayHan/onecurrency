@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { orpcClient } from "@/lib/api";
+import { useSession } from "@/lib/auth-client";
 import { ACTIVE_NETWORK_ID } from "@/lib/config";
 
 const PAGE_SIZE = 20;
@@ -54,6 +55,15 @@ export default function BlacklistPage() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const { data: roles } = useQuery({
+    queryKey: ["my-roles", userId],
+    queryFn: () => orpcClient.users.getMyRoles({}),
+    enabled: !!userId,
+  });
+  const isAdmin = roles?.includes("admin") ?? false;
 
   const [newAddress, setNewAddress] = useState("");
   const [newReason, setNewReason] = useState("");
@@ -78,8 +88,7 @@ export default function BlacklistPage() {
       }),
     onSuccess: () => {
       toast.success("Address blacklisted", {
-        description:
-          "The address has been added to the DB and blacklisted on-chain.",
+        description: "The account has been restricted successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["admin-blacklist"] });
       setAddOpen(false);
@@ -144,7 +153,7 @@ export default function BlacklistPage() {
             Blacklist Manager
           </h1>
           <p className="mt-1 text-muted-foreground text-sm">
-            Manage on-chain and off-chain blacklisted addresses.
+            Manage restricted accounts and compliance actions.
           </p>
         </div>
         <Button className="gap-2" onClick={() => setAddOpen(true)}>
@@ -215,21 +224,23 @@ export default function BlacklistPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button
-                          aria-label="Seize tokens"
-                          className="min-h-11 min-w-11"
-                          onClick={() =>
-                            setPendingAction({
-                              type: "seize",
-                              publicId: row.publicId,
-                              address: row.address,
-                            })
-                          }
-                          title="Seize tokens"
-                          variant="outline"
-                        >
-                          <Zap className="size-3.5" />
-                        </Button>
+                        {isAdmin && (
+                          <Button
+                            aria-label="Seize tokens"
+                            className="min-h-11 min-w-11"
+                            onClick={() =>
+                              setPendingAction({
+                                type: "seize",
+                                publicId: row.publicId,
+                                address: row.address,
+                              })
+                            }
+                            title="Seize tokens"
+                            variant="outline"
+                          >
+                            <Zap className="size-3.5" />
+                          </Button>
+                        )}
                         <Button
                           aria-label="Remove from blacklist"
                           className="min-h-11 min-w-11"
@@ -302,16 +313,14 @@ export default function BlacklistPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Ethereum Address</Label>
+              <Label>Account ID</Label>
               <Input
                 onChange={(e) => setNewAddress(e.target.value)}
                 placeholder="0x..."
                 value={newAddress}
               />
               {newAddress && !isAddressValid && (
-                <p className="text-destructive text-xs">
-                  Invalid Ethereum address
-                </p>
+                <p className="text-destructive text-xs">Invalid Account ID</p>
               )}
             </div>
             <div className="space-y-1.5">
@@ -363,14 +372,14 @@ export default function BlacklistPage() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingAction?.type === "seize"
-                ? `This will call seizeTokens() on-chain and transfer all tokens from ${pendingAction?.address.slice(
+                ? `This will transfer the account balance from ${pendingAction?.address.slice(
                     0,
                     10
-                  )}... to the treasury. This cannot be undone.`
-                : `This will call unblacklistAccount() on-chain for ${pendingAction?.address.slice(
+                  )}... to the secure reserve wallet. This cannot be undone.`
+                : `This will remove the restriction for ${pendingAction?.address.slice(
                     0,
                     10
-                  )}... and remove the DB record.`}
+                  )}... and delete the compliance record.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -383,7 +392,7 @@ export default function BlacklistPage() {
                 }
                 if (pendingAction.type === "remove") {
                   removeMutation.mutate(pendingAction.publicId);
-                } else {
+                } else if (isAdmin) {
                   seizeMutation.mutate(pendingAction.publicId);
                 }
               }}

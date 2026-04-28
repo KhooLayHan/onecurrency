@@ -61,7 +61,15 @@ export default function AdminLayout({
     if (!(rolesLoading || !rolesFetched || hasAccess)) {
       router.replace("/dashboard");
     }
-  }, [sessionLoading, rolesLoading, rolesFetched, session, hasAccess, router, pathname]);
+  }, [
+    sessionLoading,
+    rolesLoading,
+    rolesFetched,
+    session,
+    hasAccess,
+    router,
+    pathname,
+  ]);
 
   if (sessionLoading || rolesLoading || !rolesFetched) {
     return (

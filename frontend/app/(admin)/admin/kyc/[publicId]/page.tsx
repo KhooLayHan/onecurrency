@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { KYC_STATUS } from "@/common/constants/kyc";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -33,6 +32,8 @@ const DOC_TYPE_LABEL: Record<string, string> = {
 
 const NATIONALITY_NAMES = new Intl.DisplayNames(["en"], { type: "region" });
 
+const HTTP_STATUS_NOT_FOUND = 404;
+
 export default function KycDetailPage() {
   const { publicId } = useParams<{ publicId: string }>();
   const router = useRouter();
@@ -41,7 +42,13 @@ export default function KycDetailPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-kyc-submission", publicId],
     queryFn: () => orpcClient.admin.kyc.getSubmission({ publicId }),
   });
@@ -96,6 +103,10 @@ export default function KycDetailPage() {
         <Skeleton className="h-64" />
       </div>
     );
+  }
+
+  if (isError) {
+    return <QueryErrorState error={queryError} refetch={refetch} />;
   }
 
   if (!submission) {
@@ -208,7 +219,14 @@ export default function KycDetailPage() {
         </CardContent>
       </Card>
 
-      <AlertDialog onOpenChange={setShowApproveDialog} open={showApproveDialog}>
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!approveMutation.isPending) {
+            setShowApproveDialog(open);
+          }
+        }}
+        open={showApproveDialog}
+      >
         <AlertDialogContent size="sm">
           <AlertDialogHeader>
             <AlertDialogTitle>Approve KYC Submission?</AlertDialogTitle>
@@ -219,17 +237,24 @@ export default function KycDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               disabled={approveMutation.isPending}
               onClick={() => approveMutation.mutate()}
             >
               {approveMutation.isPending ? "Approving..." : "Approve"}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog onOpenChange={setShowRejectDialog} open={showRejectDialog}>
+      <AlertDialog
+        onOpenChange={(open) => {
+          if (!rejectMutation.isPending) {
+            setShowRejectDialog(open);
+          }
+        }}
+        open={showRejectDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Reject KYC Submission</AlertDialogTitle>
@@ -247,13 +272,13 @@ export default function KycDetailPage() {
           />
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               disabled={rejectionReason.length < 10 || rejectMutation.isPending}
               onClick={() => rejectMutation.mutate()}
               variant="destructive"
             >
               {rejectMutation.isPending ? "Rejecting..." : "Reject Submission"}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -272,6 +297,35 @@ const STATUS_CONFIG: Record<
   [KYC_STATUS.VERIFIED]: { variant: "success", label: "Verified" },
   [KYC_STATUS.REJECTED]: { variant: "destructive", label: "Rejected" },
 };
+
+function QueryErrorState({
+  error,
+  refetch,
+}: {
+  error: unknown;
+  refetch: () => void;
+}) {
+  const is404 =
+    (error as { status?: number })?.status === HTTP_STATUS_NOT_FOUND;
+  if (is404) {
+    return (
+      <div className="py-16 text-center text-muted-foreground">
+        Submission not found.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-4 py-16 text-center">
+      <p className="text-muted-foreground">
+        Failed to load submission:{" "}
+        {error instanceof Error ? error.message : "Unknown error"}
+      </p>
+      <Button onClick={() => refetch()} size="sm" variant="outline">
+        Retry
+      </Button>
+    </div>
+  );
+}
 
 function StatusBadge({ kycStatusId }: { kycStatusId: number }) {
   const config = STATUS_CONFIG[kycStatusId] ?? {

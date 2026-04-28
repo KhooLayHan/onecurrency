@@ -5,6 +5,7 @@ import {
   BlacklistEntryNotFoundError,
 } from "@/common/errors/compliance";
 import type { Database } from "../db";
+import { logger } from "../lib/logger";
 import { BlacklistRepository } from "../repositories/blacklist.repository";
 import { AuditService } from "./audit.service";
 import {
@@ -12,7 +13,6 @@ import {
   seizeAddressTokens,
   unblacklistAddress,
 } from "./blockchain";
-import { logger } from "../lib/logger";
 
 type AddInput = {
   address: string;
@@ -51,23 +51,26 @@ export class BlacklistService {
           );
         }
         return blacklistAddress(input.address).andThen((txHash) =>
-          repo.create(input).map((entry) => {
-            void auditService
-              .log({
-                userId: input.addedByUserId,
-                action: "blacklist.add",
-                entityType: "blacklisted_address",
-                entityId: entry.id,
-                newValues: {
-                  address: input.address,
-                  reason: input.reason,
-                  txHash,
-                },
-              })
-              .mapErr((err) => {
-                logger.error({ err }, "Audit log failed for blacklist.add");
-              });
-          })
+          repo
+            .create(input)
+            // biome-ignore lint/suspicious/useIterableCallbackReturn: neverthrow Result.map for fire-and-forget audit; void return is intentional
+            .map((_entry) => {
+              auditService
+                .log({
+                  userId: input.addedByUserId,
+                  action: "blacklist.add",
+                  entityType: "blacklisted_address",
+                  entityId: _entry.id,
+                  newValues: {
+                    address: input.address,
+                    reason: input.reason,
+                    txHash,
+                  },
+                })
+                .mapErr((err) => {
+                  logger.error({ err }, "Audit log failed for blacklist.add");
+                });
+            })
         );
       });
   }
@@ -84,8 +87,9 @@ export class BlacklistService {
         return errAsync(new BlacklistEntryNotFoundError(publicId));
       }
       return repo.deleteByPublicId(publicId).andThen(() =>
+        // biome-ignore lint/suspicious/useIterableCallbackReturn: neverthrow ResultAsync.map for fire-and-forget audit; void return is intentional
         unblacklistAddress(entry.address).map((txHash) => {
-          void auditService
+          auditService
             .log({
               userId: removedByUserId,
               action: "blacklist.remove",
@@ -114,24 +118,26 @@ export class BlacklistService {
       if (!entry) {
         return errAsync(new BlacklistEntryNotFoundError(publicId));
       }
-      return seizeAddressTokens(entry.address, treasuryAddress).map(
-        (txHash) => {
-          void auditService
-            .log({
-              userId: adminUserId,
-              action: "blacklist.seize",
-              entityType: "blacklisted_address",
-              entityId: entry.id,
-              metadata: {
-                fromAddress: entry.address,
-                toAddress: treasuryAddress,
-                txHash,
-              },
-            })
-            .mapErr((err) => {
-              logger.error({ err }, "Audit log failed for blacklist.seize");
-            });
-        }
+      return (
+        seizeAddressTokens(entry.address, treasuryAddress)
+          // biome-ignore lint/suspicious/useIterableCallbackReturn: neverthrow ResultAsync.map for fire-and-forget audit; void return is intentional
+          .map((txHash) => {
+            auditService
+              .log({
+                userId: adminUserId,
+                action: "blacklist.seize",
+                entityType: "blacklisted_address",
+                entityId: entry.id,
+                metadata: {
+                  fromAddress: entry.address,
+                  toAddress: treasuryAddress,
+                  txHash,
+                },
+              })
+              .mapErr((err) => {
+                logger.error({ err }, "Audit log failed for blacklist.seize");
+              });
+          })
       );
     });
   }

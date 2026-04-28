@@ -1,5 +1,6 @@
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -45,4 +46,16 @@ export function generateDownloadUrl(key: string): Promise<string> {
   return getSignedUrl(client, command, {
     expiresIn: DOWNLOAD_EXPIRES_SECONDS,
   });
+}
+
+export async function checkObjectExists(key: string): Promise<boolean> {
+  const client = createClient();
+  try {
+    await client.send(
+      new HeadObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key })
+    );
+    return true;
+  } catch {
+    return false;
+  }
 }

@@ -81,7 +81,7 @@ export const listKycSubmissions = base
 
 export const getKycSubmission = base
   .use(requirePermission("kyc:read"))
-  .input(z.object({ publicId: z.string().uuid() }))
+  .input(z.object({ publicId: z.uuid() }))
   .output(
     z.object({
       submission: z.object({
@@ -129,7 +129,7 @@ export const getKycSubmission = base
 
 export const approveKyc = base
   .use(requirePermission("kyc:verify"))
-  .input(z.object({ publicId: z.string().uuid() }))
+  .input(z.object({ publicId: z.uuid() }))
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
     const result = await kycAdminService.approve(
@@ -146,7 +146,7 @@ export const rejectKyc = base
   .use(requirePermission("kyc:reject"))
   .input(
     z.object({
-      publicId: z.string().uuid(),
+      publicId: z.uuid(),
       reason: z
         .string()
         .min(10, "Rejection reason must be at least 10 characters"),
@@ -252,7 +252,7 @@ export const removeFromBlacklist = base
 
 export const seizeTokens = base
   .use(requireRole("admin"))
-  .input(z.object({ publicId: z.string().uuid() }))
+  .input(z.object({ publicId: z.uuid() }))
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
     if (!TREASURY_ADDRESS) {
