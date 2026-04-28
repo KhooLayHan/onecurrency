@@ -55,7 +55,10 @@ export async function checkObjectExists(key: string): Promise<boolean> {
       new HeadObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key })
     );
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof NoSuchKey) {
+      return false;
+    }
+    throw error;
   }
 }
