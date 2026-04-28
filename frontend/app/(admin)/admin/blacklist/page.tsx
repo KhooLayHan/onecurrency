@@ -37,6 +37,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { orpcClient } from "@/lib/api";
 import { ACTIVE_NETWORK_ID } from "@/lib/config";
 
+const PAGE_SIZE = 20;
+const ETHEREUM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
+const ADDRESS_PREFIX_LENGTH = 8;
+const ADDRESS_SUFFIX_LENGTH = 6;
+const MIN_REASON_LENGTH = 5;
+
 type PendingAction =
   | { type: "remove"; publicId: string; address: string }
   | { type: "seize"; publicId: string; address: string }
@@ -117,8 +123,18 @@ export default function BlacklistPage() {
     },
   });
 
-  const totalPages = data ? Math.ceil(data.total / 20) : 0;
-  const isAddressValid = /^0x[a-fA-F0-9]{40}$/.test(newAddress);
+  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
+  const isAddressValid = ETHEREUM_ADDRESS_REGEX.test(newAddress);
+
+  const getActionLabel = () => {
+    if (removeMutation.isPending || seizeMutation.isPending) {
+      return "Processing...";
+    }
+    if (pendingAction?.type === "seize") {
+      return "Seize Tokens";
+    }
+    return "Remove";
+  };
 
   return (
     <div className="space-y-6">
@@ -164,10 +180,12 @@ export default function BlacklistPage() {
           </TableHeader>
           <TableBody>
             {isLoading
-              ? Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
-                      <TableCell key={j}>
+              ? Array.from({ length: 5 }).map((_row, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholders are static
+                  <TableRow key={`skeleton-row-${i}`}>
+                    {Array.from({ length: 6 }).map((_cell, j) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholders are static
+                      <TableCell key={`skeleton-cell-${j}`}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
                     ))}
@@ -177,7 +195,7 @@ export default function BlacklistPage() {
                   <TableRow key={row.publicId}>
                     <TableCell>
                       <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                        {row.address.slice(0, 8)}...{row.address.slice(-6)}
+                        {row.address.slice(0, ADDRESS_PREFIX_LENGTH)}...{row.address.slice(-ADDRESS_SUFFIX_LENGTH)}
                       </code>
                     </TableCell>
                     <TableCell>
@@ -317,7 +335,7 @@ export default function BlacklistPage() {
             </Button>
             <Button
               disabled={
-                !isAddressValid || newReason.length < 5 || addMutation.isPending
+                !isAddressValid || newReason.length < MIN_REASON_LENGTH || addMutation.isPending
               }
               onClick={() => addMutation.mutate()}
             >
@@ -368,11 +386,7 @@ export default function BlacklistPage() {
                 pendingAction?.type === "seize" ? "destructive" : "default"
               }
             >
-              {removeMutation.isPending || seizeMutation.isPending
-                ? "Processing..."
-                : pendingAction?.type === "seize"
-                  ? "Seize Tokens"
-                  : "Remove"}
+              {getActionLabel()}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

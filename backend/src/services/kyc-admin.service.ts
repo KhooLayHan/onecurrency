@@ -4,11 +4,11 @@ import { InternalError } from "@/common/errors/infrastructure";
 import { KYC_STATUS } from "../constants/kyc-status";
 import type { Database } from "../db";
 import type { KycSubmission } from "../db/schema/kyc-submissions";
+import { withTransaction } from "../lib/transaction";
 import { KycRepository } from "../repositories/kyc.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { AuditService } from "./audit.service";
 import { generateDownloadUrl } from "./r2.service";
-import { withTransaction } from "../lib/transaction";
 
 type ListFilters = {
   kycStatusId?: number;
