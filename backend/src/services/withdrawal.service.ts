@@ -15,18 +15,20 @@ import { TRANSACTION_STATUS } from "../constants/transaction-status";
 import { TRANSACTION_TYPE } from "../constants/transaction-type";
 import type { Database } from "../db";
 import type { InitiateWithdrawalRequest } from "../dto/withdrawal.dto";
+import { env } from "../env";
 import { logger } from "../lib/logger";
 import { BlockchainTransactionRepository } from "../repositories/blockchain-transaction.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { WalletRepository } from "../repositories/wallet.repository";
 import { WithdrawalRepository } from "../repositories/withdrawal.repository";
 import { burnTokens, getOnChainBalance } from "./blockchain";
-import * as stripeService from "./stripe.service";
-import * as stripeMockService from "./stripe-mock.service";
-import { env } from "../env";
-
-const stripe =
-  env.NODE_ENV === "production" ? stripeService : stripeMockService;
+import {
+  addBankAccount,
+  calculateTokenAmountWei,
+  createConnectedAccount,
+  createPayout,
+  createTransfer,
+} from "./stripe.service";
 
 const WITHDRAWAL_FEE_NUMERATOR = 5n;
 const WITHDRAWAL_FEE_DENOMINATOR = 1000n;
@@ -53,7 +55,7 @@ export class WithdrawalService {
         WITHDRAWAL_FEE_DENOMINATOR
     );
     const netAmountCents = grossAmountCents - feeCents;
-    const tokenAmountWei = stripe.calculateTokenAmountWei(grossAmountCents);
+    const tokenAmountWei = calculateTokenAmountWei(grossAmountCents);
 
     return userRepo
       .findById(userId)
@@ -176,7 +178,7 @@ export class WithdrawalService {
           });
         }
         return ResultAsync.fromPromise(
-          stripe.createConnectedAccount(user.email, `acct-${userId.toString()}`),
+          createConnectedAccount(user.email, `acct-${userId.toString()}`),
           (e): AppError =>
             new ExternalServiceError(
               "Stripe",
@@ -206,7 +208,7 @@ export class WithdrawalService {
           connectAccountId,
         }) =>
           ResultAsync.fromPromise(
-            stripe.addBankAccount(
+            addBankAccount(
               connectAccountId,
               {
                 routingNumber: input.bankRoutingNumber,
@@ -236,7 +238,7 @@ export class WithdrawalService {
         ({ withdrawal, blockchainTx, connectAccountId, bankAccountId }) => {
           const idempotencyBase = `withdrawal-${withdrawal.id.toString()}`;
           return ResultAsync.fromPromise(
-            stripe.createTransfer(
+            createTransfer(
               netAmountCents,
               connectAccountId,
               `${idempotencyBase}-transfer`
@@ -249,7 +251,7 @@ export class WithdrawalService {
               )
           ).andThen((transferId) =>
             ResultAsync.fromPromise(
-              stripe.createPayout(
+              createPayout(
                 netAmountCents,
                 connectAccountId,
                 bankAccountId,
@@ -271,6 +273,12 @@ export class WithdrawalService {
         }
       )
       .andThen(({ withdrawal, transferId, payoutId }) =>
+        // withdrawalRepo
+        //   .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
+        //   .map(() => ({
+        //     withdrawalId: withdrawal.publicId,
+        //     status: "processing" as const,
+        //   }))
         withdrawalRepo
           .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
           .andThen(() => {
