@@ -173,9 +173,11 @@ export default function KycDetailPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant={isPending ? "warning" : "default"}>
           <CardHeader>
-            <CardTitle className="text-base">Review Status</CardTitle>
+            <CardTitle className="text-base">
+              {isPending ? "Action Required — Review Status" : "Review Status"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2">

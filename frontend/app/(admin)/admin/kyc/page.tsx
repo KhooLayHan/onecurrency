@@ -8,6 +8,13 @@ import { KYC_STATUS } from "@/common/constants/kyc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -84,22 +91,28 @@ export default function KycSubmissionsPage() {
             value={search}
           />
         </div>
-        <select
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-          onChange={(e) => {
-            setStatusFilter(
-              e.target.value ? Number(e.target.value) : undefined
-            );
+        <Select
+          onValueChange={(value) => {
+            setStatusFilter(value ? Number(value) : undefined);
             setPage(1);
           }}
-          value={statusFilter ?? ""}
+          value={statusFilter !== undefined ? String(statusFilter) : ""}
         >
-          <option value="">All statuses</option>
-          <option value={KYC_STATUS.PENDING}>Pending</option>
-          <option value={KYC_STATUS.VERIFIED}>Verified</option>
-          <option value={KYC_STATUS.REJECTED}>Rejected</option>
-          <option value={KYC_STATUS.EXPIRED}>Expired</option>
-        </select>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All statuses</SelectItem>
+            <SelectItem value={String(KYC_STATUS.PENDING)}>Pending</SelectItem>
+            <SelectItem value={String(KYC_STATUS.VERIFIED)}>
+              Verified
+            </SelectItem>
+            <SelectItem value={String(KYC_STATUS.REJECTED)}>
+              Rejected
+            </SelectItem>
+            <SelectItem value={String(KYC_STATUS.EXPIRED)}>Expired</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-lg border">
