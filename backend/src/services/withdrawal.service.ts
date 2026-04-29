@@ -22,13 +22,7 @@ import { UserRepository } from "../repositories/user.repository";
 import { WalletRepository } from "../repositories/wallet.repository";
 import { WithdrawalRepository } from "../repositories/withdrawal.repository";
 import { burnTokens, getOnChainBalance } from "./blockchain";
-import {
-  addBankAccount,
-  calculateTokenAmountWei,
-  createConnectedAccount,
-  createPayout,
-  createTransfer,
-} from "./stripe-mock.service";
+import { calculateTokenAmountWei } from "./stripe.service";
 
 const stripe =
   env.NODE_ENV === "production"
@@ -183,7 +177,10 @@ export class WithdrawalService {
           });
         }
         return ResultAsync.fromPromise(
-          createConnectedAccount(user.email, `acct-${userId.toString()}`),
+          stripe.createConnectedAccount(
+            user.email,
+            `acct-${userId.toString()}`
+          ),
           (e): AppError =>
             new ExternalServiceError(
               "Stripe",
@@ -213,7 +210,7 @@ export class WithdrawalService {
           connectAccountId,
         }) =>
           ResultAsync.fromPromise(
-            addBankAccount(
+            stripe.addBankAccount(
               connectAccountId,
               {
                 routingNumber: input.bankRoutingNumber,
@@ -243,7 +240,7 @@ export class WithdrawalService {
         ({ withdrawal, blockchainTx, connectAccountId, bankAccountId }) => {
           const idempotencyBase = `withdrawal-${withdrawal.id.toString()}`;
           return ResultAsync.fromPromise(
-            createTransfer(
+            stripe.createTransfer(
               netAmountCents,
               connectAccountId,
               `${idempotencyBase}-transfer`
@@ -256,7 +253,7 @@ export class WithdrawalService {
               )
           ).andThen((transferId) =>
             ResultAsync.fromPromise(
-              createPayout(
+              stripe.createPayout(
                 netAmountCents,
                 connectAccountId,
                 bankAccountId,

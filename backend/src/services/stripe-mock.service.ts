@@ -5,16 +5,19 @@
  */
 import { logger } from "../lib/logger";
 
-// Re-export the real helper since it doesn't need mocking
-export { calculateTokenAmountWei } from "./stripe.service";
+const TIMESTAMP_LENGTH = 36;
+const RANDOM_LENGTH = 36;
+const RANDOM_SUBSTRING_LENGTH = 8;
 
 function generateDevId(prefix: string): string {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
+  const timestamp = Date.now().toString(TIMESTAMP_LENGTH);
+  const random = Math.random()
+    .toString(RANDOM_LENGTH)
+    .substring(RANDOM_SUBSTRING_LENGTH);
   return `${prefix}_dev_${timestamp}_${random}`;
 }
 
-export async function createConnectedAccount(
+export function createConnectedAccount(
   _email: string,
   _idempotencyKey: string
 ): Promise<string> {
@@ -23,10 +26,10 @@ export async function createConnectedAccount(
     { connectedAccountId: id },
     "[MOCK] Created Stripe Connect account"
   );
-  return id;
+  return Promise.resolve(id);
 }
 
-export async function addBankAccount(
+export function addBankAccount(
   connectedAccountId: string,
   bankDetails: {
     routingNumber: string;
@@ -41,10 +44,10 @@ export async function addBankAccount(
     { connectedAccountId, bankAccountId: id, bankDetails },
     "[MOCK] Added bank account to connected account"
   );
-  return id;
+  return Promise.resolve(id);
 }
 
-export async function createTransfer(
+export function createTransfer(
   netAmountCents: number,
   connectedAccountId: string,
   _idempotencyKey: string
@@ -54,10 +57,10 @@ export async function createTransfer(
     { connectedAccountId, transferId: id, netAmountCents },
     "[MOCK] Created platform transfer"
   );
-  return id;
+  return Promise.resolve(id);
 }
 
-export async function createPayout(
+export function createPayout(
   netAmountCents: number,
   connectedAccountId: string,
   bankAccountId: string,
@@ -68,5 +71,5 @@ export async function createPayout(
     { connectedAccountId, bankAccountId, payoutId: id, netAmountCents },
     "[MOCK] Created bank payout"
   );
-  return id;
+  return Promise.resolve(id);
 }
