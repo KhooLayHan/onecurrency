@@ -16,6 +16,7 @@ import { TRANSACTION_TYPE } from "../constants/transaction-type";
 import type { Database } from "../db";
 import type { InitiateWithdrawalRequest } from "../dto/withdrawal.dto";
 import { env } from "../env";
+import { sendWithdrawalProcessedEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 import { BlockchainTransactionRepository } from "../repositories/blockchain-transaction.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -29,11 +30,6 @@ import {
   createPayout,
   createTransfer,
 } from "./stripe.service";
-
-// const stripe =
-//   env.NODE_ENV === "production"
-//     ? await import("./stripe.service")
-//     : await import("./stripe-mock.service");
 
 const WITHDRAWAL_FEE_NUMERATOR = 5n;
 const WITHDRAWAL_FEE_DENOMINATOR = 1000n;
@@ -49,7 +45,7 @@ export class WithdrawalService {
     userId: bigint,
     input: InitiateWithdrawalRequest
   ): ResultAsync<
-    { withdrawalId: string; status: "completed" | "processing" },
+    { withdrawalId: string; status: "processing" | "completed" },
     AppError
   > {
     const userRepo = new UserRepository(this.db);
@@ -243,7 +239,13 @@ export class WithdrawalService {
           }))
       )
       .andThen(
-        ({ withdrawal, blockchainTx, connectAccountId, bankAccountId }) => {
+        ({
+          user,
+          withdrawal,
+          blockchainTx,
+          connectAccountId,
+          bankAccountId,
+        }) => {
           const idempotencyBase = `withdrawal-${withdrawal.id.toString()}`;
           return ResultAsync.fromPromise(
             createTransfer(
@@ -272,6 +274,7 @@ export class WithdrawalService {
                   { cause: e }
                 )
             ).map((payoutId) => ({
+              user,
               withdrawal,
               blockchainTx,
               transferId,
@@ -280,13 +283,7 @@ export class WithdrawalService {
           );
         }
       )
-      .andThen(({ withdrawal, transferId, payoutId }) =>
-        // withdrawalRepo
-        //   .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
-        //   .map(() => ({
-        //     withdrawalId: withdrawal.publicId,
-        //     status: "processing" as const,
-        //   }))
+      .andThen(({ user, withdrawal, transferId, payoutId }) =>
         withdrawalRepo
           .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
           .andThen(() => {
@@ -294,16 +291,28 @@ export class WithdrawalService {
               return withdrawalRepo
                 .updateStatus(withdrawal.id, TRANSACTION_STATUS.COMPLETED)
                 .map(() => ({
+                  user,
                   withdrawalId: withdrawal.publicId,
                   status: "completed" as const,
                 }));
             }
             return okAsync({
+              user,
               withdrawalId: withdrawal.publicId,
               status: "processing" as const,
             });
           })
       )
+      .andThen(({ user, withdrawalId, status }) => {
+        // Non-blocking: email failure must not abort a completed withdrawal
+        sendWithdrawalProcessedEmail(
+          user.email,
+          user.name,
+          grossAmountCents,
+          withdrawalId
+        );
+        return okAsync({ withdrawalId, status });
+      })
       .mapErr((err) => {
         const isPreBurnError =
           err instanceof InsufficientBalanceError ||

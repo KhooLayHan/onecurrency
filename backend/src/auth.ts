@@ -1,17 +1,23 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { twoFactor } from "better-auth/plugins";
 import { db } from "./db";
 import { accounts } from "./db/schema/accounts";
+import { rateLimits } from "./db/schema/rate-limit";
 import { sessions } from "./db/schema/sessions";
+import { twoFactors } from "./db/schema/two-factor";
 import { users } from "./db/schema/users";
 import { verifications } from "./db/schema/verifications";
 import { env } from "./env";
+import { sendPasswordResetEmail } from "./lib/email";
 import { logger } from "./lib/logger";
 import { WalletService } from "./services/wallet.service";
 
 const walletService = new WalletService(db);
 
 export const auth = betterAuth({
+  appName: "OneCurrency",
+
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
@@ -19,6 +25,8 @@ export const auth = betterAuth({
       session: sessions,
       account: accounts,
       verification: verifications,
+      twoFactor: twoFactors,
+      rateLimit: rateLimits,
     },
   }),
 
@@ -26,8 +34,26 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: [env.CORS_ORIGIN],
+
   emailAndPassword: {
     enabled: true,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      // Not awaited: email failure must never block or reveal timing info about
+      // whether the email address exists (OWASP authentication best practice)
+      await sendPasswordResetEmail(user.email, url);
+    },
+  },
+
+  plugins: [twoFactor()],
+
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    window: 60,
+    max: 100,
+    // /sign-in/email is automatically limited to 3 req / 10s by better-auth
+    // /two-factor/* is automatically limited to 3 req / 10s by the twoFactor plugin
   },
 
   user: {
@@ -60,10 +86,7 @@ export const auth = betterAuth({
             );
           } else {
             logger.info(
-              {
-                userId: user.id,
-                address: result.value.address,
-              },
+              { userId: user.id, address: result.value.address },
               "Custodial wallet provisioned for new user"
             );
           }
