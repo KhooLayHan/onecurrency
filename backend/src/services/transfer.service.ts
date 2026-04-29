@@ -16,6 +16,7 @@ import { TRANSACTION_STATUS } from "../constants/transaction-status";
 import { TRANSACTION_TYPE } from "../constants/transaction-type";
 import type { Database } from "../db";
 import type { InitiateTransferRequest } from "../dto/transfer.dto";
+import { sendTransferReceivedEmail, sendTransferSentEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 import { BlockchainTransactionRepository } from "../repositories/blockchain-transaction.repository";
 import { TransferRepository } from "../repositories/transfer.repository";
@@ -220,9 +221,17 @@ export class TransferService {
             }
           )
           .andThen(
-            ({ senderWallet, receiver, receiverWallet, transfer, txHash }) =>
+            ({
+              sender,
+              senderWallet,
+              receiver,
+              receiverWallet,
+              transfer,
+              txHash,
+            }) =>
               ResultAsync.fromPromise(
                 this.db.transaction(async (tx) => {
+                  // sender and receiver are captured in closure for the notification below
                   const txBlockchainRepo = new BlockchainTransactionRepository(
                     tx as unknown as Database
                   );
@@ -255,6 +264,8 @@ export class TransferService {
                   }
 
                   return {
+                    sender,
+                    receiver,
                     transferId: transfer.publicId,
                     recipientName: receiver.name,
                     status: "completed" as const,
@@ -276,6 +287,26 @@ export class TransferService {
                   );
                 }
               )
+          )
+          .andThen(
+            ({ sender, receiver, transferId, recipientName, status }) => {
+              // Non-blocking: email failures must not abort a completed transfer
+              sendTransferSentEmail(
+                sender.email,
+                sender.name,
+                recipientName,
+                input.amountCents,
+                transferId
+              );
+              sendTransferReceivedEmail(
+                receiver.email,
+                recipientName,
+                sender.name,
+                input.amountCents,
+                transferId
+              );
+              return okAsync({ transferId, recipientName, status });
+            }
           );
       })
       .mapErr((err) => {

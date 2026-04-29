@@ -7,6 +7,7 @@ import { KYC_STATUS } from "../constants/kyc-status";
 import { TRANSACTION_STATUS } from "../constants/transaction-status";
 import type { Database } from "../db";
 import { env } from "../env";
+import { sendDepositReceivedEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 import { DepositRepository } from "../repositories/deposit.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -284,6 +285,22 @@ export class DepositService {
                     tokenAmountWei,
                     depositId: deposit.id,
                     eventId: event.id,
+                  }).andThen(() => {
+                    // Non-blocking: email failure must not abort a completed deposit
+                    new UserRepository(this.db).findById(BigInt(userId)).match(
+                      (user) => {
+                        if (user) {
+                          sendDepositReceivedEmail(
+                            user.email,
+                            user.name,
+                            amountCents,
+                            String(deposit.id)
+                          );
+                        }
+                      },
+                      () => {}
+                    );
+                    return okAsync(undefined);
                   });
                 });
               }
