@@ -56,9 +56,7 @@ export default function ForgotPasswordPage() {
                 1
               </span>
             </div>
-            <h1 className="font-bold text-2xl tracking-tight">
-              OneCurrency
-            </h1>
+            <h1 className="font-bold text-2xl tracking-tight">OneCurrency</h1>
           </div>
           <Card>
             <CardContent className="flex flex-col items-center gap-4 py-8">
@@ -93,9 +91,7 @@ export default function ForgotPasswordPage() {
             </span>
           </div>
           <div className="text-center">
-            <h1 className="font-bold text-2xl tracking-tight">
-              OneCurrency
-            </h1>
+            <h1 className="font-bold text-2xl tracking-tight">OneCurrency</h1>
             <p className="mt-1 text-muted-foreground text-sm">
               Reset your password
             </p>
@@ -120,8 +116,7 @@ export default function ForgotPasswordPage() {
                 <form.Field name="email">
                   {(field) => {
                     const isInvalid =
-                      field.state.meta.isTouched &&
-                      !field.state.meta.isValid;
+                      field.state.meta.isTouched && !field.state.meta.isValid;
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor={field.name}>Email</FieldLabel>
@@ -132,17 +127,13 @@ export default function ForgotPasswordPage() {
                           id={field.name}
                           name={field.name}
                           onBlur={field.handleBlur}
-                          onChange={(e) =>
-                            field.handleChange(e.target.value)
-                          }
+                          onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="you@example.com"
                           type="email"
                           value={field.state.value}
                         />
                         {isInvalid && (
-                          <FieldError
-                            errors={field.state.meta.errors}
-                          />
+                          <FieldError errors={field.state.meta.errors} />
                         )}
                       </Field>
                     );
@@ -158,9 +149,7 @@ export default function ForgotPasswordPage() {
                     size="lg"
                     type="submit"
                   >
-                    {isSubmitting
-                      ? "Sending..."
-                      : "Send reset link"}
+                    {isSubmitting ? "Sending..." : "Send reset link"}
                   </Button>
                 )}
               </form.Subscribe>

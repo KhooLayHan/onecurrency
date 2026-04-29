@@ -1,12 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const PROTECTED_ROUTES = [
-  "/dashboard",
-  "/transfer",
-  "/history",
-  "/profile",
-];
+const PROTECTED_ROUTES = ["/dashboard", "/transfer", "/history", "/profile"];
 
 const AUTH_REDIRECT_IF_AUTHENTICATED = [
   "/login",
@@ -22,8 +17,8 @@ const BETTER_AUTH_SESSION_COOKIE_NAMES = [
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
-  const isAuthenticated = BETTER_AUTH_SESSION_COOKIE_NAMES.some(
-    (cookieName) => request.cookies.has(cookieName)
+  const isAuthenticated = BETTER_AUTH_SESSION_COOKIE_NAMES.some((cookieName) =>
+    request.cookies.has(cookieName)
   );
 
   // If trying to access protected route while not authenticated
