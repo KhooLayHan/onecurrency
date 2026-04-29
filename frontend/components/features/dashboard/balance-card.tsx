@@ -43,7 +43,10 @@ function formatUsd(value: number): string {
 }
 
 function truncateAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const ADDRESS_LENGTH = 6;
+  const ADDRESS_LENGTH_SLICE = -4;
+
+  return `${address.slice(0, ADDRESS_LENGTH)}...${address.slice(ADDRESS_LENGTH_SLICE)}`;
 }
 
 export function BalanceCard() {

@@ -74,7 +74,9 @@ async function main() {
   );
 
   // Build the event payload using real session data
-  const timestamp = Math.floor(Date.now() / 1000);
+  const TIMESTAMP_LENGTH = 1000;
+
+  const timestamp = Math.floor(Date.now() / TIMESTAMP_LENGTH);
   const eventPayload = JSON.stringify({
     id: `evt_sim_${deposit.id}_${timestamp}`,
     object: "event",
