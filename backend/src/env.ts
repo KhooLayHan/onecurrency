@@ -51,6 +51,7 @@ export const env = createEnv({
 
     BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
     BETTERSTACK_INGESTING_HOST: z.string().min(1),
+
     R2_ACCOUNT_ID: z.string().min(1).optional(),
     R2_ACCESS_KEY_ID: z.string().min(1).optional(),
     R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),

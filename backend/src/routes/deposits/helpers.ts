@@ -102,6 +102,8 @@ export function recordWebhookEvent(
   db: Database,
   event: Stripe.Event
 ): ResultAsync<WebhookEvent | null, AppError> {
+  logger.info("213");
+
   return new WebhookEventRepository(db)
     .create({
       stripeEventId: event.id,
@@ -247,6 +249,11 @@ export function finalizeWebhookProcessing(
     eventId,
   } = params;
 
+  logger.info(
+    { depositId: String(depositId), txHash, eventId },
+    "finalizeWebhookProcessing: starting atomic finalization"
+  );
+
   return withTransaction(db, (tx) =>
     new BlockchainTransactionRepository(tx)
       .create({
@@ -259,9 +266,29 @@ export function finalizeWebhookProcessing(
         isConfirmed: true,
         confirmations: MIN_CONFIRMATIONS,
       })
-      .andThen((blockchainTx) =>
-        new DepositRepository(tx).complete(depositId, BigInt(blockchainTx.id))
-      )
-      .andThen(() => new WebhookEventRepository(tx).markProcessed(eventId))
+      .andThen((blockchainTx) => {
+        logger.info(
+          { blockchainTxId: String(blockchainTx.id), txHash },
+          "finalizeWebhookProcessing: blockchain tx recorded"
+        );
+        return new DepositRepository(tx).complete(
+          depositId,
+          BigInt(blockchainTx.id)
+        );
+      })
+      .andThen(() => {
+        logger.info(
+          { depositId: String(depositId) },
+          "finalizeWebhookProcessing: deposit marked complete"
+        );
+        return new WebhookEventRepository(tx).markProcessed(eventId);
+      })
+      .andThen(() => {
+        logger.info(
+          { eventId },
+          "finalizeWebhookProcessing: webhook event marked processed"
+        );
+        return okAsync(undefined);
+      })
   );
 }

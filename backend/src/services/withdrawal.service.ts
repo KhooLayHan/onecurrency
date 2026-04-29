@@ -15,6 +15,7 @@ import { TRANSACTION_STATUS } from "../constants/transaction-status";
 import { TRANSACTION_TYPE } from "../constants/transaction-type";
 import type { Database } from "../db";
 import type { InitiateWithdrawalRequest } from "../dto/withdrawal.dto";
+import { env } from "../env";
 import { logger } from "../lib/logger";
 import { BlockchainTransactionRepository } from "../repositories/blockchain-transaction.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -28,6 +29,11 @@ import {
   createPayout,
   createTransfer,
 } from "./stripe.service";
+
+// const stripe =
+//   env.NODE_ENV === "production"
+//     ? await import("./stripe.service")
+//     : await import("./stripe-mock.service");
 
 const WITHDRAWAL_FEE_NUMERATOR = 5n;
 const WITHDRAWAL_FEE_DENOMINATOR = 1000n;
@@ -272,12 +278,28 @@ export class WithdrawalService {
         }
       )
       .andThen(({ withdrawal, transferId, payoutId }) =>
+        // withdrawalRepo
+        //   .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
+        //   .map(() => ({
+        //     withdrawalId: withdrawal.publicId,
+        //     status: "processing" as const,
+        //   }))
         withdrawalRepo
           .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
-          .map(() => ({
-            withdrawalId: withdrawal.publicId,
-            status: "processing" as const,
-          }))
+          .andThen(() => {
+            if (env.NODE_ENV !== "production") {
+              return withdrawalRepo
+                .updateStatus(withdrawal.id, TRANSACTION_STATUS.COMPLETED)
+                .map(() => ({
+                  withdrawalId: withdrawal.publicId,
+                  status: "completed" as const,
+                }));
+            }
+            return okAsync({
+              withdrawalId: withdrawal.publicId,
+              status: "processing" as const,
+            });
+          })
       )
       .mapErr((err) => {
         const isPreBurnError =

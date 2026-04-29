@@ -70,6 +70,10 @@ v1.use(
   })
 );
 
+// Stripe webhook — must stay as a raw Hono route: Stripe signature verification
+// requires the unparsed request body, which oRPC's handler would consume first.
+v1.route("/deposits", depositsWebhookRouter);
+
 v1.get("health", (c) =>
   c.json({
     status: "healthy",
@@ -92,10 +96,6 @@ v1.use("*", async (c, next) => {
 
 // better-auth sign-in / sign-up / session routes
 v1.on(["POST", "GET"], "/auth/**", (c) => auth.handler(c.req.raw));
-
-// Stripe webhook — must stay as a raw Hono route: Stripe signature verification
-// requires the unparsed request body, which oRPC's handler would consume first.
-v1.route("/deposits", depositsWebhookRouter);
 
 // oRPC RPCHandler — serves all procedures via RPC protocol (matches RPCLink on frontend).
 // Previously used OpenAPIHandler but switched due to protocol mismatch:

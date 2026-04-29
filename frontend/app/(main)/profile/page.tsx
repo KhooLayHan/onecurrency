@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { User } from "lucide-react";
+import { Link2, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { KYC_STATUS } from "@/common/constants/kyc";
@@ -130,6 +130,23 @@ export default function ProfilePage() {
         onStartVerification={() => setWizardOpen(true)}
         rejectionReason={latestSubmission?.rejectionReason ?? undefined}
       />
+
+      {/* Linked Account — External wallet for Managed Recovery (coming soon) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="size-5 text-primary" />
+            External Linked Account
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-muted-foreground text-sm">
+            Link an external account to enable Managed Recovery and additional
+            access options. Your OneCurrency Account balance is unaffected.
+          </p>
+          <appkit-button />
+        </CardContent>
+      </Card>
 
       <KycVerificationWizard
         defaultName={session.user.name}

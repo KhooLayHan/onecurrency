@@ -62,7 +62,9 @@ const formattedPrivateKey = env.SEPOLIA_PRIVATE_KEY?.startsWith("0x")
 const account = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
 
 // 4. Initialize the Wallet Client (For signing and sending txs)
-const walletClient = createWalletClient({
+export const activeChainId: number = chain.id;
+
+export const walletClient = createWalletClient({
   account,
   chain,
   transport: http(rpcUrl),
@@ -86,7 +88,16 @@ export function mintTokens(
         throw new InvalidAddressError(toAddress);
       }
 
-      logger.info({ toAddress, amountWei }, "Initiating mint transaction...");
+      logger.info(
+        {
+          toAddress,
+          amountWei,
+          chainId: chain.id,
+          rpcUrl,
+          contractAddress: ONECURRENCY_ADDRESS,
+        },
+        "Initiating mint transaction..."
+      );
 
       // 2. Simulate (Saves gas. Will throw immediately if blacklisted or lacking roles)
       const { request } = await publicClient.simulateContract({

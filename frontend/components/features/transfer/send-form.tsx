@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Loader2, Send, UserCheck } from "lucide-react";
 import { useCallback, useState } from "react";
 import { formatUnits } from "viem";
-import { useConnection, useReadContract } from "wagmi";
+import { useReadContract } from "wagmi";
 import { KYC_STATUS } from "@/common/constants/kyc";
 import {
   ONECURRENCY_ADDRESS,
@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useUserWallet } from "@/hooks/use-user-wallet";
 import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 
@@ -56,14 +57,15 @@ export function SendForm() {
 
   const isVerified = session?.user?.kycStatusId === KYC_STATUS.VERIFIED;
 
-  const { address } = useConnection();
+  // Use the custodial wallet address — this is the actual source of funds for transfers
+  const { address: custodialAddress } = useUserWallet();
   const { data: rawBalanceWei } = useReadContract({
     address: ONECURRENCY_ADDRESS as `0x${string}`,
     abi: OneCurrencyABI,
     functionName: "balanceOf",
-    args: address ? [address] : undefined,
+    args: custodialAddress ? [custodialAddress] : undefined,
     query: {
-      enabled: !!address,
+      enabled: !!custodialAddress,
       refetchInterval: BALANCE_REFRESH_INTERVAL_MS,
     },
   });

@@ -8,6 +8,13 @@ import { KYC_STATUS } from "@/common/constants/kyc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -18,6 +25,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { orpcClient } from "@/lib/api";
+
+const ALL_STATUSES_VALUE = "all";
 
 const STATUS_LABEL: Record<number, string> = {
   [KYC_STATUS.NONE]: "None",
@@ -84,25 +93,37 @@ export default function KycSubmissionsPage() {
             value={search}
           />
         </div>
-        <select
-          className="rounded-md border bg-background px-3 py-2 text-sm"
-          onChange={(e) => {
+        <Select
+          onValueChange={(value) => {
             setStatusFilter(
-              e.target.value ? Number(e.target.value) : undefined
+              value === ALL_STATUSES_VALUE ? undefined : Number(value)
             );
             setPage(1);
           }}
-          value={statusFilter ?? ""}
+          value={
+            statusFilter !== undefined
+              ? String(statusFilter)
+              : ALL_STATUSES_VALUE
+          }
         >
-          <option value="">All statuses</option>
-          <option value={KYC_STATUS.PENDING}>Pending</option>
-          <option value={KYC_STATUS.VERIFIED}>Verified</option>
-          <option value={KYC_STATUS.REJECTED}>Rejected</option>
-          <option value={KYC_STATUS.EXPIRED}>Expired</option>
-        </select>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_STATUSES_VALUE}>All statuses</SelectItem>
+            <SelectItem value={String(KYC_STATUS.PENDING)}>Pending</SelectItem>
+            <SelectItem value={String(KYC_STATUS.VERIFIED)}>
+              Verified
+            </SelectItem>
+            <SelectItem value={String(KYC_STATUS.REJECTED)}>
+              Rejected
+            </SelectItem>
+            <SelectItem value={String(KYC_STATUS.EXPIRED)}>Expired</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>

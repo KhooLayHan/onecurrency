@@ -1,9 +1,11 @@
 "use client";
 
-import { ArrowRight, Info, Receipt, ShieldCheck } from "lucide-react";
+import { ArrowRight, Info, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { KYC_STATUS } from "@/common/constants/kyc";
 import { BalanceCard } from "@/components/features/dashboard/balance-card";
+import { KycBanner } from "@/components/features/dashboard/kyc-banner";
+import { RecentActivityList } from "@/components/features/dashboard/recent-activity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useSession } from "@/lib/auth-client";
 
-// Exchange rate constant
+// Hardcoded exchange rate used in sidebar
 const MYR_EXCHANGE_RATE = 4.72;
 
 // Time boundaries for greetings
@@ -131,6 +133,8 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-6 md:col-span-7 lg:col-span-8">
           <BalanceCard />
 
+          <KycBanner kycStatusId={kycStatusId} />
+
           {/* Recent Activity Section */}
           <div className="pt-4">
             <div className="mb-4 flex items-center justify-between">
@@ -143,16 +147,7 @@ export default function DashboardPage() {
                 <ArrowRight className="size-4" />
               </Link>
             </div>
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card/50 p-12 text-center">
-              <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-secondary">
-                <Receipt className="size-6 text-muted-foreground" />
-              </div>
-              <h3 className="font-medium text-base">No activity yet</h3>
-              <p className="mt-1 max-w-sm text-muted-foreground text-sm">
-                When you add money to your account, your transactions will
-                appear here.
-              </p>
-            </div>
+            <RecentActivityList />
           </div>
         </div>
 

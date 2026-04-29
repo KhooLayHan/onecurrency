@@ -178,6 +178,7 @@ export class DepositRepository {
       this.db
         .update(deposits)
         .set({
+          statusId: TRANSACTION_STATUS.COMPLETED,
           blockchainTxId,
           completedAt: new Date(),
         })

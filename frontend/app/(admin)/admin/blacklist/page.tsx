@@ -36,7 +36,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
-import { ACTIVE_NETWORK_ID } from "@/lib/config";
 
 const PAGE_SIZE = 20;
 const ETHEREUM_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
@@ -78,11 +77,16 @@ export default function BlacklistPage() {
       }),
   });
 
+  const resetAddForm = () => {
+    setNewAddress("");
+    setNewReason("");
+    setNewSource("");
+  };
+
   const addMutation = useMutation({
     mutationFn: () =>
       orpcClient.admin.blacklist.add({
         address: newAddress,
-        networkId: ACTIVE_NETWORK_ID,
         reason: newReason,
         source: newSource || undefined,
       }),
@@ -92,9 +96,7 @@ export default function BlacklistPage() {
       });
       queryClient.invalidateQueries({ queryKey: ["admin-blacklist"] });
       setAddOpen(false);
-      setNewAddress("");
-      setNewReason("");
-      setNewSource("");
+      resetAddForm();
     },
     onError: (error) => {
       toast.error("Failed to blacklist address", {
@@ -162,7 +164,7 @@ export default function BlacklistPage() {
         </Button>
       </div>
 
-      <div className="relative max-w-sm">
+      <div className="relative w-full max-w-sm">
         <Search className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
         <Input
           className="pl-9"
@@ -175,7 +177,7 @@ export default function BlacklistPage() {
         />
       </div>
 
-      <div className="rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -303,7 +305,15 @@ export default function BlacklistPage() {
         </div>
       )}
 
-      <Dialog onOpenChange={setAddOpen} open={addOpen}>
+      <Dialog
+        onOpenChange={(open) => {
+          setAddOpen(open);
+          if (!open) {
+            resetAddForm();
+          }
+        }}
+        open={addOpen}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -331,6 +341,11 @@ export default function BlacklistPage() {
                 rows={2}
                 value={newReason}
               />
+              {newReason && newReason.length < MIN_REASON_LENGTH && (
+                <p className="text-destructive text-xs">
+                  Reason must be at least {MIN_REASON_LENGTH} characters
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Source (optional)</Label>
@@ -342,7 +357,13 @@ export default function BlacklistPage() {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button onClick={() => setAddOpen(false)} variant="outline">
+            <Button
+              onClick={() => {
+                setAddOpen(false);
+                resetAddForm();
+              }}
+              variant="outline"
+            >
               Cancel
             </Button>
             <Button
