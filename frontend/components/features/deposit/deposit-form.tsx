@@ -3,7 +3,6 @@
 import { useForm } from "@tanstack/react-form";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useConnection } from "wagmi";
 import { KYC_STATUS } from "@/common/constants/kyc";
 import { depositSchema } from "@/common/index";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -68,7 +67,6 @@ async function initiateCheckout(
 }
 
 export function DepositForm() {
-  const { address } = useConnection();
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const { data: session } = useSession();
@@ -87,11 +85,6 @@ export function DepositForm() {
     },
     onSubmit: async ({ value }) => {
       setGlobalError(null);
-
-      if (!address) {
-        setGlobalError("Please connect your wallet first.");
-        return;
-      }
 
       if (!walletId) {
         setGlobalError("No primary wallet found. Please contact support.");
@@ -195,7 +188,6 @@ export function DepositForm() {
             disabled={
               !canSubmit ||
               isSubmitting ||
-              !address ||
               !isVerified ||
               isWalletLoading
             }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, RefreshCw, Send, Wallet } from "lucide-react";
+import { ExternalLink, Plus, RefreshCw, Send } from "lucide-react";
 import { formatUnits } from "viem";
 import { useConnection, useReadContract } from "wagmi";
 import {
@@ -19,6 +19,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useUserWallet } from "@/hooks/use-user-wallet";
 import { DepositForm } from "../deposit/deposit-form";
 import { SendForm } from "../transfer/send-form";
 
@@ -27,57 +33,107 @@ const TOKEN_DECIMALS = 18;
 const BALANCE_REFRESH_INTERVAL_MS = 5000;
 const BALANCE_REFRESH_INTERVAL_SLOW_MS = 15_000;
 
-export function BalanceCard() {
-  const { address, isConnected } = useConnection();
+function formatUsd(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
 
+function truncateAddress(address: string): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+export function BalanceCard() {
+  // Non-custodial: MetaMask / AppKit connected wallet
+  const { address: connectedAddress, isConnected } = useConnection();
+
+  // Custodial: server-managed OneCurrency checking account
+  const { address: custodialAddress, isLoading: isCustodialLoading } =
+    useUserWallet();
+
+  // --- Custodial balance read (primary / hero) ---
   const {
-    data: balanceWei,
-    isLoading,
-    isError,
-    refetch,
+    data: custodialBalanceWei,
+    isLoading: isCustodialBalanceLoading,
+    isError: isCustodialBalanceError,
+    refetch: refetchCustodial,
   } = useReadContract({
     address: ONECURRENCY_ADDRESS as `0x${string}`,
     abi: OneCurrencyABI,
     functionName: "balanceOf",
-    args: address ? [address] : undefined,
+    args: custodialAddress ? [custodialAddress] : undefined,
     query: {
-      enabled: !!address,
-      refetchInterval: (query) => {
-        if (query.state.error) {
-          return BALANCE_REFRESH_INTERVAL_SLOW_MS;
-        }
-        return BALANCE_REFRESH_INTERVAL_MS;
-      },
+      enabled: !!custodialAddress,
+      refetchInterval: (query) =>
+        query.state.error
+          ? BALANCE_REFRESH_INTERVAL_SLOW_MS
+          : BALANCE_REFRESH_INTERVAL_MS,
       retry: 2,
     },
   });
 
-  const formattedBalance = balanceWei
-    ? Number(formatUnits(balanceWei as bigint, TOKEN_DECIMALS))
-    : 0;
-  const localBalance = formattedBalance * MYR_EXCHANGE_RATE;
+  // --- Connected (MetaMask) balance read (informational only) ---
+  const { data: connectedBalanceWei } = useReadContract({
+    address: ONECURRENCY_ADDRESS as `0x${string}`,
+    abi: OneCurrencyABI,
+    functionName: "balanceOf",
+    args: connectedAddress ? [connectedAddress] : undefined,
+    query: {
+      enabled: !!connectedAddress,
+      refetchInterval: BALANCE_REFRESH_INTERVAL_MS,
+      retry: 2,
+    },
+  });
 
-  // Account (wallet) not connected - show connect prompt inside card
-  if (!isConnected) {
+  const custodialBalance = custodialBalanceWei
+    ? Number(formatUnits(custodialBalanceWei as bigint, TOKEN_DECIMALS))
+    : 0;
+
+  const connectedBalance = connectedBalanceWei
+    ? Number(formatUnits(connectedBalanceWei as bigint, TOKEN_DECIMALS))
+    : 0;
+
+  const localBalance = custodialBalance * MYR_EXCHANGE_RATE;
+
+  // Show skeleton while we're waiting to learn whether user has a custodial
+  // wallet (and MetaMask isn't connected as a fallback indicator).
+  if (isCustodialLoading) {
     return (
       <Card className="relative w-full overflow-hidden border-border shadow-sm">
         <div className="-mr-8 -mt-8 absolute top-0 right-0 size-32 rounded-full bg-primary/5 blur-3xl" />
-
         <CardHeader className="pb-2">
           <CardTitle className="font-medium text-muted-foreground text-sm">
-            Total Balance
+            OneCurrency Account
           </CardTitle>
         </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-10 w-48 rounded-lg" />
+            <Skeleton className="h-5 w-32 rounded-md" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
+  // No custodial wallet found — prompt to connect via AppKit
+  if (!custodialAddress) {
+    return (
+      <Card className="relative w-full overflow-hidden border-border shadow-sm">
+        <div className="-mr-8 -mt-8 absolute top-0 right-0 size-32 rounded-full bg-primary/5 blur-3xl" />
+        <CardHeader className="pb-2">
+          <CardTitle className="font-medium text-muted-foreground text-sm">
+            OneCurrency Account
+          </CardTitle>
+        </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-secondary">
-              <Wallet className="size-6 text-muted-foreground" />
-            </div>
             <p className="mb-4 max-w-xs text-muted-foreground text-sm">
               Connect your account to view your balance and make transactions.
             </p>
-            {/* Reown AppKit wallet connect button */}
             <appkit-button />
           </div>
         </CardContent>
@@ -85,17 +141,18 @@ export function BalanceCard() {
     );
   }
 
-  let balanceContent: React.JSX.Element;
+  // --- Hero balance content (custodial) ---
+  let heroContent: React.JSX.Element;
 
-  if (isLoading) {
-    balanceContent = (
+  if (isCustodialBalanceLoading) {
+    heroContent = (
       <div className="flex flex-col gap-2">
         <Skeleton className="h-10 w-48 rounded-lg" />
         <Skeleton className="h-5 w-32 rounded-md" />
       </div>
     );
-  } else if (isError) {
-    balanceContent = (
+  } else if (isCustodialBalanceError) {
+    heroContent = (
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <span className="font-semibold text-3xl text-muted-foreground tabular-nums">
@@ -104,7 +161,7 @@ export function BalanceCard() {
           <Button
             aria-label="Retry loading balance"
             className="min-h-11 min-w-11"
-            onClick={() => refetch()}
+            onClick={() => refetchCustodial()}
             size="icon"
             title="Retry"
             variant="ghost"
@@ -119,30 +176,61 @@ export function BalanceCard() {
       </div>
     );
   } else {
-    balanceContent = (
+    heroContent = (
       <AmountDisplay
         align="left"
         localAmount={localBalance}
         localCurrency="RM"
         size="xl"
-        usdAmount={formattedBalance}
+        usdAmount={custodialBalance}
       />
     );
   }
 
   return (
     <Card className="relative w-full overflow-hidden border-border shadow-sm">
-      {/* Subtle background glow to make it feel premium */}
+      {/* Subtle background glow */}
       <div className="-mr-8 -mt-8 absolute top-0 right-0 size-32 rounded-full bg-primary/5 blur-3xl" />
 
       <CardHeader className="pb-2">
         <CardTitle className="font-medium text-muted-foreground text-sm">
-          Total Balance
+          OneCurrency Account
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {balanceContent}
+        {/* Primary (custodial) balance */}
+        {heroContent}
+
+        {/* External Linked Account row — informational, only when MetaMask is connected */}
+        {isConnected && connectedAddress && (
+          <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+              <div className="flex flex-col">
+                <span className="font-medium text-sm">
+                  External Linked Account
+                </span>
+                <span className="font-mono text-muted-foreground text-xs">
+                  {truncateAddress(connectedAddress)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="font-semibold text-sm tabular-nums">
+                {formatUsd(connectedBalance)}
+              </span>
+              <Tooltip>
+                <TooltipTrigger className="cursor-not-allowed text-muted-foreground text-xs underline-offset-2 hover:underline">
+                  Transfer
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Managed Recovery — coming soon</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 pt-4">

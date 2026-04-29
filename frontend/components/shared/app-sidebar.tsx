@@ -60,6 +60,10 @@ function SidebarFooterContent({
   if (session) {
     return (
       <div className="flex flex-col gap-2">
+        {/* Persistent wallet connect/manage button — hidden in icon-collapsed mode */}
+        <div className="group-data-[collapsible=icon]:hidden">
+          <appkit-button />
+        </div>
         <div className="flex items-center gap-3 px-2 py-1">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary">
             <User className="size-4 text-muted-foreground" />

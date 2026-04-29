@@ -22,12 +22,18 @@ import { UserRepository } from "../repositories/user.repository";
 import { WalletRepository } from "../repositories/wallet.repository";
 import { WithdrawalRepository } from "../repositories/withdrawal.repository";
 import { burnTokens, getOnChainBalance } from "./blockchain";
-import { calculateTokenAmountWei } from "./stripe.service";
+import {
+  addBankAccount,
+  calculateTokenAmountWei,
+  createConnectedAccount,
+  createPayout,
+  createTransfer,
+} from "./stripe.service";
 
-const stripe =
-  env.NODE_ENV === "production"
-    ? await import("./stripe.service")
-    : await import("./stripe-mock.service");
+// const stripe =
+//   env.NODE_ENV === "production"
+//     ? await import("./stripe.service")
+//     : await import("./stripe-mock.service");
 
 const WITHDRAWAL_FEE_NUMERATOR = 5n;
 const WITHDRAWAL_FEE_DENOMINATOR = 1000n;
@@ -177,10 +183,7 @@ export class WithdrawalService {
           });
         }
         return ResultAsync.fromPromise(
-          stripe.createConnectedAccount(
-            user.email,
-            `acct-${userId.toString()}`
-          ),
+          createConnectedAccount(user.email, `acct-${userId.toString()}`),
           (e): AppError =>
             new ExternalServiceError(
               "Stripe",
@@ -210,7 +213,7 @@ export class WithdrawalService {
           connectAccountId,
         }) =>
           ResultAsync.fromPromise(
-            stripe.addBankAccount(
+            addBankAccount(
               connectAccountId,
               {
                 routingNumber: input.bankRoutingNumber,
@@ -240,7 +243,7 @@ export class WithdrawalService {
         ({ withdrawal, blockchainTx, connectAccountId, bankAccountId }) => {
           const idempotencyBase = `withdrawal-${withdrawal.id.toString()}`;
           return ResultAsync.fromPromise(
-            stripe.createTransfer(
+            createTransfer(
               netAmountCents,
               connectAccountId,
               `${idempotencyBase}-transfer`
@@ -253,7 +256,7 @@ export class WithdrawalService {
               )
           ).andThen((transferId) =>
             ResultAsync.fromPromise(
-              stripe.createPayout(
+              createPayout(
                 netAmountCents,
                 connectAccountId,
                 bankAccountId,
