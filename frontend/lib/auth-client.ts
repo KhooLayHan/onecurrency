@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import type { auth } from "../../backend/src/auth";
 import { env } from "../env";
 
+const HTTP_TOO_MANY_REQUESTS = 429;
+
 export const authClient = createAuthClient({
   baseURL: `${env.NEXT_PUBLIC_API_URL}/api/v1/auth`,
   plugins: [
@@ -18,8 +20,8 @@ export const authClient = createAuthClient({
     }),
   ],
   fetchOptions: {
-    onError: async (context) => {
-      if (context.response.status === 429) {
+    onError: (context) => {
+      if (context.response.status === HTTP_TOO_MANY_REQUESTS) {
         const retryAfter = context.response.headers.get("X-Retry-After");
         const seconds = retryAfter ? Number(retryAfter) : null;
         toast.error(

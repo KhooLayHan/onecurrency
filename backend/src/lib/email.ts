@@ -3,12 +3,13 @@ import { env } from "../env";
 import { logger } from "./logger";
 
 const resend = new Resend(env.RESEND_API_KEY);
+const CENTS_PER_DOLLAR = 100;
 
 const formatUsd = (cents: number): string =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(cents / 100);
+  }).format(cents / CENTS_PER_DOLLAR);
 
 export async function sendPasswordResetEmail(
   to: string,
@@ -81,13 +82,21 @@ export async function sendWithdrawalProcessedEmail(
   }
 }
 
-export async function sendTransferSentEmail(
-  to: string,
-  senderName: string,
-  recipientName: string,
-  amountCents: number,
-  transferId: string
-): Promise<void> {
+type SendTransferSentEmailOptions = {
+  to: string;
+  senderName: string;
+  recipientName: string;
+  amountCents: number;
+  transferId: string;
+};
+
+export async function sendTransferSentEmail({
+  to,
+  senderName,
+  recipientName,
+  amountCents,
+  transferId,
+}: SendTransferSentEmailOptions): Promise<void> {
   const { error } = await resend.emails.send(
     {
       from: env.EMAIL_FROM,
@@ -105,13 +114,21 @@ export async function sendTransferSentEmail(
   }
 }
 
-export async function sendTransferReceivedEmail(
-  to: string,
-  recipientName: string,
-  senderName: string,
-  amountCents: number,
-  transferId: string
-): Promise<void> {
+type SendTransferReceivedEmailOptions = {
+  to: string;
+  recipientName: string;
+  senderName: string;
+  amountCents: number;
+  transferId: string;
+};
+
+export async function sendTransferReceivedEmail({
+  to,
+  recipientName,
+  senderName,
+  amountCents,
+  transferId,
+}: SendTransferReceivedEmailOptions): Promise<void> {
   const { error } = await resend.emails.send(
     {
       from: env.EMAIL_FROM,

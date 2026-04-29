@@ -291,20 +291,20 @@ export class TransferService {
           .andThen(
             ({ sender, receiver, transferId, recipientName, status }) => {
               // Non-blocking: email failures must not abort a completed transfer
-              sendTransferSentEmail(
-                sender.email,
-                sender.name,
+              sendTransferSentEmail({
+                to: sender.email,
+                senderName: sender.name,
                 recipientName,
-                input.amountCents,
-                transferId
-              );
-              sendTransferReceivedEmail(
-                receiver.email,
+                amountCents: input.amountCents,
+                transferId,
+              });
+              sendTransferReceivedEmail({
+                to: receiver.email,
                 recipientName,
-                sender.name,
-                input.amountCents,
-                transferId
-              );
+                senderName: sender.name,
+                amountCents: input.amountCents,
+                transferId,
+              });
               return okAsync({ transferId, recipientName, status });
             }
           );
