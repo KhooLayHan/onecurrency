@@ -19,6 +19,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useReconnectTimeout } from "@/hooks/use-reconnect-timeout";
 import { signOut, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
@@ -107,6 +108,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, isPending } = useSession();
+  useReconnectTimeout();
 
   const handleSignOut = async () => {
     try {
