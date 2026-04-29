@@ -186,10 +186,7 @@ export function DepositForm() {
           <Button
             className="w-full rounded-xl"
             disabled={
-              !canSubmit ||
-              isSubmitting ||
-              !isVerified ||
-              isWalletLoading
+              !canSubmit || isSubmitting || !isVerified || isWalletLoading
             }
             size="lg"
             type="submit"
