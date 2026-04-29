@@ -82,26 +82,34 @@ function Enable2FADialog({ onEnabled }: { onEnabled: () => void }) {
     },
   });
 
+  const resetSetupState = () => {
+    setStep("password");
+    setTotpUri("");
+    setBackupCodes([]);
+    passwordForm.reset();
+    codeForm.reset();
+  };
+
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {
-      setStep("password");
-      setTotpUri("");
-      setBackupCodes([]);
-      passwordForm.reset();
-      codeForm.reset();
+      resetSetupState();
     }
     setOpen(nextOpen);
   };
 
   const handleDone = () => {
-    setOpen(false);
+    handleClose(false);
     onEnabled();
     toast.success("Two-factor authentication enabled");
   };
 
-  const copyBackupCodes = () => {
-    navigator.clipboard.writeText(backupCodes.join("\n"));
-    toast.success("Backup codes copied");
+  const copyBackupCodes = async () => {
+    try {
+      await navigator.clipboard.writeText(backupCodes.join("\n"));
+      toast.success("Backup codes copied");
+    } catch {
+      toast.error("Couldn't copy backup codes. Download them instead.");
+    }
   };
 
   const downloadBackupCodes = () => {
@@ -326,14 +334,21 @@ function Disable2FADialog({ onDisabled }: { onDisabled: () => void }) {
         toast.error(result.error.message || "Incorrect password.");
         return;
       }
-      setOpen(false);
+      handleClose(false);
       onDisabled();
       toast.success("Two-factor authentication disabled");
     },
   });
 
+  const handleClose = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      form.reset();
+    }
+    setOpen(nextOpen);
+  };
+
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog onOpenChange={handleClose} open={open}>
       <DialogTrigger
         render={
           <Button size="sm" variant="outline">

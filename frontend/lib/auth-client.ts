@@ -15,7 +15,8 @@ export const authClient = createAuthClient({
     inferAdditionalFields<typeof auth>(),
     twoFactorClient({
       onTwoFactorRedirect() {
-        window.location.href = "/two-factor";
+        const search = window.location.search;
+        window.location.href = `/two-factor${search}`;
       },
     }),
   ],

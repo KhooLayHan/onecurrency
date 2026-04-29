@@ -151,10 +151,6 @@ export default function TwoFactorPage() {
                             onChange={(e) => {
                               const val = e.target.value.replace(/\D/g, "");
                               field.handleChange(val);
-                              // Auto-submit when complete
-                              if (val.length === TOTP_CODE_LENGTH) {
-                                totpForm.handleSubmit();
-                              }
                             }}
                             placeholder="000000"
                             type="text"
