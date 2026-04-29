@@ -48,7 +48,10 @@ export class WithdrawalService {
   initiateWithdrawal(
     userId: bigint,
     input: InitiateWithdrawalRequest
-  ): ResultAsync<{ withdrawalId: string; status: "processing" }, AppError> {
+  ): ResultAsync<
+    { withdrawalId: string; status: "completed" | "processing" },
+    AppError
+  > {
     const userRepo = new UserRepository(this.db);
     const walletRepo = new WalletRepository(this.db);
     const withdrawalRepo = new WithdrawalRepository(this.db);
