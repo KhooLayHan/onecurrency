@@ -298,7 +298,11 @@ export class DepositService {
                           );
                         }
                       },
-                      () => {}
+                      (err) =>
+                        logger.warn(
+                          { error: err },
+                          "Failed to look up user for deposit notification email"
+                        )
                     );
                     return okAsync(undefined);
                   });

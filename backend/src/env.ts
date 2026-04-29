@@ -53,7 +53,12 @@ export const env = createEnv({
     BETTERSTACK_INGESTING_HOST: z.string().min(1),
 
     RESEND_API_KEY: z.string().min(1),
-    EMAIL_FROM: z.string().min(1),
+    EMAIL_FROM: z
+      .string()
+      .regex(
+        /^([^<>]+<[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>|[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)$/,
+        "Invalid EMAIL_FROM format"
+      ),
 
     R2_ACCOUNT_ID: z.string().min(1).optional(),
     R2_ACCESS_KEY_ID: z.string().min(1).optional(),

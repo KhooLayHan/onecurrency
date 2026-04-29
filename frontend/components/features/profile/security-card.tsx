@@ -29,6 +29,7 @@ import { authClient, useSession } from "@/lib/auth-client";
 
 const MIN_PASSWORD_LENGTH = 8;
 const TOTP_CODE_LENGTH = 6;
+const DIGITS_ONLY_REGEX = /^\d+$/;
 
 type SetupStep = "password" | "qr" | "backup-codes";
 
@@ -66,7 +67,7 @@ function Enable2FADialog({ onEnabled }: { onEnabled: () => void }) {
         code: z
           .string()
           .length(TOTP_CODE_LENGTH, "Enter your 6-digit code")
-          .regex(/^\d+$/, "Numbers only"),
+          .regex(DIGITS_ONLY_REGEX, "Numbers only"),
       }),
     },
     onSubmit: async ({ value }) => {
