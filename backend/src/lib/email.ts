@@ -13,11 +13,11 @@ const formatUsd = (cents: number): string =>
 
 const escapeHtml = (str: string): string =>
   str
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, "'")
-    .replace(/'/g, "'");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot")
+    .replace(/'/g, "&#39;");
 
 export async function sendPasswordResetEmail(
   to: string,

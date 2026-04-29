@@ -13,11 +13,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  turbopack: {
-    resolveAlias: {
-      accounts: "./lib/empty-module.ts",
-    },
-  },
+  // turbopack: {
+  //   resolveAlias: {
+  //     accounts: "./lib/empty-module.ts",
+  //   },
+  // },
 };
 
 export default nextConfig;
