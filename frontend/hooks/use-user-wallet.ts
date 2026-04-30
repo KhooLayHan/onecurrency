@@ -10,12 +10,14 @@ type UserWallet = {
   walletId: string;
   address: string;
   networkId: number;
+  chainId: number;
 };
 
 export function useUserWallet(): {
   walletId: string | undefined;
   address: string | undefined;
   networkId: number | undefined;
+  chainId: number | undefined;
   isLoading: boolean;
   error: Error | null;
 } {
@@ -31,6 +33,7 @@ export function useUserWallet(): {
     walletId: data?.walletId,
     address: data?.address,
     networkId: data?.networkId,
+    chainId: data?.chainId,
     isLoading,
     error,
   };
