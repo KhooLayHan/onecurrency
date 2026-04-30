@@ -1,4 +1,14 @@
-import { and, count, desc, eq, gte, ilike, lte, or, type SQL } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  lte,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
@@ -203,8 +213,14 @@ export class TransactionAdminService {
       })
       .from(deposits)
       .innerJoin(users, eq(deposits.userId, users.id))
-      .innerJoin(transactionStatuses, eq(deposits.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(deposits.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(deposits.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(deposits.blockchainTxId, blockchainTransactions.id)
+      )
       .orderBy(desc(deposits.createdAt));
 
     const rows = where ? await base.where(where) : await base;
@@ -254,8 +270,14 @@ export class TransactionAdminService {
       })
       .from(deposits)
       .innerJoin(users, eq(deposits.userId, users.id))
-      .innerJoin(transactionStatuses, eq(deposits.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(deposits.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(deposits.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(deposits.blockchainTxId, blockchainTransactions.id)
+      )
       .orderBy(desc(deposits.createdAt))
       .limit(limit)
       .offset(offset);
@@ -310,7 +332,9 @@ export class TransactionAdminService {
     }
     if (filters.search) {
       const term = `%${filters.search}%`;
-      conditions.push(or(ilike(users.name, term), ilike(users.email, term)) as SQL);
+      conditions.push(
+        or(ilike(users.name, term), ilike(users.email, term)) as SQL
+      );
     }
     return buildWhere(conditions);
   }
@@ -346,8 +370,14 @@ export class TransactionAdminService {
       })
       .from(withdrawals)
       .innerJoin(users, eq(withdrawals.userId, users.id))
-      .innerJoin(transactionStatuses, eq(withdrawals.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(withdrawals.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(withdrawals.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(withdrawals.blockchainTxId, blockchainTransactions.id)
+      )
       .orderBy(desc(withdrawals.createdAt));
 
     const rows = where ? await base.where(where) : await base;
@@ -397,8 +427,14 @@ export class TransactionAdminService {
       })
       .from(withdrawals)
       .innerJoin(users, eq(withdrawals.userId, users.id))
-      .innerJoin(transactionStatuses, eq(withdrawals.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(withdrawals.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(withdrawals.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(withdrawals.blockchainTxId, blockchainTransactions.id)
+      )
       .orderBy(desc(withdrawals.createdAt))
       .limit(limit)
       .offset(offset);
@@ -453,7 +489,9 @@ export class TransactionAdminService {
     }
     if (filters.search) {
       const term = `%${filters.search}%`;
-      conditions.push(or(ilike(users.name, term), ilike(users.email, term)) as SQL);
+      conditions.push(
+        or(ilike(users.name, term), ilike(users.email, term)) as SQL
+      );
     }
     return buildWhere(conditions);
   }
@@ -485,8 +523,14 @@ export class TransactionAdminService {
       .from(transfers)
       .innerJoin(senderUser, eq(transfers.senderUserId, senderUser.id))
       .leftJoin(receiverUser, eq(transfers.receiverUserId, receiverUser.id))
-      .innerJoin(transactionStatuses, eq(transfers.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(transfers.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(transfers.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(transfers.blockchainTxId, blockchainTransactions.id)
+      )
       .orderBy(desc(transfers.createdAt));
 
     const rows = where ? await base.where(where) : await base;
@@ -555,8 +599,14 @@ export class TransactionAdminService {
       .from(transfers)
       .innerJoin(senderUser, eq(transfers.senderUserId, senderUser.id))
       .leftJoin(receiverUser, eq(transfers.receiverUserId, receiverUser.id))
-      .innerJoin(transactionStatuses, eq(transfers.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(transfers.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(transfers.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(transfers.blockchainTxId, blockchainTransactions.id)
+      )
       .orderBy(desc(transfers.createdAt))
       .limit(limit)
       .offset(offset);
@@ -601,7 +651,7 @@ export class TransactionAdminService {
   private buildTransferWhere(
     filters: ListFilters,
     senderUser: UserAlias,
-    receiverUser: UserAlias,
+    receiverUser: UserAlias
   ): SQL | undefined {
     const conditions: SQL[] = [];
     if (filters.statusId) {
@@ -620,7 +670,7 @@ export class TransactionAdminService {
           ilike(senderUser.name, term),
           ilike(senderUser.email, term),
           ilike(receiverUser.name, term),
-          ilike(receiverUser.email, term),
+          ilike(receiverUser.email, term)
         ) as SQL
       );
     }
@@ -647,8 +697,14 @@ export class TransactionAdminService {
       })
       .from(deposits)
       .innerJoin(users, eq(deposits.userId, users.id))
-      .innerJoin(transactionStatuses, eq(deposits.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(deposits.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(deposits.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(deposits.blockchainTxId, blockchainTransactions.id)
+      )
       .where(eq(deposits.publicId, publicId));
 
     if (!row) {
@@ -693,8 +749,14 @@ export class TransactionAdminService {
       })
       .from(withdrawals)
       .innerJoin(users, eq(withdrawals.userId, users.id))
-      .innerJoin(transactionStatuses, eq(withdrawals.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(withdrawals.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(withdrawals.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(withdrawals.blockchainTxId, blockchainTransactions.id)
+      )
       .where(eq(withdrawals.publicId, publicId));
 
     if (!row) {
@@ -745,8 +807,14 @@ export class TransactionAdminService {
       .from(transfers)
       .innerJoin(senderUser, eq(transfers.senderUserId, senderUser.id))
       .leftJoin(receiverUser, eq(transfers.receiverUserId, receiverUser.id))
-      .innerJoin(transactionStatuses, eq(transfers.statusId, transactionStatuses.id))
-      .leftJoin(blockchainTransactions, eq(transfers.blockchainTxId, blockchainTransactions.id))
+      .innerJoin(
+        transactionStatuses,
+        eq(transfers.statusId, transactionStatuses.id)
+      )
+      .leftJoin(
+        blockchainTransactions,
+        eq(transfers.blockchainTxId, blockchainTransactions.id)
+      )
       .where(eq(transfers.publicId, publicId));
 
     if (!row) {
