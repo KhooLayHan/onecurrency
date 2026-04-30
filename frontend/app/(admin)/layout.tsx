@@ -2,12 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowLeftRight,
   ClipboardList,
   LogOut,
   Menu,
   ShieldAlert,
   ShieldCheck,
   User,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,11 +36,25 @@ const NAV_ITEMS = [
     icon: ShieldAlert,
     roles: ["admin"],
   },
+  {
+    label: "Users",
+    href: "/admin/users",
+    icon: Users,
+    roles: ["admin", "compliance"],
+  },
+  {
+    label: "Transactions",
+    href: "/admin/transactions",
+    icon: ArrowLeftRight,
+    roles: ["admin", "compliance"],
+  },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
   "/admin/kyc": "KYC Submissions",
   "/admin/blacklist": "Blacklist Manager",
+  "/admin/users": "Users",
+  "/admin/transactions": "Transactions",
 };
 
 function getPageTitle(pathname: string): string {
