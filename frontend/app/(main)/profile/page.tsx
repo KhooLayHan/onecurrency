@@ -10,6 +10,7 @@ import {
   type KycFormData,
   KycVerificationWizard,
 } from "@/components/features/profile/kyc-verification-wizard";
+import { SecurityCard } from "@/components/features/profile/security-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { orpcClient } from "@/lib/api";
@@ -123,6 +124,8 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <SecurityCard />
 
       <KycStatusCard
         kycStatusId={kycStatusId}

@@ -11,12 +11,14 @@ import { deposits } from "./db/schema/deposits";
 import { kycStatuses } from "./db/schema/kyc-statuses";
 import { kycSubmissions } from "./db/schema/kyc-submissions";
 import { networks } from "./db/schema/networks";
+import { rateLimits } from "./db/schema/rate-limit";
 import { relations } from "./db/schema/relations";
 import { roles } from "./db/schema/roles";
 import { sessions } from "./db/schema/sessions";
 import { transactionStatuses } from "./db/schema/transaction-statuses";
 import { transactionTypes } from "./db/schema/transaction-types";
 import { transfers } from "./db/schema/transfers";
+import { twoFactors } from "./db/schema/two-factor";
 import { userRoles } from "./db/schema/user-roles";
 import { users } from "./db/schema/users";
 import { verifications } from "./db/schema/verifications";
@@ -80,6 +82,8 @@ export const db = drizzle({
     blacklistedAddresses,
     webhookEvents,
     withdrawals,
+    rateLimits,
+    twoFactors,
     relations,
   },
   logger: env.NODE_ENV !== "production",

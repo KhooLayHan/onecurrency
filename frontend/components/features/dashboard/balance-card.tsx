@@ -1,6 +1,7 @@
 "use client";
 
 import { ExternalLink, Plus, RefreshCw, Send } from "lucide-react";
+import Link from "next/link";
 import { formatUnits } from "viem";
 import { useConnection, useReadContract } from "wagmi";
 import {
@@ -54,8 +55,13 @@ export function BalanceCard() {
   const { address: connectedAddress, isConnected } = useConnection();
 
   // Custodial: server-managed OneCurrency checking account
-  const { address: custodialAddress, isLoading: isCustodialLoading } =
-    useUserWallet();
+  // const { address: custodialAddress, isLoading: isCustodialLoading } =
+  //   useUserWallet();
+  const {
+    address: custodialAddress,
+    isLoading: isCustodialLoading,
+    networkId,
+  } = useUserWallet();
 
   // --- Custodial balance read (primary / hero) ---
   const {
@@ -68,8 +74,9 @@ export function BalanceCard() {
     abi: OneCurrencyABI,
     functionName: "balanceOf",
     args: custodialAddress ? [custodialAddress] : undefined,
+    chainId: networkId,
     query: {
-      enabled: !!custodialAddress,
+      enabled: !!custodialAddress && !!networkId,
       refetchInterval: (query) =>
         query.state.error
           ? BALANCE_REFRESH_INTERVAL_SLOW_MS
@@ -84,6 +91,7 @@ export function BalanceCard() {
     abi: OneCurrencyABI,
     functionName: "balanceOf",
     args: connectedAddress ? [connectedAddress] : undefined,
+    chainId: networkId,
     query: {
       enabled: !!connectedAddress,
       refetchInterval: BALANCE_REFRESH_INTERVAL_MS,
@@ -209,7 +217,9 @@ export function BalanceCard() {
         {isConnected && connectedAddress && (
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3">
             <div className="flex items-center gap-2">
-              <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+              <Link href="/profile">
+                <ExternalLink className="size-4 shrink-0 text-muted-foreground" />
+              </Link>
               <div className="flex flex-col">
                 <span className="font-medium text-sm">
                   External Linked Account
