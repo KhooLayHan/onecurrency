@@ -41,6 +41,7 @@ export const seedRoles = async (): Promise<void> => {
         permissions: [
           "user:read",
           "user:list",
+          "user:write",
           "kyc:read",
           "kyc:verify",
           "kyc:reject",
