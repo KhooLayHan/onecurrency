@@ -32,6 +32,7 @@ contract OneCurrency is ERC20, ERC20Burnable, ERC20Pausable, ERC20Permit, Access
 
   // ─── Blacklist ─────────────────────────────────────────────────────────────
   mapping(address => bool) private _blacklisted;
+  bool private _seizing;
 
   // ─── Events ────────────────────────────────────────────────────────────────
   event AccountBlacklisted(address indexed account);
@@ -153,9 +154,11 @@ contract OneCurrency is ERC20, ERC20Burnable, ERC20Pausable, ERC20Permit, Access
     uint256 amount = balanceOf(from);
     if (amount == 0) revert ZeroAmount();
 
-    // Call ERC20._transfer directly to bypass our blacklist check in _update.
-    // This is intentional — SEIZE_ROLE is an authorised compliance action.
+    // Use a _seizing guard so _update skips the blacklist check for this
+    // authorised compliance action only.
+    _seizing = true;
     ERC20._transfer(from, to, amount);
+    _seizing = false;
     emit TokensSeized(from, to, amount);
   }
 
@@ -170,8 +173,10 @@ contract OneCurrency is ERC20, ERC20Burnable, ERC20Pausable, ERC20Permit, Access
     virtual
     override(ERC20, ERC20Pausable)
   {
-    if (_blacklisted[from]) revert BlacklistedAccount(from);
-    if (_blacklisted[to])   revert BlacklistedAccount(to);
+    if (!_seizing) {
+     if (_blacklisted[from]) revert BlacklistedAccount(from);
+     if (_blacklisted[to])   revert BlacklistedAccount(to);
+   }
     super._update(from, to, value);
   }
 }
