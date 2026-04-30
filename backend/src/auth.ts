@@ -38,10 +38,12 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     revokeSessionsOnPasswordReset: true,
+    // biome-ignore lint/suspicious/useAwait: check
     sendResetPassword: async ({ user, url }) => {
       // Not awaited: email failure must never block or reveal timing info about
       // whether the email address exists (OWASP authentication best practice)
-      await sendPasswordResetEmail(user.email, url);
+      // biome-ignore lint/complexity/noVoid: check
+      void sendPasswordResetEmail(user.email, url);
     },
   },
 
