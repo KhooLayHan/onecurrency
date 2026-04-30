@@ -55,9 +55,7 @@ export class WalletService {
         ).andThen((network) => {
           if (!network) {
             return errAsync(
-              new InternalError(
-                "Network not found for user's primary wallet"
-              )
+              new InternalError("Network not found for user's primary wallet")
             );
           }
 
