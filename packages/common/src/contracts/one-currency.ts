@@ -23,6 +23,9 @@ export const OneCurrencyABI: Abi = parseAbi([
 
   "error AccessControlUnauthorizedAccount(address account, bytes32 neededRole)",
   "error BlacklistedAccount(address account)",
+  "error ZeroAmount()",
+  "error ZeroAddress()",
+  "error ExceedsMaxSupply(uint256 requested, uint256 available)",
 ]);
 
 export const ONECURRENCY_ADDRESS: string =
