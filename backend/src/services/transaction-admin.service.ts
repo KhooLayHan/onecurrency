@@ -460,23 +460,12 @@ export class TransactionAdminService {
 
   // ─── Transfer queries ──────────────────────────────────────────────────────
 
-  private async countTransfers(filters: ListFilters): Promise<number> {
-    const senderUser = alias(users, "sender_user");
-    const where = this.buildTransferWhere(filters, senderUser);
-    const query = this.db
-      .select({ count: count() })
-      .from(transfers)
-      .innerJoin(senderUser, eq(transfers.senderUserId, senderUser.id));
-    const [result] = where ? await query.where(where) : await query;
-    return result?.count ?? 0;
-  }
-
   private async fetchTransfers(
     filters: ListFilters
   ): Promise<AdminTransactionItem[]> {
     const senderUser = alias(users, "sender_user");
     const receiverUser = alias(users, "receiver_user");
-    const where = this.buildTransferWhere(filters, senderUser);
+    const where = this.buildTransferWhere(filters, senderUser, receiverUser);
 
     const base = this.db
       .select({
@@ -526,6 +515,19 @@ export class TransactionAdminService {
     );
   }
 
+  private async countTransfers(filters: ListFilters): Promise<number> {
+    const senderUser = alias(users, "sender_user");
+    const receiverUser = alias(users, "receiver_user");
+    const where = this.buildTransferWhere(filters, senderUser, receiverUser);
+    const query = this.db
+      .select({ count: count() })
+      .from(transfers)
+      .innerJoin(senderUser, eq(transfers.senderUserId, senderUser.id))
+      .leftJoin(receiverUser, eq(transfers.receiverUserId, receiverUser.id));
+    const [result] = where ? await query.where(where) : await query;
+    return result?.count ?? 0;
+  }
+
   private queryTransfers(
     filters: ListFilters,
     limit: number,
@@ -533,7 +535,7 @@ export class TransactionAdminService {
   ): ResultAsync<ListResult, InternalError> {
     const senderUser = alias(users, "sender_user");
     const receiverUser = alias(users, "receiver_user");
-    const where = this.buildTransferWhere(filters, senderUser);
+    const where = this.buildTransferWhere(filters, senderUser, receiverUser);
 
     const base = this.db
       .select({
@@ -598,7 +600,8 @@ export class TransactionAdminService {
 
   private buildTransferWhere(
     filters: ListFilters,
-    senderUser: UserAlias
+    senderUser: UserAlias,
+    receiverUser: UserAlias,
   ): SQL | undefined {
     const conditions: SQL[] = [];
     if (filters.statusId) {
@@ -613,7 +616,12 @@ export class TransactionAdminService {
     if (filters.search) {
       const term = `%${filters.search}%`;
       conditions.push(
-        or(ilike(senderUser.name, term), ilike(senderUser.email, term)) as SQL
+        or(
+          ilike(senderUser.name, term),
+          ilike(senderUser.email, term),
+          ilike(receiverUser.name, term),
+          ilike(receiverUser.email, term),
+        ) as SQL
       );
     }
     return buildWhere(conditions);

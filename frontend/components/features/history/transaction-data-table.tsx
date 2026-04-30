@@ -46,7 +46,7 @@ const CSV_TYPE_LABELS: Record<Transaction["type"], string> = {
   transfer_received: "Received",
 };
 
-const CSV_FORMULA_PREFIX_RE = /^[=+\-@]/;
+const CSV_FORMULA_PREFIX_RE = /^[=+\-@\t\r]/;
 function escapeCsvCell(value: string) {
   const sanitized = CSV_FORMULA_PREFIX_RE.test(value) ? `'${value}` : value;
   return `"${sanitized.replace(/"/g, '""')}"`;
