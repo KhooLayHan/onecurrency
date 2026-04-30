@@ -15,6 +15,7 @@ export type PrimaryWallet = {
   walletId: bigint;
   address: string;
   networkId: number;
+  chainId: number;
 };
 
 export class WalletService {
@@ -36,10 +37,36 @@ export class WalletService {
           );
         }
 
-        return okAsync({
-          walletId: wallet.id,
-          address: wallet.address,
-          networkId: wallet.networkId,
+        return ResultAsync.fromPromise(
+          this.db
+            .select({ chainId: networks.chainId })
+            .from(networks)
+            .where(eq(networks.id, wallet.networkId))
+            .limit(1)
+            .then((rows) => rows[0] ?? null),
+          (e): AppError =>
+            new InternalError("Failed to fetch network chainId", {
+              cause: e,
+              context: {
+                userId: userId.toString(),
+                networkId: String(wallet.networkId),
+              },
+            })
+        ).andThen((network) => {
+          if (!network) {
+            return errAsync(
+              new InternalError(
+                "Network not found for user's primary wallet"
+              )
+            );
+          }
+
+          return okAsync({
+            walletId: wallet.id,
+            address: wallet.address,
+            networkId: wallet.networkId,
+            chainId: Number(network.chainId),
+          });
         });
       });
   }

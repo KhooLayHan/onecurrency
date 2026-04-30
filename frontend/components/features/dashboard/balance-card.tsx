@@ -60,7 +60,7 @@ export function BalanceCard() {
   const {
     address: custodialAddress,
     isLoading: isCustodialLoading,
-    networkId,
+    // chainId,
   } = useUserWallet();
 
   // --- Custodial balance read (primary / hero) ---
@@ -74,9 +74,9 @@ export function BalanceCard() {
     abi: OneCurrencyABI,
     functionName: "balanceOf",
     args: custodialAddress ? [custodialAddress] : undefined,
-    chainId: networkId,
+    // chainId,
     query: {
-      enabled: !!custodialAddress && !!networkId,
+      enabled: !!custodialAddress,
       refetchInterval: (query) =>
         query.state.error
           ? BALANCE_REFRESH_INTERVAL_SLOW_MS
@@ -91,7 +91,7 @@ export function BalanceCard() {
     abi: OneCurrencyABI,
     functionName: "balanceOf",
     args: connectedAddress ? [connectedAddress] : undefined,
-    chainId: networkId,
+    // chainId,
     query: {
       enabled: !!connectedAddress,
       refetchInterval: BALANCE_REFRESH_INTERVAL_MS,

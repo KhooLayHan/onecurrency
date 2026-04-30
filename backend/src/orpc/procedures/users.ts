@@ -64,6 +64,7 @@ export const getPrimaryWallet = base
       walletId: z.string(),
       address: z.string(),
       networkId: z.number(),
+      chainId: z.number(),
     })
   )
   .handler(async ({ context }) => {
@@ -78,12 +79,13 @@ export const getPrimaryWallet = base
     if (result.isErr()) {
       throw mapToORPCError(result.error);
     }
-    const { walletId, address, networkId } = result.value;
-    logger.info({ userId }, "User primary wallet fetched");
+    const { walletId, address, networkId, chainId } = result.value;
+    logger.info({ userId, chainId }, "User primary wallet fetched");
     return {
       walletId: walletId.toString(),
       address,
       networkId,
+      chainId,
     };
   });
 
