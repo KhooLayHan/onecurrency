@@ -9,6 +9,10 @@ import {
   seizeTokens,
 } from "./procedures/admin";
 import {
+  getAdminTransaction,
+  listAdminTransactions,
+} from "./procedures/admin-transactions";
+import {
   checkout,
   getHistory as getDepositHistory,
   testMint,
@@ -53,6 +57,10 @@ export const appRouter = {
       add: addToBlacklist,
       remove: removeFromBlacklist,
       seize: seizeTokens,
+    },
+    transactions: {
+      list: listAdminTransactions,
+      get: getAdminTransaction,
     },
   },
 };
