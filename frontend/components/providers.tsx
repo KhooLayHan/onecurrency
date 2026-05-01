@@ -7,7 +7,6 @@ import { type ReactNode, useState } from "react";
 import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
 import { Toaster } from "@/components/ui/sonner";
 import { projectId, wagmiAdapter } from "@/config";
-import { env } from "@/src/env";
 
 if (!projectId) {
   throw new Error("Project ID is not defined");
@@ -17,9 +16,9 @@ const metadata = {
   name: "OneCurrency",
   description: "A Hybrid Fiat-to-Crypto Bridge",
   url:
-    env.NODE_ENV === "development"
-      ? "https://localhost:3000"
-      : "https://www.onecurrency.tech",
+    // env. === "development"
+    //   ? "https://localhost:3000"
+    "https://www.onecurrency.tech",
   icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 

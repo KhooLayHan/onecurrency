@@ -120,6 +120,14 @@ export class DepositService {
             // DEV ONLY: bypass Stripe checkout UI by processing the payment directly.
             // In production, this is handled by the Stripe webhook.
             if (env.NODE_ENV !== "production") {
+              // With deferred PaymentIntent creation (2026-02-25.clover API),
+              // payment_intent is null on a freshly-created session. Fallback to a
+              // fake ID so the downstream validation never chokes in dev.
+              const devPaymentIntentId =
+                typeof session.payment_intent === "string"
+                  ? session.payment_intent
+                  : `pi_dev_${deposit.id}`;
+
               const devEvent = {
                 id: `evt_dev_${deposit.id}`,
                 object: "event",
@@ -130,7 +138,13 @@ export class DepositService {
                 pending_webhooks: 0,
                 request: null,
                 api_version: null,
-                data: { object: { ...session, payment_status: "paid" } },
+                data: {
+                  object: {
+                    ...session,
+                    payment_status: "paid",
+                    payment_intent: devPaymentIntentId,
+                  },
+                },
               } as unknown as Stripe.Event;
 
               logger.info(

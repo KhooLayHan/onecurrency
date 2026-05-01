@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { InternalError } from "@/common/errors/infrastructure";
 import type { Database } from "../db";
@@ -34,15 +35,36 @@ export class BlockchainTransactionRepository {
           },
         })
     ).andThen((tx) => {
-      if (!tx) {
+      if (tx) {
+        return okAsync(tx);
+      }
+
+      // Insert was skipped because of a conflict — fetch the existing row
+      return ResultAsync.fromPromise(
+        this.db
+          .select()
+          .from(blockchainTransactions)
+          .where(eq(blockchainTransactions.txHash, data.txHash))
+          .then((rows) => rows[0] ?? null),
+        (e): InternalError =>
+          new InternalError(
+            "Failed to retrieve existing blockchain transaction record",
+            {
+              cause: e,
+              context: { txHash: data.txHash },
+            }
+          )
+      ).andThen((existing) => {
+        if (existing) {
+          return okAsync(existing);
+        }
         return errAsync(
           new InternalError(
-            "Blockchain transaction not returned after insert",
+            "Blockchain transaction record missing after insert conflict",
             { context: { txHash: data.txHash } }
           )
         );
-      }
-      return okAsync(tx);
+      });
     });
   }
 }
