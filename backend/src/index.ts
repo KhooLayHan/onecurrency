@@ -38,8 +38,8 @@ app.use(
     origin: (origin) => {
       // If the request comes from any of these safe origins, allow it!
       const allowedOrigins = [
-        env.PROD_CORS_ORIGIN,
-        env.PROD_SUB_CORS_ORIGIN,
+        // env.PROD_CORS_ORIGIN,
+        // env.PROD_SUB_CORS_ORIGIN,
         env.LOCAL_CORS_ORIGIN,
       ];
 
@@ -71,7 +71,22 @@ const v1 = new Hono<{ Variables: SessionVariables }>();
 v1.use(
   "*",
   cors({
-    origin: env.LOCAL_CORS_ORIGIN,
+    origin: (origin) => {
+      // If the request comes from any of these safe origins, allow it!
+      const allowedOrigins = [
+        `${env.PROD_CORS_ORIGIN}`,
+        `${env.PROD_SUB_CORS_ORIGIN}`,
+        `${env.LOCAL_CORS_ORIGIN}`,
+      ];
+
+      // Return the exact origin the browser asked for if it's in our safe list
+      if (origin && allowedOrigins.includes(origin)) {
+        return origin;
+      }
+
+      // Fallback
+      return env.LOCAL_CORS_ORIGIN;
+    },
     allowHeaders: [
       "Content-Type",
       "Authorization",

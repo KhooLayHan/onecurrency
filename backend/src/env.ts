@@ -47,9 +47,9 @@ export const env = createEnv({
     STRIPE_PUBLISHABLE_KEY: z.string().regex(/^pk_(test|live)_/),
     STRIPE_WEBHOOK_SECRET: z.string(),
 
-    LOCAL_CORS_ORIGIN: z.string(),
-    PROD_CORS_ORIGIN: z.string(),
-    PROD_SUB_CORS_ORIGIN: z.string(),
+    LOCAL_CORS_ORIGIN: z.string().default("https://localhost:3000"),
+    PROD_CORS_ORIGIN: z.string().default("https://www.onecurrency.tech"),
+    PROD_SUB_CORS_ORIGIN: z.string().default("https://onecurrency.tech"),
 
     BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
     BETTERSTACK_INGESTING_HOST: z.string().min(1),
