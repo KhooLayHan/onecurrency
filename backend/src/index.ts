@@ -35,7 +35,22 @@ app.use(
 app.use(
   "/api/*",
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: (origin) => {
+      // If the request comes from any of these safe origins, allow it!
+      const allowedOrigins = [
+        "https://www.onecurrency.tech",
+        "https://onecurrency.tech",
+        "http://localhost:3000",
+      ];
+
+      // Return the exact origin the browser asked for if it's in our safe list
+      if (origin && allowedOrigins.includes(origin)) {
+        return origin;
+      }
+
+      // Fallback
+      return env.CORS_ORIGIN;
+    },
     allowHeaders: [
       "Content-Type",
       "Authorization",
