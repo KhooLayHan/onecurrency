@@ -102,6 +102,10 @@ export const auth = betterAuth({
   },
 
   advanced: {
+    crossSubdomainCookies: {
+      enabled: true,
+      domain: ".onecurrency.tech",
+    },
     ipAddress: {
       ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip"],
     },
