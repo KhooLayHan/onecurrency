@@ -102,7 +102,7 @@ export const auth = betterAuth({
   },
 
   advanced: {
-    crossSubdomainCookies: {
+    crossSubDomainCookies: {
       enabled: true,
       domain: ".onecurrency.tech",
     },
