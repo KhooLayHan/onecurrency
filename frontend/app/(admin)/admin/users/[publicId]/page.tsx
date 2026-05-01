@@ -90,6 +90,416 @@ function InfoRow({ label, value }: DetailRow) {
   );
 }
 
+function getConfirmLabel(
+  isPending: boolean,
+  action: "suspend" | "restore" | null
+): string {
+  if (isPending) {
+    return "Processing...";
+  }
+  if (action === "suspend") {
+    return "Suspend";
+  }
+  return "Restore";
+}
+
+/* ── Sub-component: Profile card ─────────────────────────────── */
+
+type AdminUserDetail = Awaited<ReturnType<typeof orpcClient.admin.users.get>>;
+
+function ProfileCard({ user }: { user: AdminUserDetail }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Profile</CardTitle>
+      </CardHeader>
+      <CardContent className="divide-y">
+        <InfoRow label="Name" value={user.name} />
+        <InfoRow label="Email" value={user.email} />
+        <InfoRow
+          label="Email verified"
+          value={
+            user.emailVerified ? (
+              <Badge variant="success">Verified</Badge>
+            ) : (
+              <Badge variant="neutral">Unverified</Badge>
+            )
+          }
+        />
+        <InfoRow
+          label="KYC status"
+          value={
+            <Badge variant={KYC_STATUS_VARIANTS[user.kycStatusId] ?? "neutral"}>
+              {KYC_STATUS_LABELS[user.kycStatusId] ?? "Unknown"}
+            </Badge>
+          }
+        />
+        {user.kycVerifiedAt && (
+          <InfoRow
+            label="KYC verified"
+            value={new Date(user.kycVerifiedAt).toLocaleDateString()}
+          />
+        )}
+        <InfoRow
+          label="Roles"
+          value={
+            <div className="flex flex-wrap justify-end gap-1">
+              {user.roles.length === 0 ? (
+                <span className="text-muted-foreground">—</span>
+              ) : (
+                user.roles.map((role) => (
+                  <Badge key={role} variant="outline">
+                    {role}
+                  </Badge>
+                ))
+              )}
+            </div>
+          }
+        />
+        <InfoRow
+          label="Created"
+          value={new Date(user.createdAt).toLocaleDateString()}
+        />
+        <InfoRow
+          label="Updated"
+          value={new Date(user.updatedAt).toLocaleDateString()}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ── Sub-component: Account settings card ───────────────────── */
+
+type AccountSettingsCardProps = {
+  user: AdminUserDetail;
+  isSuspended: boolean;
+  editingLimit: boolean;
+  limitInput: string;
+  isSavingLimit: boolean;
+  onEditLimit: () => void;
+  onLimitInputChange: (value: string) => void;
+  onSaveLimit: () => void;
+  onCancelEdit: () => void;
+};
+
+function AccountSettingsCard({
+  user,
+  isSuspended,
+  editingLimit,
+  limitInput,
+  isSavingLimit,
+  onEditLimit,
+  onLimitInputChange,
+  onSaveLimit,
+  onCancelEdit,
+}: AccountSettingsCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Account Settings</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="space-y-2">
+          <Label className="text-sm">Deposit Limit</Label>
+          {editingLimit ? (
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <span className="-translate-y-1/2 absolute top-1/2 left-3 text-muted-foreground text-sm">
+                  $
+                </span>
+                <Input
+                  className="pl-7"
+                  inputMode="decimal"
+                  onChange={(e) => onLimitInputChange(e.target.value)}
+                  placeholder="0.00"
+                  type="number"
+                  value={limitInput}
+                />
+              </div>
+              <Button disabled={isSavingLimit} onClick={onSaveLimit} size="sm">
+                {isSavingLimit ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                disabled={isSavingLimit}
+                onClick={onCancelEdit}
+                size="sm"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="text-sm tabular-nums">
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                }).format(user.depositLimitCents / CENTS_TO_DOLLARS)}
+              </span>
+              <Button onClick={onEditLimit} size="sm" variant="outline">
+                Edit
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {isSuspended && user.deletedAt && (
+          <div className="space-y-1">
+            <Label className="text-sm">Suspended At</Label>
+            <p className="text-muted-foreground text-sm">
+              {new Date(user.deletedAt).toLocaleString()}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ── Sub-component: Transaction history tab ────────────────── */
+
+type AdminTxList = Awaited<
+  ReturnType<typeof orpcClient.admin.transactions.list>
+>;
+
+type UserTransactionHistoryTabProps = {
+  txData: AdminTxList | undefined;
+  txLoading: boolean;
+  txPage: number;
+  txTotalPages: number;
+  onPageChange: (page: number) => void;
+};
+
+function UserTransactionHistoryTab({
+  txData,
+  txLoading,
+  txPage,
+  txTotalPages,
+  onPageChange,
+}: UserTransactionHistoryTabProps) {
+  return (
+    <>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">Fee</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Receipt Reference</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {txLoading &&
+              Array.from({ length: SKELETON_TX_ROW_COUNT }).map((_r, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholders are static
+                <TableRow key={`tx-skeleton-${i}`}>
+                  {Array.from({ length: SKELETON_TX_COL_COUNT }).map(
+                    (_c, j) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholders are static
+                      <TableCell key={`tx-skeleton-cell-${j}`}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    )
+                  )}
+                </TableRow>
+              ))}
+            {!txLoading &&
+              txData?.items.map((tx) => (
+                <TableRow
+                  className="cursor-pointer"
+                  key={tx.publicId}
+                  onClick={() =>
+                    window.open(`/admin/transactions/${tx.publicId}`, "_self")
+                  }
+                >
+                  <TableCell className="text-muted-foreground text-sm">
+                    {new Date(tx.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>{TX_TYPE_LABELS[tx.type] ?? tx.type}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                    }).format(tx.amountCents / CENTS_TO_DOLLARS)}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                    }).format(tx.feeCents / CENTS_TO_DOLLARS)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={TX_STATUS_VARIANTS[tx.status] ?? "neutral"}>
+                      {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-muted-foreground text-xs">
+                    {tx.publicId}
+                  </TableCell>
+                </TableRow>
+              ))}
+            {!txLoading && txData?.items.length === 0 && (
+              <TableRow>
+                <TableCell
+                  className="py-8 text-center text-muted-foreground"
+                  colSpan={SKELETON_TX_COL_COUNT}
+                >
+                  No transactions found.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {txTotalPages > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <p className="text-muted-foreground text-sm">
+            {txData?.total} total transactions
+          </p>
+          <div className="flex gap-2">
+            <Button
+              disabled={txPage === 1}
+              onClick={() => onPageChange(txPage - 1)}
+              size="sm"
+              variant="outline"
+            >
+              Previous
+            </Button>
+            <span className="flex items-center px-3 text-sm">
+              {txPage} / {txTotalPages}
+            </span>
+            <Button
+              disabled={txPage === txTotalPages}
+              onClick={() => onPageChange(txPage + 1)}
+              size="sm"
+              variant="outline"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ── Sub-component: Page header ──────────────────────────────── */
+
+type UserDetailHeaderProps = {
+  userLoading: boolean;
+  user: AdminUserDetail | undefined;
+  isSuspended: boolean;
+  actionPending: boolean;
+  onToggleSuspend: () => void;
+};
+
+function UserDetailHeader({
+  userLoading,
+  user,
+  isSuspended,
+  actionPending,
+  onToggleSuspend,
+}: UserDetailHeaderProps) {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-4">
+        <Link
+          className="inline-flex shrink-0 items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
+          href="/admin/users"
+        >
+          <ArrowLeft className="size-4" />
+          Users
+        </Link>
+        {userLoading ? (
+          <Skeleton className="h-7 w-48" />
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-bold text-xl tracking-tight">{user?.name}</h1>
+            {isSuspended ? (
+              <Badge variant="error">Suspended</Badge>
+            ) : (
+              <Badge variant="success">Active</Badge>
+            )}
+          </div>
+        )}
+      </div>
+
+      {!userLoading && user && (
+        <Button
+          disabled={actionPending}
+          onClick={onToggleSuspend}
+          size="sm"
+          variant={isSuspended ? "outline" : "destructive"}
+        >
+          {isSuspended ? "Restore Account" : "Suspend Account"}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/* ── Error guard helper ─────────────────────────────────────── */
+
+function getUserDetailErrorNode(
+  userError: boolean,
+  userLoading: boolean,
+  userQueryError: Error | null
+): React.ReactNode {
+  if (!(userError && userQueryError)) {
+    return null;
+  }
+
+  const maybeNotFound = userQueryError as { status?: number };
+  if (
+    "status" in maybeNotFound &&
+    maybeNotFound.status === HTTP_STATUS_NOT_FOUND
+  ) {
+    return (
+      <div className="space-y-4">
+        <Link
+          className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
+          href="/admin/users"
+        >
+          <ArrowLeft className="size-4" />
+          Users
+        </Link>
+        <div className="py-16 text-center text-muted-foreground">
+          User not found.
+        </div>
+      </div>
+    );
+  }
+
+  if (userLoading) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4">
+      <Link
+        className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
+        href="/admin/users"
+      >
+        <ArrowLeft className="size-4" />
+        Users
+      </Link>
+      <div className="py-16 text-center text-muted-foreground text-sm">
+        Failed to load user:{" "}
+        {userQueryError instanceof Error
+          ? userQueryError.message
+          : "Unknown error"}
+      </div>
+    </div>
+  );
+}
+
+/* ── Main page component ────────────────────────────────────── */
+
 export default function AdminUserDetailPage() {
   const { publicId } = useParams<{ publicId: string }>();
   const queryClient = useQueryClient();
@@ -181,7 +591,9 @@ export default function AdminUserDetailPage() {
   }
 
   function handleEditLimit() {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     setLimitInput((user.depositLimitCents / CENTS_TO_DOLLARS).toFixed(2));
     setEditingLimit(true);
   }
@@ -189,89 +601,26 @@ export default function AdminUserDetailPage() {
   const isSuspended = user?.deletedAt !== null && user?.deletedAt !== undefined;
   const txTotalPages = txData ? Math.ceil(txData.total / txData.pageSize) : 0;
 
-  // 404 state
-  if (
-    userError &&
-    userQueryError &&
-    "status" in userQueryError &&
-    (userQueryError as { status: number }).status === HTTP_STATUS_NOT_FOUND
-  ) {
-    return (
-      <div className="space-y-4">
-        <Link
-          className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
-          href="/admin/users"
-        >
-          <ArrowLeft className="size-4" />
-          Users
-        </Link>
-        <div className="py-16 text-center text-muted-foreground">
-          User not found.
-        </div>
-      </div>
-    );
-  }
-
-  // Generic error state
-  if (userError && !userLoading) {
-    return (
-      <div className="space-y-4">
-        <Link
-          className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
-          href="/admin/users"
-        >
-          <ArrowLeft className="size-4" />
-          Users
-        </Link>
-        <div className="py-16 text-center text-muted-foreground text-sm">
-          Failed to load user:{" "}
-          {userQueryError instanceof Error
-            ? userQueryError.message
-            : "Unknown error"}
-        </div>
-      </div>
-    );
+  const errorNode = getUserDetailErrorNode(
+    userError,
+    userLoading,
+    userQueryError
+  );
+  if (errorNode) {
+    return errorNode;
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            className="inline-flex shrink-0 items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
-            href="/admin/users"
-          >
-            <ArrowLeft className="size-4" />
-            Users
-          </Link>
-          {userLoading ? (
-            <Skeleton className="h-7 w-48" />
-          ) : (
-            <div className="flex items-center gap-2.5">
-              <h1 className="font-bold text-xl tracking-tight">{user?.name}</h1>
-              {isSuspended ? (
-                <Badge variant="error">Suspended</Badge>
-              ) : (
-                <Badge variant="success">Active</Badge>
-              )}
-            </div>
-          )}
-        </div>
-
-        {!userLoading && user && (
-          <Button
-            disabled={suspendMutation.isPending || restoreMutation.isPending}
-            onClick={() =>
-              setPendingAction(isSuspended ? "restore" : "suspend")
-            }
-            size="sm"
-            variant={isSuspended ? "outline" : "destructive"}
-          >
-            {isSuspended ? "Restore Account" : "Suspend Account"}
-          </Button>
-        )}
-      </div>
+      <UserDetailHeader
+        actionPending={suspendMutation.isPending || restoreMutation.isPending}
+        isSuspended={isSuspended}
+        onToggleSuspend={() =>
+          setPendingAction(isSuspended ? "restore" : "suspend")
+        }
+        user={user}
+        userLoading={userLoading}
+      />
 
       <Tabs className="w-full" defaultValue="overview">
         <TabsList>
@@ -289,145 +638,18 @@ export default function AdminUserDetailPage() {
           ) : (
             user && (
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Profile card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Profile</CardTitle>
-                  </CardHeader>
-                  <CardContent className="divide-y">
-                    <InfoRow label="Name" value={user.name} />
-                    <InfoRow label="Email" value={user.email} />
-                    <InfoRow
-                      label="Email verified"
-                      value={
-                        user.emailVerified ? (
-                          <Badge variant="success">Verified</Badge>
-                        ) : (
-                          <Badge variant="neutral">Unverified</Badge>
-                        )
-                      }
-                    />
-                    <InfoRow
-                      label="KYC status"
-                      value={
-                        <Badge
-                          variant={
-                            KYC_STATUS_VARIANTS[user.kycStatusId] ?? "neutral"
-                          }
-                        >
-                          {KYC_STATUS_LABELS[user.kycStatusId] ?? "Unknown"}
-                        </Badge>
-                      }
-                    />
-                    {user.kycVerifiedAt && (
-                      <InfoRow
-                        label="KYC verified"
-                        value={new Date(
-                          user.kycVerifiedAt
-                        ).toLocaleDateString()}
-                      />
-                    )}
-                    <InfoRow
-                      label="Roles"
-                      value={
-                        <div className="flex flex-wrap justify-end gap-1">
-                          {user.roles.length === 0 ? (
-                            <span className="text-muted-foreground">—</span>
-                          ) : (
-                            user.roles.map((role) => (
-                              <Badge key={role} variant="outline">
-                                {role}
-                              </Badge>
-                            ))
-                          )}
-                        </div>
-                      }
-                    />
-                    <InfoRow
-                      label="Created"
-                      value={new Date(user.createdAt).toLocaleDateString()}
-                    />
-                    <InfoRow
-                      label="Updated"
-                      value={new Date(user.updatedAt).toLocaleDateString()}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Account card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      Account Settings
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-5">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Deposit Limit</Label>
-                      {editingLimit ? (
-                        <div className="flex items-center gap-2">
-                          <div className="relative flex-1">
-                            <span className="-translate-y-1/2 absolute top-1/2 left-3 text-muted-foreground text-sm">
-                              $
-                            </span>
-                            <Input
-                              className="pl-7"
-                              inputMode="decimal"
-                              onChange={(e) => setLimitInput(e.target.value)}
-                              placeholder="0.00"
-                              type="number"
-                              value={limitInput}
-                            />
-                          </div>
-                          <Button
-                            disabled={updateLimitMutation.isPending}
-                            onClick={handleSaveLimit}
-                            size="sm"
-                          >
-                            {updateLimitMutation.isPending
-                              ? "Saving..."
-                              : "Save"}
-                          </Button>
-                          <Button
-                            disabled={updateLimitMutation.isPending}
-                            onClick={() => setEditingLimit(false)}
-                            size="sm"
-                            variant="outline"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm tabular-nums">
-                            {new Intl.NumberFormat("en-US", {
-                              style: "currency",
-                              currency: "USD",
-                            }).format(
-                              user.depositLimitCents / CENTS_TO_DOLLARS
-                            )}
-                          </span>
-                          <Button
-                            onClick={handleEditLimit}
-                            size="sm"
-                            variant="outline"
-                          >
-                            Edit
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {isSuspended && user.deletedAt && (
-                      <div className="space-y-1">
-                        <Label className="text-sm">Suspended At</Label>
-                        <p className="text-muted-foreground text-sm">
-                          {new Date(user.deletedAt).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <ProfileCard user={user} />
+                <AccountSettingsCard
+                  editingLimit={editingLimit}
+                  isSavingLimit={updateLimitMutation.isPending}
+                  isSuspended={isSuspended}
+                  limitInput={limitInput}
+                  onCancelEdit={() => setEditingLimit(false)}
+                  onEditLimit={handleEditLimit}
+                  onLimitInputChange={setLimitInput}
+                  onSaveLimit={handleSaveLimit}
+                  user={user}
+                />
               </div>
             )
           )}
@@ -435,118 +657,13 @@ export default function AdminUserDetailPage() {
 
         {/* Transaction History tab */}
         <TabsContent className="mt-6" value="transactions">
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="text-right">Fee</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Receipt Reference</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {txLoading &&
-                  Array.from({ length: SKELETON_TX_ROW_COUNT }).map((_r, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholders are static
-                    <TableRow key={`tx-skeleton-${i}`}>
-                      {Array.from({
-                        length: SKELETON_TX_COL_COUNT,
-                      }).map((_c, j) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: Skeleton placeholders are static
-                        <TableCell key={`tx-skeleton-cell-${j}`}>
-                          <Skeleton className="h-4 w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                {!txLoading &&
-                  txData?.items.map((tx) => (
-                    <TableRow
-                      className="cursor-pointer"
-                      key={tx.publicId}
-                      onClick={() =>
-                        window.open(
-                          `/admin/transactions/${tx.publicId}`,
-                          "_self"
-                        )
-                      }
-                    >
-                      <TableCell className="text-muted-foreground text-sm">
-                        {new Date(tx.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {TX_TYPE_LABELS[tx.type] ?? tx.type}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        }).format(tx.amountCents / CENTS_TO_DOLLARS)}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground tabular-nums">
-                        {new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        }).format(tx.feeCents / CENTS_TO_DOLLARS)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={TX_STATUS_VARIANTS[tx.status] ?? "neutral"}
-                        >
-                          {tx.status.charAt(0).toUpperCase() +
-                            tx.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-muted-foreground text-xs">
-                        {tx.publicId}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                {!txLoading && txData?.items.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      className="py-8 text-center text-muted-foreground"
-                      colSpan={SKELETON_TX_COL_COUNT}
-                    >
-                      No transactions found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {txTotalPages > 1 && (
-            <div className="flex items-center justify-between pt-4">
-              <p className="text-muted-foreground text-sm">
-                {txData?.total} total transactions
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  disabled={txPage === 1}
-                  onClick={() => setTxPage((p) => p - 1)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Previous
-                </Button>
-                <span className="flex items-center px-3 text-sm">
-                  {txPage} / {txTotalPages}
-                </span>
-                <Button
-                  disabled={txPage === txTotalPages}
-                  onClick={() => setTxPage((p) => p + 1)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <UserTransactionHistoryTab
+            onPageChange={setTxPage}
+            txData={txData}
+            txLoading={txLoading}
+            txPage={txPage}
+            txTotalPages={txTotalPages}
+          />
         </TabsContent>
       </Tabs>
 
@@ -585,11 +702,10 @@ export default function AdminUserDetailPage() {
               }}
               variant={pendingAction === "suspend" ? "destructive" : "default"}
             >
-              {suspendMutation.isPending || restoreMutation.isPending
-                ? "Processing..."
-                : pendingAction === "suspend"
-                  ? "Suspend"
-                  : "Restore"}
+              {getConfirmLabel(
+                suspendMutation.isPending || restoreMutation.isPending,
+                pendingAction
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

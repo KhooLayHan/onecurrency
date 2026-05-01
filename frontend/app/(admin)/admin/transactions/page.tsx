@@ -376,7 +376,12 @@ export default function AdminTransactionsPage() {
           value={statusFilter ?? ALL_VALUE}
         >
           <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue>
+              {statusFilter !== undefined
+                ? (STATUS_OPTIONS.find((o) => o.value === statusFilter)
+                    ?.label ?? statusFilter)
+                : "All statuses"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_VALUE}>All statuses</SelectItem>

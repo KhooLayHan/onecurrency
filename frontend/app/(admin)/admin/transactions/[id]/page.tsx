@@ -45,6 +45,140 @@ function InfoRow({ label, value }: DetailRow) {
   );
 }
 
+type TransactionDetail = Awaited<
+  ReturnType<typeof orpcClient.admin.transactions.get>
+>;
+
+function TransactionDetailCards({ tx }: { tx: TransactionDetail }) {
+  return (
+    <>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Transaction details card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Transaction Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InfoRow label="Type" value={TX_TYPE_LABELS[tx.type] ?? tx.type} />
+            <InfoRow
+              label="Amount"
+              value={
+                <span className="tabular-nums">
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  }).format(tx.amountCents / CENTS_TO_DOLLARS)}
+                </span>
+              }
+            />
+            <InfoRow
+              label="Fee"
+              value={
+                <span className="tabular-nums">
+                  {new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  }).format(tx.feeCents / CENTS_TO_DOLLARS)}
+                </span>
+              }
+            />
+            <InfoRow
+              label="Status"
+              value={
+                <Badge variant={TX_STATUS_VARIANTS[tx.status] ?? "neutral"}>
+                  {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                </Badge>
+              }
+            />
+            <InfoRow
+              label="Created"
+              value={new Date(tx.createdAt).toLocaleString()}
+            />
+            <InfoRow
+              label="Completed"
+              value={
+                tx.completedAt ? new Date(tx.completedAt).toLocaleString() : "—"
+              }
+            />
+          </CardContent>
+        </Card>
+
+        {/* Parties card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Parties</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InfoRow
+              label="User"
+              value={
+                <Link
+                  className="font-medium hover:underline"
+                  href={`/admin/users/${tx.userPublicId}`}
+                >
+                  {tx.userName}
+                </Link>
+              }
+            />
+            <InfoRow
+              label="Email"
+              value={
+                <span className="text-muted-foreground">{tx.userEmail}</span>
+              }
+            />
+            {tx.counterpartyName && (
+              <InfoRow
+                label="Counterparty"
+                value={
+                  tx.counterpartyPublicId ? (
+                    <Link
+                      className="font-medium hover:underline"
+                      href={`/admin/users/${tx.counterpartyPublicId}`}
+                    >
+                      {tx.counterpartyName}
+                    </Link>
+                  ) : (
+                    tx.counterpartyName
+                  )
+                }
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Blockchain card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Blockchain</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InfoRow
+            label="Receipt Reference"
+            value={
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                {tx.publicId}
+              </code>
+            }
+          />
+          <InfoRow
+            label="Blockchain Tx Hash"
+            value={
+              tx.blockchainTxHash ? (
+                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                  {tx.blockchainTxHash}
+                </code>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )
+            }
+          />
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
 export default function AdminTransactionDetailPage() {
   const { id } = useParams<{ id: string }>();
 
@@ -148,146 +282,7 @@ export default function AdminTransactionDetailPage() {
           <Skeleton className="col-span-full h-32" />
         </div>
       ) : (
-        tx && (
-          <>
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Transaction details card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Transaction Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <InfoRow
-                    label="Type"
-                    value={TX_TYPE_LABELS[tx.type] ?? tx.type}
-                  />
-                  <InfoRow
-                    label="Amount"
-                    value={
-                      <span className="tabular-nums">
-                        {new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        }).format(tx.amountCents / CENTS_TO_DOLLARS)}
-                      </span>
-                    }
-                  />
-                  <InfoRow
-                    label="Fee"
-                    value={
-                      <span className="tabular-nums">
-                        {new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        }).format(tx.feeCents / CENTS_TO_DOLLARS)}
-                      </span>
-                    }
-                  />
-                  <InfoRow
-                    label="Status"
-                    value={
-                      <Badge
-                        variant={TX_STATUS_VARIANTS[tx.status] ?? "neutral"}
-                      >
-                        {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
-                      </Badge>
-                    }
-                  />
-                  <InfoRow
-                    label="Created"
-                    value={new Date(tx.createdAt).toLocaleString()}
-                  />
-                  <InfoRow
-                    label="Completed"
-                    value={
-                      tx.completedAt
-                        ? new Date(tx.completedAt).toLocaleString()
-                        : "—"
-                    }
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Parties card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Parties</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <InfoRow
-                    label="User"
-                    value={
-                      <Link
-                        className="font-medium hover:underline"
-                        href={`/admin/users/${tx.userPublicId}`}
-                      >
-                        {tx.userName}
-                      </Link>
-                    }
-                  />
-                  <InfoRow
-                    label="Email"
-                    value={
-                      <span className="text-muted-foreground">
-                        {tx.userEmail}
-                      </span>
-                    }
-                  />
-                  {tx.counterpartyName && (
-                    <>
-                      <InfoRow
-                        label="Counterparty"
-                        value={
-                          tx.counterpartyPublicId ? (
-                            <Link
-                              className="font-medium hover:underline"
-                              href={`/admin/users/${tx.counterpartyPublicId}`}
-                            >
-                              {tx.counterpartyName}
-                            </Link>
-                          ) : (
-                            tx.counterpartyName
-                          )
-                        }
-                      />
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Blockchain card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Blockchain</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <InfoRow
-                  label="Receipt Reference"
-                  value={
-                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                      {tx.publicId}
-                    </code>
-                  }
-                />
-                <InfoRow
-                  label="Blockchain Tx Hash"
-                  value={
-                    tx.blockchainTxHash ? (
-                      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                        {tx.blockchainTxHash}
-                      </code>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )
-                  }
-                />
-              </CardContent>
-            </Card>
-          </>
-        )
+        tx && <TransactionDetailCards tx={tx} />
       )}
     </div>
   );

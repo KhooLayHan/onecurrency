@@ -109,7 +109,12 @@ export default function AdminUsersPage() {
           }
         >
           <SelectTrigger className="w-full sm:w-44">
-            <SelectValue placeholder="All KYC statuses" />
+            <SelectValue>
+              {kycStatusFilter !== undefined
+                ? (KYC_STATUS_LABELS[kycStatusFilter] ??
+                  String(kycStatusFilter))
+                : "All KYC statuses"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_VALUE}>All KYC statuses</SelectItem>
@@ -132,7 +137,12 @@ export default function AdminUsersPage() {
           value={roleFilter ?? ALL_VALUE}
         >
           <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="All roles" />
+            <SelectValue>
+              {roleFilter !== undefined
+                ? (ROLE_OPTIONS.find((o) => o.value === roleFilter)?.label ??
+                  roleFilter)
+                : "All roles"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_VALUE}>All roles</SelectItem>
