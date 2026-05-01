@@ -33,7 +33,11 @@ export const auth = betterAuth({
   basePath: "/api/v1/auth",
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
-  trustedOrigins: [env.CORS_ORIGIN],
+  trustedOrigins: [
+    env.PROD_CORS_ORIGIN,
+    env.PROD_SUB_CORS_ORIGIN,
+    env.LOCAL_CORS_ORIGIN,
+  ],
 
   emailAndPassword: {
     enabled: true,

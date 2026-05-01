@@ -47,7 +47,9 @@ export const env = createEnv({
     STRIPE_PUBLISHABLE_KEY: z.string().regex(/^pk_(test|live)_/),
     STRIPE_WEBHOOK_SECRET: z.string(),
 
-    CORS_ORIGIN: z.string().default("http://localhost:3000"),
+    LOCAL_CORS_ORIGIN: z.string(),
+    LOCAL_CORS_ORIGIN: z.string(),
+    LOCAL_CORS_ORIGIN: z.string(),
 
     BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
     BETTERSTACK_INGESTING_HOST: z.string().min(1),
