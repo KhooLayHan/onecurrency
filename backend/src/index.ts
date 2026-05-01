@@ -38,8 +38,8 @@ app.use(
     origin: (origin) => {
       // If the request comes from any of these safe origins, allow it!
       const allowedOrigins = [
-        // env.PROD_CORS_ORIGIN,
-        // env.PROD_SUB_CORS_ORIGIN,
+        env.PROD_CORS_ORIGIN,
+        env.PROD_SUB_CORS_ORIGIN,
         env.LOCAL_CORS_ORIGIN,
       ];
 
