@@ -388,7 +388,7 @@ export default function AdminLayout({
             return (
               <Link
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-1 py-3 text-xs transition-colors",
+                  "flex flex-1 flex-col items-center gap-1 py-3 text-center text-xs transition-colors",
                   isActive
                     ? "font-semibold text-primary"
                     : "text-muted-foreground"
