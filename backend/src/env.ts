@@ -48,8 +48,8 @@ export const env = createEnv({
     STRIPE_WEBHOOK_SECRET: z.string(),
 
     LOCAL_CORS_ORIGIN: z.string(),
-    LOCAL_CORS_ORIGIN: z.string(),
-    LOCAL_CORS_ORIGIN: z.string(),
+    PROD_CORS_ORIGIN: z.string(),
+    PROD_SUB_CORS_ORIGIN: z.string(),
 
     BETTERSTACK_SOURCE_TOKEN: z.string().min(1),
     BETTERSTACK_INGESTING_HOST: z.string().min(1),
