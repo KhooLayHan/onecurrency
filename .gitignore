@@ -16,3 +16,6 @@ document/
 packages/tsconfig.tsbuildinfo
 
 **/cookies.txt
+
+skills-lock.json
+.agents/**

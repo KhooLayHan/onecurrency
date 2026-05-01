@@ -29,14 +29,19 @@ import { stripe } from "@/src/services/stripe.service";
 export function verifyStripeWebhookSignature(
   payload: string,
   signature: string
-): ResultAsync<Stripe.Event, Stripe.errors.StripeSignatureVerificationError> {
+): ResultAsync<
+  Stripe.Event,
+  InstanceType<typeof Stripe.errors.StripeSignatureVerificationError>
+> {
   return ResultAsync.fromPromise(
     stripe.webhooks.constructEventAsync(
       payload,
       signature,
       env.STRIPE_WEBHOOK_SECRET
     ),
-    (e): Stripe.errors.StripeSignatureVerificationError => {
+    (
+      e
+    ): InstanceType<typeof Stripe.errors.StripeSignatureVerificationError> => {
       if (e instanceof Stripe.errors.StripeSignatureVerificationError) {
         return e;
       }

@@ -107,7 +107,14 @@ export default function KycSubmissionsPage() {
           }
         >
           <SelectTrigger className="w-full sm:w-44">
-            <SelectValue placeholder="All statuses" />
+            <SelectValue>
+              {(value: string | null) => {
+                if (!value || value === ALL_STATUSES_VALUE) {
+                  return "All statuses";
+                }
+                return STATUS_LABEL[Number(value)] ?? "All statuses";
+              }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_STATUSES_VALUE}>All statuses</SelectItem>

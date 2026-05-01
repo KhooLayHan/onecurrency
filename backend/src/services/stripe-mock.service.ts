@@ -5,6 +5,14 @@
  */
 import { logger } from "../lib/logger";
 
+export function calculateTokenAmountWei(amountCents: number): string {
+  const POWER_OF_18 = 18;
+  const PERCENTAGE = 100;
+  const WEI_PER_DOLLAR = BigInt(10) ** BigInt(POWER_OF_18);
+  const WEI_PER_CENT = WEI_PER_DOLLAR / BigInt(PERCENTAGE);
+  return (BigInt(amountCents) * WEI_PER_CENT).toString();
+}
+
 const TIMESTAMP_LENGTH = 36;
 const RANDOM_LENGTH = 36;
 const RANDOM_SUBSTRING_LENGTH = 8;
