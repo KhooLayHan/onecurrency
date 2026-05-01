@@ -71,7 +71,7 @@ const v1 = new Hono<{ Variables: SessionVariables }>();
 v1.use(
   "*",
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: env.LOCAL_CORS_ORIGIN,
     allowHeaders: [
       "Content-Type",
       "Authorization",

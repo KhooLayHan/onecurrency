@@ -71,8 +71,8 @@ export class DepositService {
               },
             ],
             mode: "payment",
-            success_url: `${env.CORS_ORIGIN}/dashboard?deposit=success`,
-            cancel_url: `${env.CORS_ORIGIN}/dashboard?deposit=cancelled`,
+            success_url: `${env.LOCAL_CORS_ORIGIN}/dashboard?deposit=success`,
+            cancel_url: `${env.LOCAL_CORS_ORIGIN}/dashboard?deposit=cancelled`,
             metadata: {
               userId: String(userId),
               walletId: String(walletId),
