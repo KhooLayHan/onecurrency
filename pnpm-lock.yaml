@@ -109,8 +109,8 @@ importers:
         specifier: ^6.12.2
         version: 6.12.2
       stripe:
-        specifier: ^20.4.1
-        version: 20.4.1(@types/node@25.6.0)
+        specifier: ^22.1.0
+        version: 22.1.0(@types/node@25.6.0)
       viem:
         specifier: ^2.47.0
         version: 2.48.4(typescript@5.9.3)(zod@4.3.6)
@@ -190,13 +190,13 @@ importers:
         version: 1.14.0
       '@orpc/openapi':
         specifier: ^1.14.0
-        version: 1.14.0(crossws@0.3.5)(ws@8.18.3)
+        version: 1.14.0(crossws@0.3.5)(ws@8.20.0)
       '@orpc/openapi-client':
         specifier: ^1.14.0
         version: 1.14.0
       '@orpc/server':
         specifier: ^1.14.0
-        version: 1.14.0(crossws@0.3.5)(ws@8.18.3)
+        version: 1.14.0(crossws@0.3.5)(ws@8.20.0)
       '@orpc/tanstack-query':
         specifier: ^1.13.14
         version: 1.14.0(@orpc/client@1.14.0)(@tanstack/query-core@5.100.6)
@@ -6397,11 +6397,11 @@ packages:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
 
-  stripe@20.4.1:
-    resolution: {integrity: sha512-axCguHItc8Sxt0HC6aSkdVRPffjYPV7EQqZRb2GkIa8FzWDycE7nHJM19C6xAIynH1Qp1/BHiopSi96jGBxT0w==}
-    engines: {node: '>=16'}
+  stripe@22.1.0:
+    resolution: {integrity: sha512-w/xHyJGxXWnLPbNHG13sz/fae0MrFGC80Oz7YbICQymbfpqfEcsoG+6yG+9BWb81PWc4rrkeSO4wmTcmefmbLw==}
+    engines: {node: '>=18'}
     peerDependencies:
-      '@types/node': '>=16'
+      '@types/node': '>=18'
     peerDependenciesMeta:
       '@types/node':
         optional: true
@@ -9270,23 +9270,6 @@ snapshots:
     transitivePeerDependencies:
       - '@opentelemetry/api'
 
-  '@orpc/openapi@1.14.0(crossws@0.3.5)(ws@8.18.3)':
-    dependencies:
-      '@orpc/client': 1.14.0
-      '@orpc/contract': 1.14.0
-      '@orpc/interop': 1.14.0
-      '@orpc/openapi-client': 1.14.0
-      '@orpc/server': 1.14.0(crossws@0.3.5)(ws@8.18.3)
-      '@orpc/shared': 1.14.0
-      '@orpc/standard-server': 1.14.0
-      json-schema-typed: 8.0.2
-      rou3: 0.7.12
-    transitivePeerDependencies:
-      - '@opentelemetry/api'
-      - crossws
-      - fastify
-      - ws
-
   '@orpc/openapi@1.14.0(crossws@0.3.5)(ws@8.20.0)':
     dependencies:
       '@orpc/client': 1.14.0
@@ -9303,26 +9286,6 @@ snapshots:
       - crossws
       - fastify
       - ws
-
-  '@orpc/server@1.14.0(crossws@0.3.5)(ws@8.18.3)':
-    dependencies:
-      '@orpc/client': 1.14.0
-      '@orpc/contract': 1.14.0
-      '@orpc/interop': 1.14.0
-      '@orpc/shared': 1.14.0
-      '@orpc/standard-server': 1.14.0
-      '@orpc/standard-server-aws-lambda': 1.14.0
-      '@orpc/standard-server-fastify': 1.14.0
-      '@orpc/standard-server-fetch': 1.14.0
-      '@orpc/standard-server-node': 1.14.0
-      '@orpc/standard-server-peer': 1.14.0
-      cookie: 1.1.1
-    optionalDependencies:
-      crossws: 0.3.5
-      ws: 8.18.3
-    transitivePeerDependencies:
-      - '@opentelemetry/api'
-      - fastify
 
   '@orpc/server@1.14.0(crossws@0.3.5)(ws@8.20.0)':
     dependencies:
@@ -11391,7 +11354,6 @@ snapshots:
     optionalDependencies:
       msw: 2.13.6(@types/node@25.6.0)(typescript@5.9.3)
       vite: 8.0.0(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
-    optional: true
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
@@ -11428,7 +11390,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
-      vitest: 4.1.0(@types/node@20.19.39)(@vitest/browser-playwright@4.1.0)(@vitest/ui@4.1.0)(jsdom@29.1.0(@noble/hashes@2.2.0))(msw@2.13.6(@types/node@20.19.39)(typescript@5.9.3))(vite@8.0.0(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
+      vitest: 4.1.0(@types/node@25.6.0)(@vitest/browser-playwright@4.1.0)(@vitest/ui@4.1.0)(jsdom@29.1.0(@noble/hashes@2.2.0))(msw@2.13.6(@types/node@25.6.0)(typescript@5.9.3))(vite@8.0.0(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -14510,7 +14472,7 @@ snapshots:
 
   strip-json-comments@5.0.3: {}
 
-  stripe@20.4.1(@types/node@25.6.0):
+  stripe@22.1.0(@types/node@25.6.0):
     optionalDependencies:
       '@types/node': 25.6.0
 
@@ -14970,7 +14932,6 @@ snapshots:
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
-    optional: true
 
   vitest@4.1.0(@types/node@20.19.39)(@vitest/browser-playwright@4.1.0)(@vitest/ui@4.1.0)(jsdom@29.1.0(@noble/hashes@2.2.0))(msw@2.13.6(@types/node@20.19.39)(typescript@5.9.3))(vite@8.0.0(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
@@ -15061,7 +15022,6 @@ snapshots:
       jsdom: 29.1.0(@noble/hashes@2.2.0)
     transitivePeerDependencies:
       - msw
-    optional: true
 
   w3c-xmlserializer@5.0.0:
     dependencies:
