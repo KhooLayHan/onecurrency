@@ -350,7 +350,7 @@ export default function AdminTransactionsPage() {
           variant="outline"
         >
           <Download className="mr-2 size-4" />
-          Export CSV
+          Export current page
         </Button>
       </div>
 

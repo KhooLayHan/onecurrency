@@ -72,7 +72,7 @@ function TransactionDetailCards({ tx }: { tx: TransactionDetail }) {
               }
             />
             <InfoRow
-              label="Fee"
+              label="Processing Fee"
               value={
                 <span className="tabular-nums">
                   {new Intl.NumberFormat("en-US", {
@@ -147,10 +147,10 @@ function TransactionDetailCards({ tx }: { tx: TransactionDetail }) {
         </Card>
       </div>
 
-      {/* Blockchain card */}
+      {/* References card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Blockchain</CardTitle>
+          <CardTitle className="text-base">References</CardTitle>
         </CardHeader>
         <CardContent>
           <InfoRow
@@ -162,7 +162,7 @@ function TransactionDetailCards({ tx }: { tx: TransactionDetail }) {
             }
           />
           <InfoRow
-            label="Blockchain Tx Hash"
+            label="Processing Reference"
             value={
               tx.blockchainTxHash ? (
                 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
@@ -196,7 +196,8 @@ export default function AdminTransactionDetailPage() {
   // 404 state
   if (
     isError &&
-    error &&
+    typeof error === "object" &&
+    error !== null &&
     "status" in error &&
     (error as { status: number }).status === HTTP_STATUS_NOT_FOUND
   ) {

@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { KYC_STATUS } from "@/common/constants/kyc";
@@ -201,7 +201,7 @@ function AccountSettingsCard({
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="space-y-2">
-          <Label className="text-sm">Deposit Limit</Label>
+          <Label className="text-sm">Top Up Limit</Label>
           {editingLimit ? (
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -278,6 +278,8 @@ function UserTransactionHistoryTab({
   txTotalPages,
   onPageChange,
 }: UserTransactionHistoryTabProps) {
+  const router = useRouter();
+
   return (
     <>
       <div className="overflow-x-auto rounded-lg border">
@@ -287,7 +289,7 @@ function UserTransactionHistoryTab({
               <TableHead>Date</TableHead>
               <TableHead>Type</TableHead>
               <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Fee</TableHead>
+              <TableHead className="text-right">Processing Fee</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Receipt Reference</TableHead>
             </TableRow>
@@ -313,8 +315,16 @@ function UserTransactionHistoryTab({
                   className="cursor-pointer"
                   key={tx.publicId}
                   onClick={() =>
-                    window.open(`/admin/transactions/${tx.publicId}`, "_self")
+                    router.push(`/admin/transactions/${tx.publicId}`)
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/admin/transactions/${tx.publicId}`);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <TableCell className="text-muted-foreground text-sm">
                     {new Date(tx.createdAt).toLocaleDateString()}
@@ -454,10 +464,11 @@ function getUserDetailErrorNode(
     return null;
   }
 
-  const maybeNotFound = userQueryError as { status?: number };
   if (
-    "status" in maybeNotFound &&
-    maybeNotFound.status === HTTP_STATUS_NOT_FOUND
+    typeof userQueryError === "object" &&
+    userQueryError !== null &&
+    "status" in userQueryError &&
+    (userQueryError as { status?: number }).status === HTTP_STATUS_NOT_FOUND
   ) {
     return (
       <div className="space-y-4">

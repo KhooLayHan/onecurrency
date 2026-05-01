@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
       <div>
         <h1 className="font-bold text-2xl tracking-tight">Users</h1>
         <p className="mt-1 text-muted-foreground text-sm">
-          Manage user accounts, KYC status, and deposit limits.
+          Manage user accounts, KYC status, and Top Up limits.
         </p>
       </div>
 
@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
               <TableHead>Email</TableHead>
               <TableHead>KYC Status</TableHead>
               <TableHead>Roles</TableHead>
-              <TableHead>Deposit Limit</TableHead>
+              <TableHead>Top Up Limit</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
             </TableRow>
@@ -189,6 +189,14 @@ export default function AdminUsersPage() {
                   className="cursor-pointer"
                   key={row.publicId}
                   onClick={() => router.push(`/admin/users/${row.publicId}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/admin/users/${row.publicId}`);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <TableCell className="font-medium">{row.name}</TableCell>
                   <TableCell className="text-muted-foreground">

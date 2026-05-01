@@ -23,30 +23,42 @@ import { cn } from "@/lib/utils";
 
 const ADMIN_ROLES = ["admin", "compliance"];
 
-const NAV_ITEMS = [
+type NavItem = {
+  label: string;
+  href: string;
+  icon: typeof ClipboardList;
+  roles: string[];
+  showInMobile?: boolean;
+};
+
+const NAV_ITEMS: NavItem[] = [
   {
     label: "KYC Submissions",
     href: "/admin/kyc",
     icon: ClipboardList,
     roles: ["admin", "compliance"],
+    showInMobile: true,
   },
   {
     label: "Blacklist Manager",
     href: "/admin/blacklist",
     icon: ShieldAlert,
     roles: ["admin"],
+    showInMobile: false,
   },
   {
     label: "Users",
     href: "/admin/users",
     icon: Users,
     roles: ["admin", "compliance"],
+    showInMobile: true,
   },
   {
     label: "Transactions",
     href: "/admin/transactions",
     icon: ArrowLeftRight,
     roles: ["admin", "compliance"],
+    showInMobile: true,
   },
 ];
 
@@ -241,6 +253,8 @@ export default function AdminLayout({
     item.roles.some((r) => roles?.includes(r))
   );
 
+  const mobileNav = visibleNav.filter((item) => item.showInMobile !== false);
+
   const pageTitle = getPageTitle(pathname);
 
   const sidebarContent = (
@@ -369,7 +383,7 @@ export default function AdminLayout({
 
         {/* Mobile bottom nav */}
         <nav className="fixed right-0 bottom-0 left-0 z-50 flex border-t bg-background md:hidden">
-          {visibleNav.map((item) => {
+          {mobileNav.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <Link
