@@ -1,6 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AppSidebar } from "@/components/shared/app-sidebar";
 import { BottomTabs } from "@/components/shared/bottom-tabs";
@@ -16,6 +16,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session, isPending: sessionLoading } = useSession();
   const userId = session?.user?.id;
 
@@ -26,13 +27,20 @@ export default function MainLayout({
   });
 
   useEffect(() => {
-    if (sessionLoading || !rolesFetched) {
+    if (sessionLoading) {
+      return;
+    }
+    if (!session) {
+      router.replace(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    if (!rolesFetched) {
       return;
     }
     if (roles?.some((r) => ADMIN_ROLES.includes(r))) {
       router.replace("/admin/kyc");
     }
-  }, [sessionLoading, rolesFetched, roles, router]);
+  }, [sessionLoading, session, rolesFetched, roles, router, pathname]);
 
   return (
     <SidebarProvider>

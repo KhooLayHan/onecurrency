@@ -3,6 +3,7 @@
 import { hardhat, sepolia } from "@reown/appkit/networks";
 import { createAppKit } from "@reown/appkit/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { type ReactNode, useState } from "react";
 import { type Config, cookieToInitialState, WagmiProvider } from "wagmi";
 import { Toaster } from "@/components/ui/sonner";
@@ -52,14 +53,16 @@ export function Providers({
   );
 
   return (
-    <WagmiProvider
-      config={wagmiAdapter.wagmiConfig as Config}
-      initialState={initialState}
-    >
-      <QueryClientProvider client={queryClient}>
-        {children}
-        <Toaster position="top-center" richColors />
-      </QueryClientProvider>
-    </WagmiProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <WagmiProvider
+        config={wagmiAdapter.wagmiConfig as Config}
+        initialState={initialState}
+      >
+        <QueryClientProvider client={queryClient}>
+          {children}
+          <Toaster position="top-center" richColors />
+        </QueryClientProvider>
+      </WagmiProvider>
+    </ThemeProvider>
   );
 }

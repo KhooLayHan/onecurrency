@@ -1,6 +1,4 @@
-import { neonConfig, Pool } from "@neondatabase/serverless";
-import { Cache } from "drizzle-orm/cache/core/cache";
-import { entityKind } from "drizzle-orm/entity";
+import { type DatabaseError, neonConfig, Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 import { accounts } from "./db/schema/accounts";
@@ -26,26 +24,27 @@ import { wallets } from "./db/schema/wallets";
 import { webhookEvents } from "./db/schema/webhook-events";
 import { withdrawals } from "./db/schema/withdrawals";
 import { env } from "./env";
+import { logger } from "./lib/logger";
 
-class NoQueryCache extends Cache {
-  static override readonly [entityKind] = "NoQueryCache";
+// class NoQueryCache extends Cache {
+//   static override readonly [entityKind] = "NoQueryCache";
 
-  override strategy(): "explicit" {
-    return "explicit";
-  }
+//   override strategy(): "explicit" {
+//     return "explicit";
+//   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: must have empty block
-  override get(): Promise<any[] | undefined> {
-    return Promise.resolve(undefined);
-  }
+//   // biome-ignore lint/suspicious/noExplicitAny: must have empty block
+//   override get(): Promise<any[] | undefined> {
+//     return Promise.resolve(undefined);
+//   }
 
-  override put(): Promise<void> {
-    return Promise.resolve();
-  }
-  override onMutate(): Promise<void> {
-    return Promise.resolve();
-  }
-}
+//   override put(): Promise<void> {
+//     return Promise.resolve();
+//   }
+//   override onMutate(): Promise<void> {
+//     return Promise.resolve();
+//   }
+// }
 
 neonConfig.webSocketConstructor = ws;
 
@@ -58,6 +57,12 @@ const poolSize = env.DB_MIGRATION || env.DB_SEEDING ? 1 : undefined;
 export const pool: Pool = new Pool({
   connectionString,
   max: poolSize,
+});
+
+pool.on("error", (err: DatabaseError) => {
+  if (err) {
+    logger.error({ err }, "Unexpected database pool error");
+  }
 });
 
 export const db = drizzle({
@@ -88,7 +93,7 @@ export const db = drizzle({
   },
   logger: env.NODE_ENV !== "production",
   casing: "snake_case",
-  cache: new NoQueryCache(),
+  // cache: new NoQueryCache(),
 });
 
 export type Database = typeof db;

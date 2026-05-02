@@ -15,6 +15,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { orpcClient } from "@/lib/api";
@@ -367,6 +368,8 @@ export default function AdminLayout({
           </div>
 
           <div className="flex-1" />
+
+          <ThemeToggle variant="icon-only" />
 
           {/* Role badge — desktop only */}
           <span className="hidden items-center rounded-full border bg-muted/50 px-2.5 py-0.5 font-medium text-muted-foreground text-xs md:inline-flex">

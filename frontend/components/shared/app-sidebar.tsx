@@ -4,6 +4,7 @@ import { ArrowLeftRight, Home, LogOut, Receipt, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -78,6 +79,7 @@ function SidebarFooterContent({
             </span>
           </div>
         </div>
+        <ThemeToggle />
         <Button
           className="w-full justify-start gap-2 group-data-[collapsible=icon]:justify-center"
           onClick={onSignOut}
