@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Link2, User } from "lucide-react";
+import { Link2, Monitor, Moon, Palette, Sun, User } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useState } from "react";
 import { toast } from "sonner";
 import { KYC_STATUS } from "@/common/constants/kyc";
@@ -15,9 +16,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { data: session, isPending, refetch } = useSession();
+  const { theme, setTheme } = useTheme();
   const [wizardOpen, setWizardOpen] = useState(false);
 
   const kycStatusId = session?.user?.kycStatusId ?? KYC_STATUS.NONE;
@@ -121,6 +124,45 @@ export default function ProfilePage() {
           <div>
             <p className="font-medium text-muted-foreground text-sm">Email</p>
             <p className="text-base">{session.user.email}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Appearance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="size-5 text-primary" />
+            Appearance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4 text-muted-foreground text-sm">
+            Choose how OneCurrency looks on this device.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { value: "system", Icon: Monitor, label: "Default" },
+                { value: "light", Icon: Sun, label: "Light" },
+                { value: "dark", Icon: Moon, label: "Dark" },
+              ] as const
+            ).map(({ value, Icon, label }) => (
+              <button
+                className={cn(
+                  "flex min-w-22 flex-1 flex-col items-center gap-2 rounded-lg border px-3 py-4 text-sm transition-colors",
+                  theme === value
+                    ? "border-primary bg-primary/5 font-semibold text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+                key={value}
+                onClick={() => setTheme(value)}
+                type="button"
+              >
+                <Icon className="size-5" />
+                {label}
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>
