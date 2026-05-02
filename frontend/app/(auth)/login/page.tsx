@@ -3,6 +3,7 @@
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { signIn } from "@/lib/auth-client";
+import { signIn, useSession } from "@/lib/auth-client";
 
 const loginSchema = z.object({
   email: z.email("Enter a valid email address"),
@@ -45,6 +46,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = getSafeCallbackPath(searchParams.get("callbackUrl"));
+  const { data: session, isPending } = useSession();
 
   const form = useForm({
     defaultValues: {
@@ -58,7 +60,6 @@ export default function LoginPage() {
       const result = await signIn.email({
         email: value.email,
         password: value.password,
-        callbackURL: callbackUrl,
       });
 
       if (result.error) {
@@ -69,10 +70,20 @@ export default function LoginPage() {
       }
 
       toast.success("Signed in successfully");
-      router.push(callbackUrl);
-      router.refresh();
+      window.location.href = callbackUrl;
     },
   });
+
+  useEffect(() => {
+    if (!isPending && session) {
+      router.push(callbackUrl);
+    }
+  }, [session, isPending, callbackUrl, router]);
+
+  // Show blank screen while checking if already logged in
+  if (isPending || session) {
+    return <div className="min-h-dvh bg-background" />;
+  }
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-8 sm:py-12">
