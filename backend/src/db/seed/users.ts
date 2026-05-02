@@ -8,39 +8,20 @@ import { userRoles } from "../schema/user-roles";
 import { type NewUser, users } from "../schema/users";
 import { defaultSeedConfig } from "./config";
 import { batchInsertReturning } from "./helpers";
-import type {
-  KycStatusIds,
-  SeededRegularUser,
-  SeededSpecialUser,
-} from "./types";
-
-// Query KYC status IDs from database
-async function getKycStatusIds(): Promise<KycStatusIds> {
-  const statuses = await db._query.kycStatuses.findMany();
-
-  const getId = (name: string): number => {
-    const status = statuses.find((s) => s.name === name);
-    if (!status) {
-      throw new Error(`KYC status not found: ${name}`);
-    }
-    return status.id;
-  };
-
-  return {
-    none: getId("None"),
-    pending: getId("Pending"),
-    verified: getId("Verified"),
-    rejected: getId("Rejected"),
-    expired: getId("Expired"),
-  };
-}
+import { getKycStatusIds, getRoleIds } from "./lookup";
+import type { SeededRegularUser, SeededSpecialUser } from "./types";
 
 // Seed special users with their credential accounts
 export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
-  const ids = await getKycStatusIds();
+  const kycIds = await getKycStatusIds();
+  const roleIds = await getRoleIds();
   const created: SeededSpecialUser[] = [];
 
   for (const config of defaultSeedConfig.users.specialUsers) {
+    // Resolve semantic names to DB IDs
+    const kycStatusId = kycIds[config.kycStatusName];
+    const roleId = roleIds[config.roleName];
+
     // Check if exists
     const existing = await db._query.users.findFirst({
       where: eq(users.email, config.email),
@@ -54,15 +35,13 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
         id: existing.id,
         email: existing.email,
         name: existing.name,
-        roleId: config.roleId,
+        roleId,
+        kycStatusId,
         createdAt: existing.createdAt,
       });
       continue;
     }
 
-    // const passwordHash = await password.hash(config.password, {
-    //   algorithm: "argon2id",
-    // });
     const passwordHash = await hashPassword(config.password);
 
     // Insert user + credential account in transaction
@@ -73,9 +52,9 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
           name: config.name,
           email: config.email,
           emailVerified: config.emailVerified,
-          kycStatusId: config.kycStatusId,
+          kycStatusId,
           kycVerifiedAt:
-            config.kycStatusId === ids.verified ? createdAt : undefined,
+            config.kycStatusName === "verified" ? createdAt : undefined,
           depositLimitCents: config.depositLimitCents,
           createdAt,
           updatedAt: new Date(),
@@ -99,7 +78,7 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
 
         await tx.insert(userRoles).values({
           userId: inserted.id,
-          roleId: config.roleId,
+          roleId,
         });
       }
 
@@ -111,7 +90,8 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
         id: user.id,
         email: user.email,
         name: user.name,
-        roleId: config.roleId,
+        roleId,
+        kycStatusId,
         createdAt: user.createdAt,
       });
     }
@@ -168,7 +148,8 @@ export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
     userRecords.push({
       name: `${firstName} ${lastName}`,
       email: `${username}+seed${index}@example.test`,
-      emailVerified: faker.datatype.boolean(EMAIL_VERIFIED_PERCENTAGE),
+      emailVerified:
+        faker.number.float({ min: 0, max: 1 }) < EMAIL_VERIFIED_PERCENTAGE,
       kycStatusId,
       kycVerifiedAt:
         kycStatusId === ids.verified
