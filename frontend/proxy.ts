@@ -14,7 +14,7 @@ const BETTER_AUTH_SESSION_COOKIE_NAMES = [
   "__Secure-better-auth.session_token",
 ] as const;
 
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
   const isAuthenticated = BETTER_AUTH_SESSION_COOKIE_NAMES.some((cookieName) =>
