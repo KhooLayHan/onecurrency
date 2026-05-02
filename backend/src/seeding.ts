@@ -45,84 +45,89 @@ const reset = async (): Promise<void> => {
   }
 };
 
-await reset();
+try {
+  await reset();
 
-// --- Lookup tables (no dependencies) ---
-await seedKycStatuses();
-await seedTransactionStatuses();
-await seedTransactionTypes();
-await seedNetworks();
-await seedRoles();
+  // --- Lookup tables (no dependencies) ---
+  await seedKycStatuses();
+  await seedTransactionStatuses();
+  await seedTransactionTypes();
+  await seedNetworks();
+  await seedRoles();
 
-// --- Users ---
-const specialUsers: SeededSpecialUser[] = await seedSpecialUsers();
-const regularUsers = await seedRegularUsers();
+  // --- Users ---
+  const specialUsers: SeededSpecialUser[] = await seedSpecialUsers();
+  const regularUsers = await seedRegularUsers();
 
-// Resolve named special user IDs for downstream seeders
-const findSpecial = (email: string) => {
-  const u = specialUsers.find((s) => s.email === email);
-  if (!u) {
-    throw new Error(`Special user not found: ${email}`);
+  // Resolve named special user IDs for downstream seeders
+  const findSpecial = (email: string) => {
+    const u = specialUsers.find((s) => s.email === email);
+    if (!u) {
+      throw new Error(`Special user not found: ${email}`);
+    }
+    return u;
+  };
+
+  const adminUser = findSpecial("admin@onecurrency.com");
+  const complianceUser = findSpecial("compliance@onecurrency.com");
+  const withdrawUser = findSpecial("withdraw@onecurrency.com");
+  const transferUser = findSpecial("transfer@onecurrency.com");
+  const blacklistUser = findSpecial("blacklist@onecurrency.com");
+
+  // --- Roles for regular users ---
+  await seedRegularUserRoles(regularUsers, adminUser.id);
+
+  // --- KYC submissions (before wallets — no dependency on wallets) ---
+  const allUsers = [...specialUsers, ...regularUsers];
+  await seedKycSubmissions(allUsers, complianceUser.id);
+
+  // --- Wallets (all users) ---
+  const walletsByUser = await seedWallets([...specialUsers, ...regularUsers]);
+
+  // --- Sessions (all users) ---
+  await seedSessions(allUsers);
+
+  // --- Deposits (verified users with wallets only) ---
+  const network = await db._query.networks.findFirst({
+    where: (n, { eq }) => eq(n.name, "Sepolia"),
+  });
+  if (!network) {
+    throw new Error("Sepolia network not found");
   }
-  return u;
-};
 
-const adminUser = findSpecial("admin@onecurrency.com");
-const complianceUser = findSpecial("compliance@onecurrency.com");
-const withdrawUser = findSpecial("withdraw@onecurrency.com");
-const transferUser = findSpecial("transfer@onecurrency.com");
-const blacklistUser = findSpecial("blacklist@onecurrency.com");
+  const allUsersWithKyc = [
+    ...specialUsers.map((u) => ({ ...u, kycStatusId: u.kycStatusId })),
+    ...regularUsers,
+  ];
 
-// --- Roles for regular users ---
-await seedRegularUserRoles(regularUsers, adminUser.id);
+  await seedDeposits(walletsByUser, allUsersWithKyc, network.id);
 
-// --- KYC submissions (before wallets — no dependency on wallets) ---
-const allUsers = [...specialUsers, ...regularUsers];
-await seedKycSubmissions(allUsers, complianceUser.id);
+  // --- Withdrawals ---
+  await seedWithdrawals(
+    walletsByUser,
+    allUsersWithKyc,
+    network.id,
+    withdrawUser.id
+  );
 
-// --- Wallets (all users) ---
-const walletsByUser = await seedWallets([...specialUsers, ...regularUsers]);
+  // --- Transfers ---
+  await seedTransfers(
+    walletsByUser,
+    allUsersWithKyc,
+    network.id,
+    transferUser.id
+  );
 
-// --- Sessions (all users) ---
-await seedSessions(allUsers);
-
-// --- Deposits (verified users with wallets only) ---
-const network = await db._query.networks.findFirst({
-  where: (n, { eq }) => eq(n.name, "Sepolia"),
-});
-if (!network) {
-  throw new Error("Sepolia network not found");
+  // --- Blacklisted addresses (compliance table — seeded last among compliance) ---
+  await seedBlacklistedAddresses(
+    walletsByUser,
+    blacklistUser.id,
+    complianceUser.id,
+    network.id
+  );
+} catch (err) {
+  logger.error({ err }, "Seeding failed");
+  throw err;
+} finally {
+  await pool.end();
 }
-
-const allUsersWithKyc = [
-  ...specialUsers.map((u) => ({ ...u, kycStatusId: u.kycStatusId })),
-  ...regularUsers,
-];
-
-await seedDeposits(walletsByUser, allUsersWithKyc, network.id);
-
-// --- Withdrawals ---
-await seedWithdrawals(
-  walletsByUser,
-  allUsersWithKyc,
-  network.id,
-  withdrawUser.id
-);
-
-// --- Transfers ---
-await seedTransfers(
-  walletsByUser,
-  allUsersWithKyc,
-  network.id,
-  transferUser.id
-);
-
-// --- Blacklisted addresses (compliance table — seeded last among compliance) ---
-await seedBlacklistedAddresses(
-  walletsByUser,
-  blacklistUser.id,
-  complianceUser.id,
-  network.id
-);
-
-await pool.end();

@@ -49,7 +49,92 @@ function getDepositStatusId(
   return STATUS_IDS.failed;
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: seeding function — data generation is inherently complex
+type MintTransactionParams = {
+  networkId: number;
+  toAddress: string;
+  tokenAmount: string;
+  createdAt: Date;
+  isConfirmed: boolean;
+};
+
+function buildMintTransactionValues(
+  params: MintTransactionParams
+): typeof blockchainTransactions.$inferInsert {
+  return {
+    networkId: params.networkId,
+    transactionTypeId: TX_TYPE_MINT,
+    fromAddress: MOCK_CONTRACT_ADDRESS,
+    toAddress: params.toAddress,
+    txHash: generateTransactionHash(),
+    blockNumber: BigInt(faker.number.int({ min: 5_000_000, max: 7_000_000 })),
+    blockHash: params.isConfirmed ? generateBlockHash() : undefined,
+    amount: params.tokenAmount,
+    nonce: BigInt(faker.number.int({ min: 0, max: 1000 })),
+    gasUsed: BigInt(faker.number.int({ min: 21_000, max: 200_000 })),
+    gasPriceWei: String(
+      faker.number.bigInt({
+        min: 1_000_000_000n,
+        max: 50_000_000_000n,
+      })
+    ),
+    isConfirmed: params.isConfirmed,
+    confirmations: params.isConfirmed
+      ? faker.number.int({ min: 12, max: 200 })
+      : 0,
+    createdAt: params.createdAt,
+    confirmedAt: params.isConfirmed
+      ? faker.date.between({ from: params.createdAt, to: new Date() })
+      : undefined,
+  };
+}
+
+type DepositRecordParams = {
+  userId: bigint;
+  walletId: bigint;
+  scenario: "completed" | "pending" | "failedNoTx" | "hybridFailed";
+  amountCents: bigint;
+  feeCents: bigint;
+  tokenAmount: string;
+  blockchainTxId: bigint | undefined;
+  confirmedAt: Date | undefined;
+  createdAt: Date;
+};
+
+function buildDepositRecord(
+  params: DepositRecordParams
+): typeof deposits.$inferInsert {
+  return {
+    userId: params.userId,
+    walletId: params.walletId,
+    statusId: getDepositStatusId(params.scenario),
+    stripeSessionId: generateStripeSessionId(),
+    stripePaymentIntentId:
+      params.scenario !== "pending"
+        ? generateStripePaymentIntentId()
+        : undefined,
+    stripeCustomerId:
+      params.scenario === "completed" || params.scenario === "hybridFailed"
+        ? generateStripeCustomerId()
+        : undefined,
+    amountCents: params.amountCents,
+    feeCents: params.feeCents,
+    tokenAmount: params.tokenAmount,
+    exchangeRate: "1.00000000",
+    blockchainTxId: params.blockchainTxId,
+    idempotencyKey: generateIdempotencyKey(),
+    ipAddress: faker.internet.ipv4(),
+    userAgent: generateUserAgent(),
+    createdAt: params.createdAt,
+    completedAt:
+      params.scenario === "completed"
+        ? faker.date.between({
+            from: params.confirmedAt ?? params.createdAt,
+            to: new Date(),
+          })
+        : undefined,
+  };
+}
+
 export async function seedDeposits(
   walletsByUser: SeededWalletsByUser,
   users: Array<{ id: bigint; kycStatusId: number; createdAt: Date }>,
@@ -86,24 +171,7 @@ export async function seedDeposits(
     }
 
     const count = randomBetween(min, max);
-    const userDeposits: {
-      userId: bigint;
-      walletId: bigint;
-      statusId: number;
-      stripeSessionId: string;
-      stripePaymentIntentId?: string;
-      stripeCustomerId?: string;
-      amountCents: bigint;
-      feeCents: bigint;
-      tokenAmount: string;
-      exchangeRate: string;
-      blockchainTxId?: bigint;
-      idempotencyKey: string;
-      ipAddress: string;
-      userAgent: string;
-      createdAt: Date;
-      completedAt?: Date;
-    }[] = [];
+    const userDeposits: SeededDeposit[] = [];
 
     for (let i = 0; i < count; i++) {
       const scenario = weightedRandom(statusWeights) ?? "completed";
@@ -115,91 +183,61 @@ export async function seedDeposits(
         to: new Date(),
       });
 
-      let blockchainTxId: bigint | undefined;
-      let confirmedAt: Date | undefined;
+      // Per-record transaction: blockchain_transactions + deposit are atomic
+      const [depositRecord] = await db.transaction(async (tx) => {
+        let blockchainTxId: bigint | undefined;
+        let confirmedAt: Date | undefined;
 
-      // Create blockchain_transactions for completed/hybridFailed
-      if (scenario === "completed" || scenario === "hybridFailed") {
-        const isConfirmed = scenario === "completed";
-        const txHash = generateTransactionHash();
-        const blockNumber = BigInt(
-          faker.number.int({ min: 5_000_000, max: 7_000_000 })
-        );
-        confirmedAt = isConfirmed
-          ? faker.date.between({ from: createdAt, to: new Date() })
-          : undefined;
+        // Create blockchain_transactions for completed/hybridFailed
+        if (scenario === "completed" || scenario === "hybridFailed") {
+          const isConfirmed = scenario === "completed";
+          confirmedAt = isConfirmed
+            ? faker.date.between({ from: createdAt, to: new Date() })
+            : undefined;
 
-        const [tx] = await db
-          .insert(blockchainTransactions)
-          .values({
-            networkId,
-            transactionTypeId: TX_TYPE_MINT,
-            fromAddress: MOCK_CONTRACT_ADDRESS,
-            toAddress: primaryWallet.address,
-            txHash,
-            blockNumber,
-            blockHash: isConfirmed ? generateBlockHash() : undefined,
-            amount: tokenAmount,
-            nonce: BigInt(faker.number.int({ min: 0, max: 1000 })),
-            gasUsed: BigInt(faker.number.int({ min: 21_000, max: 200_000 })),
-            gasPriceWei: String(
-              faker.number.bigInt({
-                min: 1_000_000_000n,
-                max: 50_000_000_000n,
+          const [btx] = await tx
+            .insert(blockchainTransactions)
+            .values(
+              buildMintTransactionValues({
+                networkId,
+                toAddress: primaryWallet.address,
+                tokenAmount,
+                createdAt,
+                isConfirmed,
               })
-            ),
-            isConfirmed,
-            confirmations: isConfirmed
-              ? faker.number.int({ min: 12, max: 200 })
-              : 0,
-            createdAt,
-            confirmedAt,
-          })
-          .returning({ id: blockchainTransactions.id });
+            )
+            .returning({ id: blockchainTransactions.id });
 
-        blockchainTxId = tx?.id;
-      }
+          blockchainTxId = btx?.id;
+        }
 
-      userDeposits.push({
-        userId: user.id,
-        walletId: primaryWallet.id,
-        statusId: getDepositStatusId(scenario),
-        stripeSessionId: generateStripeSessionId(),
-        stripePaymentIntentId:
-          scenario !== "pending" ? generateStripePaymentIntentId() : undefined,
-        stripeCustomerId:
-          scenario === "completed" || scenario === "hybridFailed"
-            ? generateStripeCustomerId()
-            : undefined,
-        amountCents,
-        feeCents,
-        tokenAmount,
-        exchangeRate: "1.00000000",
-        blockchainTxId,
-        idempotencyKey: generateIdempotencyKey(),
-        ipAddress: faker.internet.ipv4(),
-        userAgent: generateUserAgent(),
-        createdAt,
-        // completedAt must be after on-chain confirmation
-        completedAt:
-          scenario === "completed"
-            ? faker.date.between({
-                from: confirmedAt ?? createdAt,
-                to: new Date(),
-              })
-            : undefined,
+        return tx
+          .insert(deposits)
+          .values(
+            buildDepositRecord({
+              userId: user.id,
+              walletId: primaryWallet.id,
+              scenario,
+              amountCents,
+              feeCents,
+              tokenAmount,
+              blockchainTxId,
+              confirmedAt,
+              createdAt,
+            })
+          )
+          .returning({
+            id: deposits.id,
+            userId: deposits.userId,
+            walletId: deposits.walletId,
+            statusId: deposits.statusId,
+          });
       });
+
+      userDeposits.push(depositRecord as unknown as SeededDeposit);
     }
 
-    // Insert deposits for this user
-    const inserted = await db.insert(deposits).values(userDeposits).returning({
-      id: deposits.id,
-      userId: deposits.userId,
-      walletId: deposits.walletId,
-      statusId: deposits.statusId,
-    });
-
-    result.set(user.id, inserted as SeededDeposit[]);
+    result.set(user.id, userDeposits);
   }
 
   logger.info(`Created deposits for ${eligibleUsers.length} verified users`);

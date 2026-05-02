@@ -5,7 +5,6 @@ import { blockchainTransactions } from "../schema/blockchain-transactions";
 import { transfers } from "../schema/transfers";
 import { defaultSeedConfig } from "./config";
 import {
-  batchInsert,
   calculateFee,
   centsToTokenWei,
   generateBlockHash,
@@ -91,22 +90,6 @@ export async function seedTransfers(
     pairs.push({ sender, receiver });
   }
 
-  const records: {
-    senderUserId: bigint;
-    receiverUserId: bigint;
-    senderWalletId: bigint;
-    receiverWalletId: bigint;
-    statusId: number;
-    amountCents: bigint;
-    feeCents: bigint;
-    tokenAmount: string;
-    blockchainTxId?: bigint;
-    idempotencyKey?: string;
-    note?: string;
-    createdAt: Date;
-    completedAt?: Date;
-  }[] = [];
-
   for (const { sender, receiver } of pairs) {
     const senderWallets = walletsByUser.get(sender.id);
     const receiverWallets = walletsByUser.get(receiver.id);
@@ -139,74 +122,74 @@ export async function seedTransfers(
         to: new Date(),
       });
 
-      let blockchainTxId: bigint | undefined;
+      // Per-record transaction: blockchain_transactions + transfer are atomic
+      await db.transaction(async (tx) => {
+        let blockchainTxId: bigint | undefined;
 
-      if (scenario === "completed") {
-        const [tx] = await db
-          .insert(blockchainTransactions)
-          .values({
-            networkId,
-            transactionTypeId: TX_TYPE_TRANSFER,
-            fromAddress: senderWallet.address,
-            toAddress: receiverWallet.address,
-            txHash: generateTransactionHash(),
-            blockNumber: BigInt(
-              faker.number.int({ min: 5_000_000, max: 7_000_000 })
-            ),
-            blockHash: generateBlockHash(),
-            amount: tokenAmount,
-            nonce: BigInt(faker.number.int({ min: 0, max: 1000 })),
-            gasUsed: BigInt(faker.number.int({ min: 21_000, max: 200_000 })),
-            gasPriceWei: String(
-              faker.number.bigInt({
-                min: 1_000_000_000n,
-                max: 50_000_000_000n,
-              })
-            ),
-            isConfirmed: true,
-            confirmations: faker.number.int({ min: 12, max: 200 }),
-            createdAt,
-            confirmedAt: faker.date.between({
-              from: createdAt,
-              to: new Date(),
-            }),
-          })
-          .returning({ id: blockchainTransactions.id });
+        if (scenario === "completed") {
+          const [btx] = await tx
+            .insert(blockchainTransactions)
+            .values({
+              networkId,
+              transactionTypeId: TX_TYPE_TRANSFER,
+              fromAddress: senderWallet.address,
+              toAddress: receiverWallet.address,
+              txHash: generateTransactionHash(),
+              blockNumber: BigInt(
+                faker.number.int({ min: 5_000_000, max: 7_000_000 })
+              ),
+              blockHash: generateBlockHash(),
+              amount: tokenAmount,
+              nonce: BigInt(faker.number.int({ min: 0, max: 1000 })),
+              gasUsed: BigInt(faker.number.int({ min: 21_000, max: 200_000 })),
+              gasPriceWei: String(
+                faker.number.bigInt({
+                  min: 1_000_000_000n,
+                  max: 50_000_000_000n,
+                })
+              ),
+              isConfirmed: true,
+              confirmations: faker.number.int({ min: 12, max: 200 }),
+              createdAt,
+              confirmedAt: faker.date.between({
+                from: createdAt,
+                to: new Date(),
+              }),
+            })
+            .returning({ id: blockchainTransactions.id });
 
-        blockchainTxId = tx?.id;
-      }
+          blockchainTxId = btx?.id;
+        }
 
-      records.push({
-        senderUserId: sender.id,
-        receiverUserId: receiver.id,
-        senderWalletId: senderWallet.id,
-        receiverWalletId: receiverWallet.id,
-        statusId: getTransferStatusId(scenario),
-        amountCents,
-        feeCents,
-        tokenAmount,
-        blockchainTxId,
-        idempotencyKey: generateIdempotencyKey(),
-        note:
-          faker.number.float({ min: 0, max: 1 }) < TRANSFER_NOTE_PROBABILITY
-            ? faker.helpers.arrayElement([
-                "Thanks!",
-                "Rent split",
-                "Dinner",
-                "Paying back",
-              ])
-            : undefined,
-        createdAt,
-        completedAt:
-          scenario === "completed"
-            ? faker.date.between({ from: createdAt, to: new Date() })
-            : undefined,
+        await tx.insert(transfers).values({
+          senderUserId: sender.id,
+          receiverUserId: receiver.id,
+          senderWalletId: senderWallet.id,
+          receiverWalletId: receiverWallet.id,
+          statusId: getTransferStatusId(scenario),
+          amountCents,
+          feeCents,
+          tokenAmount,
+          blockchainTxId,
+          idempotencyKey: generateIdempotencyKey(),
+          note:
+            faker.number.float({ min: 0, max: 1 }) < TRANSFER_NOTE_PROBABILITY
+              ? faker.helpers.arrayElement([
+                  "Thanks!",
+                  "Rent split",
+                  "Dinner",
+                  "Paying back",
+                ])
+              : undefined,
+          createdAt,
+          completedAt:
+            scenario === "completed"
+              ? faker.date.between({ from: createdAt, to: new Date() })
+              : undefined,
+        });
       });
     }
   }
 
-  await batchInsert(transfers, records, { batchSize: 50 });
-  logger.info(
-    `Created ${records.length} transfers across ${pairs.length} pairs`
-  );
+  logger.info(`Created transfers across ${pairs.length} pairs`);
 }
