@@ -55,14 +55,12 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
         email: existing.email,
         name: existing.name,
         roleId: config.roleId,
+        kycStatusId: config.kycStatusId,
         createdAt: existing.createdAt,
       });
       continue;
     }
 
-    // const passwordHash = await password.hash(config.password, {
-    //   algorithm: "argon2id",
-    // });
     const passwordHash = await hashPassword(config.password);
 
     // Insert user + credential account in transaction
@@ -112,6 +110,7 @@ export async function seedSpecialUsers(): Promise<SeededSpecialUser[]> {
         email: user.email,
         name: user.name,
         roleId: config.roleId,
+        kycStatusId: config.kycStatusId,
         createdAt: user.createdAt,
       });
     }
@@ -168,7 +167,8 @@ export async function seedRegularUsers(): Promise<SeededRegularUser[]> {
     userRecords.push({
       name: `${firstName} ${lastName}`,
       email: `${username}+seed${index}@example.test`,
-      emailVerified: faker.datatype.boolean(EMAIL_VERIFIED_PERCENTAGE),
+      emailVerified:
+        faker.number.float({ min: 0, max: 1 }) < EMAIL_VERIFIED_PERCENTAGE,
       kycStatusId,
       kycVerifiedAt:
         kycStatusId === ids.verified

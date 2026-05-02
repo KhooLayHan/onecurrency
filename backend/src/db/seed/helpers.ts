@@ -93,6 +93,16 @@ export function generateStripePaymentIntentId(): string {
   return `pi_${faker.string.alphanumeric(STRIPE_PAYMENT_INTENT_ID_LENGTH)}`;
 }
 
+export function generateStripeTransferId(): string {
+  const STRIPE_TRANSFER_ID_LENGTH = 24;
+  return `tr_${faker.string.alphanumeric(STRIPE_TRANSFER_ID_LENGTH)}`;
+}
+
+export function generateStripePayoutId(): string {
+  const STRIPE_PAYOUT_ID_LENGTH = 24;
+  return `po_${faker.string.alphanumeric(STRIPE_PAYOUT_ID_LENGTH)}`;
+}
+
 export function generateIdempotencyKey(): string {
   return faker.string.uuid();
 }
@@ -117,7 +127,7 @@ export function weightedRandom<T>(items: { value: T; weight: number }[]) {
   }
 
   // Fallback should be unreachable with positive weights, but TypeScript needs this
-  // return items[items.length - 1]!.value;
+  return items.at(-1)?.value;
 }
 
 export function distributeByPercentage(
@@ -288,6 +298,15 @@ export function generateProviderName(walletType: string): string | undefined {
   return weightedRandom(
     providers.map((p) => ({ value: p.value, weight: p.weight }))
   );
+}
+
+const NUMERIC_BASE = 10;
+const TOKEN_DECIMALS = 18;
+const WEI_PER_TOKEN = BigInt(NUMERIC_BASE) ** BigInt(TOKEN_DECIMALS);
+const CENTS_PER_DOLLAR = 100n;
+
+export function centsToTokenWei(amountCents: bigint): string {
+  return ((amountCents * WEI_PER_TOKEN) / CENTS_PER_DOLLAR).toString();
 }
 
 export function generateWalletLabel(isPrimary: boolean, index: number): string {
