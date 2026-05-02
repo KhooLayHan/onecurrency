@@ -71,11 +71,11 @@ export function generateEthereumAddress(): string {
 }
 
 export function generateTransactionHash(): string {
-  return `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
+  return faker.string.hexadecimal({ length: 64, casing: "lower" });
 }
 
 export function generateBlockHash(): string {
-  return `0x${faker.string.hexadecimal({ length: 64, casing: "lower" })}`;
+  return faker.string.hexadecimal({ length: 64, casing: "lower" });
 }
 
 export function generateStripeSessionId(): string {
