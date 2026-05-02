@@ -21,6 +21,7 @@ export const authClient = createAuthClient({
     }),
   ],
   fetchOptions: {
+    credentials: "include",
     onError: (context) => {
       if (context.response.status === HTTP_TOO_MANY_REQUESTS) {
         const retryAfter = context.response.headers.get("X-Retry-After");
