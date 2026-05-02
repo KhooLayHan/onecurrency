@@ -2,18 +2,10 @@ import { faker } from "@faker-js/faker";
 import { logger } from "@/src/lib/logger";
 import { kycSubmissions } from "../schema/kyc-submissions";
 import { batchInsert } from "./helpers";
+import { getKycStatusIds } from "./lookup";
 import type { SeededRegularUser, SeededSpecialUser } from "./types";
 
 const DOCUMENT_TYPES = ["passport", "drivers_license", "national_id"] as const;
-
-const KYC_STATUS_PENDING = 2;
-const KYC_STATUS_REJECTED = 4;
-const KYC_STATUS_EXPIRED = 5;
-const SEEDED_KYC_STATUSES = new Set([
-  KYC_STATUS_PENDING,
-  KYC_STATUS_REJECTED,
-  KYC_STATUS_EXPIRED,
-]);
 
 const REJECTION_REASONS = [
   "Document image is blurry or unreadable",
@@ -27,9 +19,15 @@ export async function seedKycSubmissions(
   allUsers: Array<SeededSpecialUser | SeededRegularUser>,
   complianceUserId: bigint
 ): Promise<void> {
-  const eligible = allUsers.filter((u) =>
-    SEEDED_KYC_STATUSES.has(u.kycStatusId)
-  );
+  // Resolve KYC status IDs from DB — no hardcoded values
+  const kycIds = await getKycStatusIds();
+  const seededKycStatuses = new Set([
+    kycIds.pending,
+    kycIds.rejected,
+    kycIds.expired,
+  ]);
+
+  const eligible = allUsers.filter((u) => seededKycStatuses.has(u.kycStatusId));
 
   const records: {
     userId: bigint;
@@ -49,9 +47,13 @@ export async function seedKycSubmissions(
 
   for (const user of eligible) {
     const documentType = faker.helpers.arrayElement(DOCUMENT_TYPES);
-    const createdAt = faker.date.past({ years: 0.25 });
-    const isRejected = user.kycStatusId === KYC_STATUS_REJECTED;
-    const isReviewed = isRejected || user.kycStatusId === KYC_STATUS_EXPIRED;
+    // Always after user creation — no submission can predate the account
+    const createdAt = faker.date.between({
+      from: user.createdAt,
+      to: new Date(),
+    });
+    const isRejected = user.kycStatusId === kycIds.rejected;
+    const isReviewed = isRejected || user.kycStatusId === kycIds.expired;
 
     records.push({
       userId: user.id,

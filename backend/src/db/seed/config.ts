@@ -4,8 +4,8 @@ export type SpecialUserConfig = {
   email: string;
   password: string;
   name: string;
-  roleId: number;
-  kycStatusId: number;
+  roleName: "user" | "admin" | "compliance" | "support";
+  kycStatusName: "none" | "pending" | "verified" | "rejected" | "expired";
   depositLimitCents: bigint;
   emailVerified: boolean;
 };
@@ -101,8 +101,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "admin@onecurrency.com",
         password: "Admin123!",
         name: "System Administrator",
-        roleId: 2, // admin
-        kycStatusId: 3, // verified
+        roleName: "admin",
+        kycStatusName: "verified",
         depositLimitCents: 1_000_000n, // $10,000
         emailVerified: true,
       },
@@ -110,8 +110,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "compliance@onecurrency.com",
         password: "Compliance123!",
         name: "Compliance Officer",
-        roleId: 3, // compliance
-        kycStatusId: 3, // verified
+        roleName: "compliance",
+        kycStatusName: "verified",
         depositLimitCents: 500_000n, // $5,000
         emailVerified: true,
       },
@@ -119,8 +119,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "support@onecurrency.com",
         password: "Support123!",
         name: "Support Staff",
-        roleId: 4, // support
-        kycStatusId: 3, // verified
+        roleName: "support",
+        kycStatusName: "verified",
         depositLimitCents: 100_000n, // $1,000
         emailVerified: true,
       },
@@ -128,8 +128,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "deposit@onecurrency.com",
         password: "Deposit123!",
         name: "Demo Deposit User",
-        roleId: 1, // user
-        kycStatusId: 3, // verified
+        roleName: "user",
+        kycStatusName: "verified",
         depositLimitCents: 500_000n, // $5,000
         emailVerified: true,
       },
@@ -137,8 +137,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "withdraw@onecurrency.com",
         password: "Withdraw123!",
         name: "Demo Withdraw User",
-        roleId: 1, // user
-        kycStatusId: 3, // verified
+        roleName: "user",
+        kycStatusName: "verified",
         depositLimitCents: 500_000n, // $5,000
         emailVerified: true,
       },
@@ -146,8 +146,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "transfer@onecurrency.com",
         password: "Transfer123!",
         name: "Demo Transfer User",
-        roleId: 1, // user
-        kycStatusId: 3, // verified
+        roleName: "user",
+        kycStatusName: "verified",
         depositLimitCents: 500_000n, // $5,000
         emailVerified: true,
       },
@@ -155,8 +155,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "kyc@onecurrency.com",
         password: "Kyc123!",
         name: "Demo KYC User",
-        roleId: 1, // user
-        kycStatusId: 2, // pending
+        roleName: "user",
+        kycStatusName: "pending",
         depositLimitCents: 50_000n, // $500
         emailVerified: true,
       },
@@ -164,8 +164,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "blacklist@onecurrency.com",
         password: "Blacklist123!",
         name: "Demo Blacklist User",
-        roleId: 1, // user
-        kycStatusId: 3, // verified
+        roleName: "user",
+        kycStatusName: "verified",
         depositLimitCents: 100_000n, // $1,000
         emailVerified: true,
       },
@@ -173,8 +173,8 @@ export const defaultSeedConfig: SeedConfig = {
         email: "user@onecurrency.com",
         password: "User123!",
         name: "Test User",
-        roleId: 1, // user
-        kycStatusId: 3, // verified
+        roleName: "user",
+        kycStatusName: "verified",
         depositLimitCents: 100_000n, // $1,000
         emailVerified: true,
       },

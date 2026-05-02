@@ -116,6 +116,7 @@ export async function seedDeposits(
       });
 
       let blockchainTxId: bigint | undefined;
+      let confirmedAt: Date | undefined;
 
       // Create blockchain_transactions for completed/hybridFailed
       if (scenario === "completed" || scenario === "hybridFailed") {
@@ -124,7 +125,7 @@ export async function seedDeposits(
         const blockNumber = BigInt(
           faker.number.int({ min: 5_000_000, max: 7_000_000 })
         );
-        const confirmedAt = isConfirmed
+        confirmedAt = isConfirmed
           ? faker.date.between({ from: createdAt, to: new Date() })
           : undefined;
 
@@ -179,9 +180,13 @@ export async function seedDeposits(
         ipAddress: faker.internet.ipv4(),
         userAgent: generateUserAgent(),
         createdAt,
+        // completedAt must be after on-chain confirmation
         completedAt:
           scenario === "completed"
-            ? faker.date.between({ from: createdAt, to: new Date() })
+            ? faker.date.between({
+                from: confirmedAt ?? createdAt,
+                to: new Date(),
+              })
             : undefined,
       });
     }

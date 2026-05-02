@@ -38,7 +38,10 @@ export async function seedSessions(
         SESSION_EXPIRY_MIN_DAYS,
         SESSION_EXPIRY_MAX_DAYS
       );
-      const expiresAt = new Date(Date.now() + daysUntilExpiry * MS_PER_DAY);
+      // Anchor expiry to session creation time, not wall-clock now
+      const expiresAt = new Date(
+        createdAt.getTime() + daysUntilExpiry * MS_PER_DAY
+      );
 
       records.push({
         userId: user.id,
