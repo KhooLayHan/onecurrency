@@ -1,4 +1,4 @@
-import { neonConfig, Pool } from "@neondatabase/serverless";
+import { type DatabaseError, neonConfig, Pool } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import ws from "ws";
 import { accounts } from "./db/schema/accounts";
@@ -24,6 +24,7 @@ import { wallets } from "./db/schema/wallets";
 import { webhookEvents } from "./db/schema/webhook-events";
 import { withdrawals } from "./db/schema/withdrawals";
 import { env } from "./env";
+import { logger } from "./lib/logger";
 
 // class NoQueryCache extends Cache {
 //   static override readonly [entityKind] = "NoQueryCache";
@@ -58,9 +59,11 @@ export const pool: Pool = new Pool({
   max: poolSize,
 });
 
-// pool.on("error", (err) => {
-//   logger.error({ err }, "Unexpected database pool error");
-// });
+pool.on("error", (err: DatabaseError) => {
+  if (err) {
+    logger.error({ err }, "Unexpected database pool error");
+  }
+});
 
 export const db = drizzle({
   client: pool,
