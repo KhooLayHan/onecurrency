@@ -2,7 +2,7 @@
 
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -43,7 +43,7 @@ function getSafeCallbackPath(callbackUrl: string | null): string {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = getSafeCallbackPath(searchParams.get("callbackUrl"));
   const { data: session, isPending } = useSession();
@@ -70,15 +70,15 @@ export default function LoginPage() {
       }
 
       toast.success("Signed in successfully");
-      window.location.href = callbackUrl;
+      window.location.replace(callbackUrl);
     },
   });
 
   useEffect(() => {
     if (!isPending && session) {
-      router.push(callbackUrl);
+      window.location.replace(callbackUrl);
     }
-  }, [session, isPending, callbackUrl, router]);
+  }, [session, isPending, callbackUrl]);
 
   // Show blank screen while checking if already logged in
   if (isPending || session) {
