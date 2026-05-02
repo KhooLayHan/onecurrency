@@ -13,12 +13,12 @@ import {
   randomBetween,
   weightedRandom,
 } from "./helpers";
+import { getKycStatusIds } from "./lookup";
 import type { SeededWalletsByUser } from "./types";
 
 const TX_TYPE_TRANSFER = 3;
 const STATUS_IDS = { pending: 1, completed: 3, failed: 4 } as const;
 const TRANSFER_SAMPLING_RATE = 0.3;
-const KYC_STATUS_VERIFIED = 3;
 const DEMO_TRANSFER_MIN_RECEIVERS = 3;
 const DEMO_TRANSFER_MAX_RECEIVERS = 5;
 const TRANSFER_NOTE_PROBABILITY = 0.3;
@@ -46,6 +46,9 @@ export async function seedTransfers(
   const { completed, pending, failed } =
     defaultSeedConfig.transfers.statusDistribution;
 
+  // Resolve verified KYC status ID at runtime — never assume a hardcoded value
+  const kycIds = await getKycStatusIds();
+
   const statusWeights = [
     { value: "completed" as const, weight: completed },
     { value: "pending" as const, weight: pending },
@@ -53,7 +56,7 @@ export async function seedTransfers(
   ];
 
   const verifiedWithWallets = users.filter(
-    (u) => u.kycStatusId === KYC_STATUS_VERIFIED && walletsByUser.has(u.id)
+    (u) => u.kycStatusId === kycIds.verified && walletsByUser.has(u.id)
   );
 
   // Build transfer pairs
@@ -122,11 +125,15 @@ export async function seedTransfers(
         to: new Date(),
       });
 
+      let confirmedAt: Date | undefined;
+
       // Per-record transaction: blockchain_transactions + transfer are atomic
       await db.transaction(async (tx) => {
         let blockchainTxId: bigint | undefined;
 
         if (scenario === "completed") {
+          confirmedAt = faker.date.between({ from: createdAt, to: new Date() });
+
           const [btx] = await tx
             .insert(blockchainTransactions)
             .values({
@@ -151,10 +158,7 @@ export async function seedTransfers(
               isConfirmed: true,
               confirmations: faker.number.int({ min: 12, max: 200 }),
               createdAt,
-              confirmedAt: faker.date.between({
-                from: createdAt,
-                to: new Date(),
-              }),
+              confirmedAt,
             })
             .returning({ id: blockchainTransactions.id });
 
@@ -182,9 +186,13 @@ export async function seedTransfers(
                 ])
               : undefined,
           createdAt,
+          // completedAt must be after on-chain confirmation
           completedAt:
             scenario === "completed"
-              ? faker.date.between({ from: createdAt, to: new Date() })
+              ? faker.date.between({
+                  from: confirmedAt ?? createdAt,
+                  to: new Date(),
+                })
               : undefined,
         });
       });

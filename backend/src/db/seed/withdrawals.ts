@@ -14,13 +14,13 @@ import {
   randomBetween,
   weightedRandom,
 } from "./helpers";
+import { getKycStatusIds } from "./lookup";
 import type { SeededWalletsByUser } from "./types";
 
 const MOCK_CONTRACT_ADDRESS = "0x4ed7c70f96b99c776995fb64377f0d4ab3b0e1c1";
 const TX_TYPE_BURN = 2;
 const STATUS_IDS = { pending: 1, completed: 3, failed: 4 } as const;
 const WITHDRAWAL_SAMPLING_RATE = 0.4;
-const KYC_STATUS_VERIFIED = 3;
 
 function getWithdrawalStatusId(
   scenario: "completed" | "pending" | "failed"
@@ -42,6 +42,7 @@ type WithdrawalRecordParams = {
   fiatAmountCents: bigint;
   feeCents: bigint;
   blockchainTxId: bigint | undefined;
+  confirmedAt: Date | undefined;
   createdAt: Date;
 };
 
@@ -63,31 +64,37 @@ function buildWithdrawalRecord(
     stripePayoutId:
       params.scenario === "completed" ? generateStripePayoutId() : undefined,
     createdAt: params.createdAt,
+    // completedAt must be after on-chain confirmation
     completedAt:
       params.scenario === "completed"
         ? faker.date.between({
-            from: params.createdAt,
+            from: params.confirmedAt ?? params.createdAt,
             to: new Date(),
           })
         : undefined,
   };
 }
 
+type BurnTransactionParams = {
+  networkId: number;
+  fromAddress: string;
+  tokenAmount: string;
+  createdAt: Date;
+  confirmedAt: Date;
+};
+
 function buildBurnTransactionValues(
-  networkId: number,
-  fromAddress: string,
-  tokenAmount: string,
-  createdAt: Date
+  params: BurnTransactionParams
 ): typeof blockchainTransactions.$inferInsert {
   return {
-    networkId,
+    networkId: params.networkId,
     transactionTypeId: TX_TYPE_BURN,
-    fromAddress,
+    fromAddress: params.fromAddress,
     toAddress: MOCK_CONTRACT_ADDRESS,
     txHash: generateTransactionHash(),
     blockNumber: BigInt(faker.number.int({ min: 5_000_000, max: 7_000_000 })),
     blockHash: generateBlockHash(),
-    amount: tokenAmount,
+    amount: params.tokenAmount,
     nonce: BigInt(faker.number.int({ min: 0, max: 1000 })),
     gasUsed: BigInt(faker.number.int({ min: 21_000, max: 200_000 })),
     gasPriceWei: String(
@@ -98,11 +105,8 @@ function buildBurnTransactionValues(
     ),
     isConfirmed: true,
     confirmations: faker.number.int({ min: 12, max: 200 }),
-    createdAt,
-    confirmedAt: faker.date.between({
-      from: createdAt,
-      to: new Date(),
-    }),
+    createdAt: params.createdAt,
+    confirmedAt: params.confirmedAt,
   };
 }
 
@@ -122,6 +126,9 @@ export async function seedWithdrawals(
   const { completed, pending, failed } =
     defaultSeedConfig.withdrawals.statusDistribution;
 
+  // Resolve verified KYC status ID at runtime — never assume a hardcoded value
+  const kycIds = await getKycStatusIds();
+
   const statusWeights = [
     { value: "completed" as const, weight: completed },
     { value: "pending" as const, weight: pending },
@@ -135,7 +142,7 @@ export async function seedWithdrawals(
     if (u.id === withdrawDemoUserId) {
       return true;
     }
-    if (u.kycStatusId !== KYC_STATUS_VERIFIED) {
+    if (u.kycStatusId !== kycIds.verified) {
       return false;
     }
     return faker.number.float({ min: 0, max: 1 }) < WITHDRAWAL_SAMPLING_RATE;
@@ -172,20 +179,28 @@ export async function seedWithdrawals(
         to: new Date(),
       });
 
+      // confirmedAt generated outside transaction so it can be passed to
+      // both the blockchain_transactions row and the withdrawal record
+      const confirmedAt =
+        scenario === "completed"
+          ? faker.date.between({ from: createdAt, to: new Date() })
+          : undefined;
+
       // Per-record transaction: blockchain_transactions + withdrawal are atomic
       await db.transaction(async (tx) => {
         let blockchainTxId: bigint | undefined;
 
-        if (scenario === "completed") {
+        if (scenario === "completed" && confirmedAt) {
           const [btx] = await tx
             .insert(blockchainTransactions)
             .values(
-              buildBurnTransactionValues(
+              buildBurnTransactionValues({
                 networkId,
-                primaryWallet.address,
+                fromAddress: primaryWallet.address,
                 tokenAmount,
-                createdAt
-              )
+                createdAt,
+                confirmedAt,
+              })
             )
             .returning({ id: blockchainTransactions.id });
 
@@ -201,6 +216,7 @@ export async function seedWithdrawals(
             fiatAmountCents,
             feeCents,
             blockchainTxId,
+            confirmedAt,
             createdAt,
           })
         );

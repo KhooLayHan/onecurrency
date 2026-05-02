@@ -18,6 +18,7 @@ import {
   randomBetween,
   weightedRandom,
 } from "./helpers";
+import { getKycStatusIds } from "./lookup";
 import type {
   SeededDeposit,
   SeededDepositsByUser,
@@ -35,7 +36,7 @@ const STATUS_IDS = {
   refunded: 5,
 } as const;
 const TX_TYPE_MINT = 1;
-const KYC_STATUS_VERIFIED = 3;
+const kycStatusIds = await getKycStatusIds();
 
 function getDepositStatusId(
   scenario: "completed" | "pending" | "failedNoTx" | "hybridFailed"
@@ -153,7 +154,7 @@ export async function seedDeposits(
 
   // Only verified users (kycStatusId = 3) with wallets get deposits
   const eligibleUsers = users.filter(
-    (u) => u.kycStatusId === KYC_STATUS_VERIFIED && walletsByUser.has(u.id)
+    (u) => u.kycStatusId === kycStatusIds.verified && walletsByUser.has(u.id)
   );
 
   const result: SeededDepositsByUser = new Map();
