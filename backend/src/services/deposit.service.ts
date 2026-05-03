@@ -7,7 +7,7 @@ import { KYC_STATUS } from "../constants/kyc-status";
 import { TRANSACTION_STATUS } from "../constants/transaction-status";
 import type { Database } from "../db";
 import { env } from "../env";
-import { sendDepositReceivedEmail } from "../lib/email";
+import { sendDepositFailedEmail, sendDepositReceivedEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 import { DepositRepository } from "../repositories/deposit.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -272,8 +272,8 @@ export class DepositService {
               "processSuccessfulPayment: deposit activated to PROCESSING"
             );
 
-            return fetchWalletForMint(this.db, walletId, deposit.id).andThen(
-              (wallet) => {
+            return fetchWalletForMint(this.db, walletId, deposit.id)
+              .andThen((wallet) => {
                 logger.info(
                   {
                     walletId,
@@ -321,8 +321,28 @@ export class DepositService {
                     return okAsync(undefined);
                   });
                 });
-              }
-            );
+              })
+              .mapErr((error) => {
+                // Non-blocking failure email: deposit already marked FAILED by helpers
+                new UserRepository(this.db).findById(BigInt(userId)).match(
+                  (user) => {
+                    if (user) {
+                      sendDepositFailedEmail(
+                        user.email,
+                        user.name,
+                        amountCents,
+                        String(deposit.id)
+                      );
+                    }
+                  },
+                  (err) =>
+                    logger.warn(
+                      { error: err },
+                      "Failed to look up user for deposit failure email"
+                    )
+                );
+                return error;
+              });
           });
         });
       }

@@ -1,23 +1,19 @@
+import {
+  renderDepositFailed,
+  renderDepositSuccess,
+  renderWithdrawalFailed,
+  renderWithdrawalInitiated,
+} from "@onecurrency/transactional";
 import { Resend } from "resend";
 import { env } from "../env";
 import { logger } from "./logger";
 
 const resend = new Resend(env.RESEND_API_KEY);
-const CENTS_PER_DOLLAR = 100;
 
-const formatUsd = (cents: number): string =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / CENTS_PER_DOLLAR);
-
-const escapeHtml = (str: string): string =>
-  str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot")
-    .replace(/'/g, "&#39;");
+const DASHBOARD_URL =
+  env.NODE_ENV === "development" || env.NODE_ENV === "testing"
+    ? env.LOCAL_CORS_ORIGIN
+    : env.PROD_CORS_ORIGIN;
 
 export async function sendPasswordResetEmail(
   to: string,
@@ -30,7 +26,7 @@ export async function sendPasswordResetEmail(
       subject: "Reset your OneCurrency password",
       html: `
         <p>We received a request to reset your OneCurrency password.</p>
-        <p><a href="${escapeHtml(url)}">Click here to reset your password</a></p>
+        <p><a href="${url}">Click here to reset your password</a></p>
         <p>This link expires in 1 hour. If you did not request this, you can safely ignore this email.</p>
       `,
     });
@@ -52,15 +48,18 @@ export async function sendDepositReceivedEmail(
   depositId: string
 ): Promise<void> {
   try {
+    const html = await renderDepositSuccess({
+      name,
+      amountCents,
+      depositId,
+      dashboardUrl: DASHBOARD_URL,
+    });
     const { error } = await resend.emails.send(
       {
         from: env.EMAIL_FROM,
         to: [to],
         subject: "Money added to your account",
-        html: `
-          <p>Hi ${escapeHtml(name)},</p>
-          <p>Your deposit of <strong>${formatUsd(amountCents)}</strong> has been added to your OneCurrency account and is ready to use.</p>
-        `,
+        html,
       },
       { idempotencyKey: `deposit-received/${depositId}` }
     );
@@ -78,6 +77,39 @@ export async function sendDepositReceivedEmail(
   }
 }
 
+export async function sendDepositFailedEmail(
+  to: string,
+  name: string,
+  amountCents: number,
+  depositId: string
+): Promise<void> {
+  try {
+    const html = await renderDepositFailed({
+      name,
+      amountCents,
+      depositId,
+      dashboardUrl: DASHBOARD_URL,
+    });
+    const { error } = await resend.emails.send(
+      {
+        from: env.EMAIL_FROM,
+        to: [to],
+        subject: "We couldn't add money to your account",
+        html,
+      },
+      { idempotencyKey: `deposit-failed/${depositId}` }
+    );
+    if (error) {
+      logger.warn({ error, depositId }, "Failed to send deposit failure email");
+    }
+  } catch (err) {
+    logger.warn(
+      { error: err, depositId },
+      "Unexpected error sending deposit failure email"
+    );
+  }
+}
+
 export async function sendWithdrawalProcessedEmail(
   to: string,
   name: string,
@@ -85,15 +117,18 @@ export async function sendWithdrawalProcessedEmail(
   withdrawalId: string
 ): Promise<void> {
   try {
+    const html = await renderWithdrawalInitiated({
+      name,
+      amountCents,
+      withdrawalId,
+      dashboardUrl: DASHBOARD_URL,
+    });
     const { error } = await resend.emails.send(
       {
         from: env.EMAIL_FROM,
         to: [to],
-        subject: "Your withdrawal is being processed",
-        html: `
-          <p>Hi ${escapeHtml(name)},</p>
-          <p>Your withdrawal of <strong>${formatUsd(amountCents)}</strong> is being processed and will arrive in your bank account within 1–3 business days.</p>
-        `,
+        subject: "Your cash out is being processed",
+        html,
       },
       { idempotencyKey: `withdrawal-processed/${withdrawalId}` }
     );
@@ -107,6 +142,42 @@ export async function sendWithdrawalProcessedEmail(
     logger.warn(
       { error: err, withdrawalId },
       "Unexpected error sending withdrawal notification email"
+    );
+  }
+}
+
+export async function sendWithdrawalFailedEmail(
+  to: string,
+  name: string,
+  amountCents: number,
+  withdrawalId: string
+): Promise<void> {
+  try {
+    const html = await renderWithdrawalFailed({
+      name,
+      amountCents,
+      withdrawalId,
+      dashboardUrl: DASHBOARD_URL,
+    });
+    const { error } = await resend.emails.send(
+      {
+        from: env.EMAIL_FROM,
+        to: [to],
+        subject: "There was a problem with your cash out",
+        html,
+      },
+      { idempotencyKey: `withdrawal-failed/${withdrawalId}` }
+    );
+    if (error) {
+      logger.warn(
+        { error, withdrawalId },
+        "Failed to send withdrawal failure email"
+      );
+    }
+  } catch (err) {
+    logger.warn(
+      { error: err, withdrawalId },
+      "Unexpected error sending withdrawal failure email"
     );
   }
 }
@@ -126,6 +197,12 @@ export async function sendTransferSentEmail({
   amountCents,
   transferId,
 }: SendTransferSentEmailOptions): Promise<void> {
+  const CENTS_PER_DOLLAR = 100;
+  const formatUsd = (cents: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(cents / CENTS_PER_DOLLAR);
   try {
     const { error } = await resend.emails.send(
       {
@@ -133,8 +210,8 @@ export async function sendTransferSentEmail({
         to: [to],
         subject: `You sent ${formatUsd(amountCents)}`,
         html: `
-          <p>Hi ${escapeHtml(senderName)},</p>
-          <p>You sent <strong>${formatUsd(amountCents)}</strong> to ${escapeHtml(recipientName)}. The transfer has completed.</p>
+          <p>Hi ${senderName},</p>
+          <p>You sent <strong>${formatUsd(amountCents)}</strong> to ${recipientName}. The transfer has completed.</p>
         `,
       },
       { idempotencyKey: `transfer-sent/${transferId}` }
@@ -165,6 +242,12 @@ export async function sendTransferReceivedEmail({
   amountCents,
   transferId,
 }: SendTransferReceivedEmailOptions): Promise<void> {
+  const CENTS_PER_DOLLAR = 100;
+  const formatUsd = (cents: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(cents / CENTS_PER_DOLLAR);
   try {
     const { error } = await resend.emails.send(
       {
@@ -172,8 +255,8 @@ export async function sendTransferReceivedEmail({
         to: [to],
         subject: `You received ${formatUsd(amountCents)}`,
         html: `
-          <p>Hi ${escapeHtml(recipientName)},</p>
-          <p><strong>${escapeHtml(senderName)}</strong> sent you <strong>${formatUsd(amountCents)}</strong>. The funds are now in your account.</p>
+          <p>Hi ${recipientName},</p>
+          <p><strong>${senderName}</strong> sent you <strong>${formatUsd(amountCents)}</strong>. The funds are now in your account.</p>
         `,
       },
       { idempotencyKey: `transfer-received/${transferId}` }

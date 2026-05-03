@@ -1,0 +1,26 @@
+{
+  "name": "@onecurrency/transactional",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "email dev --dir src/emails",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^1.1.2",
+    "@react-email/tailwind": "^2.0.7",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "react-email": "^4.0.16",
+    "typescript": "^5.9.3"
+  }
+}

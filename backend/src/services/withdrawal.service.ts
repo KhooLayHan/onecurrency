@@ -16,7 +16,10 @@ import { TRANSACTION_TYPE } from "../constants/transaction-type";
 import type { Database } from "../db";
 import type { InitiateWithdrawalRequest } from "../dto/withdrawal.dto";
 import { env } from "../env";
-import { sendWithdrawalProcessedEmail } from "../lib/email";
+import {
+  sendWithdrawalFailedEmail,
+  sendWithdrawalProcessedEmail,
+} from "../lib/email";
 import { logger } from "../lib/logger";
 import { BlockchainTransactionRepository } from "../repositories/blockchain-transaction.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -140,6 +143,13 @@ export class WithdrawalService {
                     withdrawalId: withdrawal.id.toString(),
                   },
                   "Token burn failed — withdrawal marked FAILED"
+                );
+                // Non-blocking: send failure email to user
+                sendWithdrawalFailedEmail(
+                  user.email,
+                  user.name,
+                  grossAmountCents,
+                  withdrawal.publicId
                 );
                 return errAsync(burnError);
               })
