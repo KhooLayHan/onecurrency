@@ -1,4 +1,4 @@
-import { Button, Hr, Preview, Text } from "@react-email/components";
+import { Button, Hr, Preview, Text } from "react-email";
 import { EmailLayout } from "./layout";
 
 export type DepositFailedEmailProps = {
@@ -48,12 +48,13 @@ export function DepositFailedEmail({
       {/* Message */}
       <Text className="m-0 mb-2 text-base text-slate-900">Hi {name},</Text>
       <Text className="m-0 mb-2 text-base text-slate-700">
-        We were unable to add money to your account. Your payment was received
-        but we encountered a problem completing the transfer. You have not been
-        charged.
+        Your payment was charged, but we encountered a problem crediting your
+        account. Your balance has not been updated.
       </Text>
       <Text className="m-0 mb-6 text-base text-slate-700">
-        Please try again or contact our support team if the issue persists.
+        Please contact our support team at{" "}
+        <a href="mailto:support@onecurrency.tech">support@onecurrency.tech</a>{" "}
+        for assistance or to request a refund.
       </Text>
 
       {/* CTA */}

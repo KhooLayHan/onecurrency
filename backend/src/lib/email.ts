@@ -8,6 +8,14 @@ import { Resend } from "resend";
 import { env } from "../env";
 import { logger } from "./logger";
 
+const escapeHtml = (str: string): string =>
+  str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const resend = new Resend(env.RESEND_API_KEY);
 
 const DASHBOARD_URL =
@@ -210,8 +218,8 @@ export async function sendTransferSentEmail({
         to: [to],
         subject: `You sent ${formatUsd(amountCents)}`,
         html: `
-          <p>Hi ${senderName},</p>
-          <p>You sent <strong>${formatUsd(amountCents)}</strong> to ${recipientName}. The transfer has completed.</p>
+          <p>Hi ${escapeHtml(senderName)},</p>
+          <p>You sent <strong>${formatUsd(amountCents)}</strong> to ${escapeHtml(recipientName)}. The transfer has completed.</p>
         `,
       },
       { idempotencyKey: `transfer-sent/${transferId}` }
@@ -255,8 +263,8 @@ export async function sendTransferReceivedEmail({
         to: [to],
         subject: `You received ${formatUsd(amountCents)}`,
         html: `
-          <p>Hi ${recipientName},</p>
-          <p><strong>${senderName}</strong> sent you <strong>${formatUsd(amountCents)}</strong>. The funds are now in your account.</p>
+          <p>Hi ${escapeHtml(recipientName)},</p>
+          <p><strong>${escapeHtml(senderName)}</strong> sent you <strong>${formatUsd(amountCents)}</strong>. The funds are now in your account.</p>
         `,
       },
       { idempotencyKey: `transfer-received/${transferId}` }

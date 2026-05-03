@@ -1,3 +1,5 @@
+import { pixelBasedPreset } from "@react-email/tailwind";
+import type { ReactNode } from "react";
 import {
   Body,
   Container,
@@ -6,12 +8,11 @@ import {
   Section,
   Tailwind,
   Text,
-} from "@react-email/components";
-import { pixelBasedPreset } from "@react-email/tailwind";
+} from "react-email";
 
 export type LayoutProps = {
   preview: string;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export function EmailLayout({ preview, children }: LayoutProps) {

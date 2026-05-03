@@ -1,4 +1,4 @@
-import { Button, Hr, Preview, Text } from "@react-email/components";
+import { Button, Hr, Preview, Text } from "react-email";
 import { EmailLayout } from "./layout";
 
 export type WithdrawalFailedEmailProps = {
