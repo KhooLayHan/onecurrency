@@ -36,7 +36,7 @@ const txVolumeSchema = z.object({
  * Runs all metrics DB queries in parallel and returns raw result arrays.
  * Extracted to keep the handler's cognitive complexity below the limit.
  */
-async function runMetricsQueries(thirtyDaysAgo: Date, sevenDaysAgo: Date) {
+function runMetricsQueries(thirtyDaysAgo: Date, sevenDaysAgo: Date) {
   return Promise.all([
     // 0: total registered users
     db
@@ -124,6 +124,22 @@ function buildKycByStatus(rows: KycCountRow[]): Record<number, number> {
   return map;
 }
 
+/** Returns the count from the first row of a count query, or 0. */
+function firstCount(rows: Array<{ count: number }>): number {
+  return rows[0]?.count ?? 0;
+}
+type VolumeRow = { count: number; totalAmountCents: string | null | undefined };
+/** Converts a volume query row to { count, totalAmountCents }. */
+function toVolume(rows: VolumeRow[]): {
+  count: number;
+  totalAmountCents: number;
+} {
+  return {
+    count: rows[0]?.count ?? 0,
+    totalAmountCents: Number(rows[0]?.totalAmountCents ?? 0),
+  };
+}
+
 /**
  * Returns aggregated platform metrics for the admin dashboard home.
  *
@@ -180,9 +196,9 @@ export const getAdminMetricsSummary = base
     const kycByStatus = buildKycByStatus(kycCountRows);
 
     return {
-      totalUsers: totalUsersRows[0]?.count ?? 0,
-      newUsersLast30Days: newUsersRows[0]?.count ?? 0,
-      suspendedUsers: suspendedRows[0]?.count ?? 0,
+      totalUsers: firstCount(totalUsersRows),
+      newUsersLast30Days: firstCount(newUsersRows),
+      suspendedUsers: firstCount(suspendedRows),
       kycCounts: {
         none: kycByStatus[KYC_STATUS.NONE] ?? 0,
         pending: kycByStatus[KYC_STATUS.PENDING] ?? 0,
@@ -190,30 +206,15 @@ export const getAdminMetricsSummary = base
         rejected: kycByStatus[KYC_STATUS.REJECTED] ?? 0,
         expired: kycByStatus[KYC_STATUS.EXPIRED] ?? 0,
       },
-      pendingKycSubmissions: pendingKycRows[0]?.count ?? 0,
+      pendingKycSubmissions: firstCount(pendingKycRows),
       transactionVolume: {
-        deposits: {
-          count: depositsVolumeRows[0]?.count ?? 0,
-          totalAmountCents: Number(
-            depositsVolumeRows[0]?.totalAmountCents ?? 0
-          ),
-        },
-        withdrawals: {
-          count: withdrawalsVolumeRows[0]?.count ?? 0,
-          totalAmountCents: Number(
-            withdrawalsVolumeRows[0]?.totalAmountCents ?? 0
-          ),
-        },
-        transfers: {
-          count: transfersVolumeRows[0]?.count ?? 0,
-          totalAmountCents: Number(
-            transfersVolumeRows[0]?.totalAmountCents ?? 0
-          ),
-        },
+        deposits: toVolume(depositsVolumeRows),
+        withdrawals: toVolume(withdrawalsVolumeRows),
+        transfers: toVolume(transfersVolumeRows),
       },
       failedTransactionsLast7Days:
-        (failedDepositsRows[0]?.count ?? 0) +
-        (failedWithdrawalsRows[0]?.count ?? 0) +
-        (failedTransfersRows[0]?.count ?? 0),
+        firstCount(failedDepositsRows) +
+        firstCount(failedWithdrawalsRows) +
+        firstCount(failedTransfersRows),
     };
   });
