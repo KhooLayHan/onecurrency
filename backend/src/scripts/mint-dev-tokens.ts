@@ -12,7 +12,8 @@ import { db, pool } from "../db";
 import { users } from "../db/schema/users";
 import { wallets } from "../db/schema/wallets";
 import { logger } from "../lib/logger";
-import { mintTokens, walletClient } from "../services/blockchain";
+import { walletClient } from "../services/blockchain/client";
+import { mintTokens } from "../services/blockchain/mint";
 
 const DEFAULT_MINT_AMOUNT_USD = 1000;
 const TOKEN_DECIMALS = 18;

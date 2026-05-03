@@ -17,7 +17,7 @@ import { BlockchainTransactionRepository } from "@/src/repositories/blockchain-t
 import { DepositRepository } from "@/src/repositories/deposit.repository";
 import { WalletRepository } from "@/src/repositories/wallet.repository";
 import { WebhookEventRepository } from "@/src/repositories/webhook-event.repository";
-import { mintTokens } from "@/src/services/blockchain";
+import { mintTokens } from "@/src/services/blockchain/mint";
 import { stripe } from "@/src/services/stripe.service";
 
 // --- Pure helpers (no database dependency) ---

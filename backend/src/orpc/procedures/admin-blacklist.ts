@@ -1,3 +1,20 @@
+/**
+ * Admin blacklist procedures.
+ *
+ * Exposes four oRPC procedures for managing the on-chain address blacklist:
+ *
+ * - `listBlacklist`      — paginated list of currently blacklisted addresses.
+ * - `addToBlacklist`     — blacklists an address on-chain and records the entry.
+ * - `removeFromBlacklist`— un-blacklists an address on-chain and removes the record.
+ * - `seizeTokens`        — seizes all tokens from a blacklisted address and
+ *                          transfers them to the configured treasury wallet.
+ *
+ * All procedures require the `blacklist:manage` permission except `seizeTokens`,
+ * which is restricted to the `admin` role due to its irreversible nature.
+ *
+ * Safety invariant: `TREASURY_ADDRESS` is validated at module load time to
+ * ensure it is never the same wallet as the operator (relayer) account.
+ */
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
@@ -6,29 +23,35 @@ import { db } from "@/src/db";
 import { networks } from "@/src/db/schema/networks";
 import { env } from "@/src/env";
 import { BlacklistService } from "@/src/services/blacklist.service";
-import { activeChainId } from "@/src/services/blockchain";
-import { KycAdminService } from "@/src/services/kyc-admin.service";
+import { activeChainId } from "@/src/services/blockchain/client";
 import { base } from "../context";
 import { mapToORPCError } from "../errors";
 import { requirePermission, requireRole } from "../middleware";
 
-const kycAdminService = new KycAdminService(db);
 const blacklistService = new BlacklistService(db);
 
-const KYC_PAGE_SIZE = 20;
+/** Number of blacklist entries returned per page. */
 const BLACKLIST_PAGE_SIZE = 20;
+
+/** Minimum character length for a blacklist reason string. */
 const BLACKLIST_REASON_MIN_LENGTH = 5;
 
+/**
+ * The treasury wallet address that receives seized tokens.
+ * Loaded from `TREASURY_ADDRESS` env var and validated at startup.
+ */
 const TREASURY_ADDRESS: `0x${string}` | null =
   (env.TREASURY_ADDRESS as `0x${string}`) ?? null;
 
-// Safety: treasury must not be the same wallet as the operator
+// Validate at module load: the treasury must never be the same wallet
+// as the operator to prevent accidental self-seizure.
 if (TREASURY_ADDRESS && env.SEPOLIA_PRIVATE_KEY) {
   const operatorAddress = privateKeyToAccount(
     (env.SEPOLIA_PRIVATE_KEY.startsWith("0x")
       ? env.SEPOLIA_PRIVATE_KEY
       : `0x${env.SEPOLIA_PRIVATE_KEY}`) as `0x${string}`
   ).address;
+
   if (operatorAddress.toLowerCase() === TREASURY_ADDRESS.toLowerCase()) {
     throw new Error(
       "TREASURY_ADDRESS must not be the same as the operator wallet (SEPOLIA_PRIVATE_KEY)"
@@ -36,140 +59,16 @@ if (TREASURY_ADDRESS && env.SEPOLIA_PRIVATE_KEY) {
   }
 }
 
-// ─── KYC Procedures ─────────────────────────────────────────────────────────
-
-export const listKycSubmissions = base
-  .use(requirePermission("kyc:read"))
-  .input(
-    z.object({
-      page: z.number().int().min(1).default(1),
-      kycStatusId: z.number().int().optional(),
-      search: z.string().optional(),
-    })
-  )
-  .output(
-    z.object({
-      items: z.array(
-        z.object({
-          publicId: z.string(),
-          fullName: z.string(),
-          documentType: z.string(),
-          kycStatusId: z.number(),
-          createdAt: z.date(),
-          userEmail: z.string(),
-          userName: z.string(),
-        })
-      ),
-      total: z.number(),
-      page: z.number(),
-      pageSize: z.number(),
-    })
-  )
-  .handler(async ({ input }) => {
-    const result = await kycAdminService.listSubmissions({
-      page: input.page,
-      pageSize: KYC_PAGE_SIZE,
-      kycStatusId: input.kycStatusId,
-      search: input.search,
-    });
-    if (result.isErr()) {
-      throw mapToORPCError(result.error);
-    }
-    return {
-      ...result.value,
-      page: input.page,
-      pageSize: KYC_PAGE_SIZE,
-    };
-  });
-
-export const getKycSubmission = base
-  .use(requirePermission("kyc:read"))
-  .input(z.object({ publicId: z.uuid() }))
-  .output(
-    z.object({
-      submission: z.object({
-        publicId: z.string(),
-        fullName: z.string(),
-        dateOfBirth: z.string(),
-        nationality: z.string(),
-        documentType: z.string(),
-        kycStatusId: z.number(),
-        rejectionReason: z.string().nullable(),
-        reviewedAt: z.date().nullable(),
-        createdAt: z.date(),
-        userId: z.string(),
-      }),
-      documentFrontUrl: z.string().nullable(),
-      documentBackUrl: z.string().nullable(),
-      selfieUrl: z.string().nullable(),
-    })
-  )
-  .handler(async ({ input }) => {
-    const result = await kycAdminService.getSubmission(input.publicId);
-    if (result.isErr()) {
-      throw mapToORPCError(result.error);
-    }
-    const { submission, documentFrontUrl, documentBackUrl, selfieUrl } =
-      result.value;
-    return {
-      submission: {
-        publicId: submission.publicId,
-        fullName: submission.fullName,
-        dateOfBirth: submission.dateOfBirth,
-        nationality: submission.nationality,
-        documentType: submission.documentType,
-        kycStatusId: submission.kycStatusId,
-        rejectionReason: submission.rejectionReason ?? null,
-        reviewedAt: submission.reviewedAt,
-        createdAt: submission.createdAt,
-        userId: submission.userId.toString(),
-      },
-      documentFrontUrl,
-      documentBackUrl,
-      selfieUrl,
-    };
-  });
-
-export const approveKyc = base
-  .use(requirePermission("kyc:verify"))
-  .input(z.object({ publicId: z.uuid() }))
-  .output(z.object({ message: z.string() }))
-  .handler(async ({ input, context }) => {
-    const result = await kycAdminService.approve(
-      input.publicId,
-      BigInt(context.session.userId)
-    );
-    if (result.isErr()) {
-      throw mapToORPCError(result.error);
-    }
-    return { message: "KYC submission approved" };
-  });
-
-export const rejectKyc = base
-  .use(requirePermission("kyc:reject"))
-  .input(
-    z.object({
-      publicId: z.uuid(),
-      reason: z
-        .string()
-        .min(10, "Rejection reason must be at least 10 characters"),
-    })
-  )
-  .output(z.object({ message: z.string() }))
-  .handler(async ({ input, context }) => {
-    const result = await kycAdminService.reject(
-      input.publicId,
-      BigInt(context.session.userId),
-      input.reason
-    );
-    if (result.isErr()) {
-      throw mapToORPCError(result.error);
-    }
-    return { message: "KYC submission rejected" };
-  });
-
-// ─── Blacklist Procedures ────────────────────────────────────────────────────
-
+/**
+ * Returns a paginated list of blacklisted addresses, optionally filtered
+ * by network ID or a text search term.
+ *
+ * @permission blacklist:manage
+ * @input  page      - 1-based page number (default 1).
+ * @input  networkId - Optional network ID to filter by.
+ * @input  search    - Optional text to search against address or reason.
+ * @output Paginated list of blacklist entries.
+ */
 export const listBlacklist = base
   .use(requirePermission("blacklist:manage"))
   .input(
@@ -211,6 +110,18 @@ export const listBlacklist = base
     return { ...result.value, page: input.page };
   });
 
+/**
+ * Blacklists an Ethereum address on-chain and records the entry in the DB.
+ *
+ * The procedure looks up the active network by chain ID to associate the
+ * entry with the correct network record before calling the contract.
+ *
+ * @permission blacklist:manage
+ * @input  address - The Ethereum address to blacklist (must be a valid 0x address).
+ * @input  reason  - Human-readable reason for blacklisting (min 5 characters).
+ * @input  source  - Optional provenance string (e.g. "OFAC", "manual").
+ * @output Confirmation message.
+ */
 export const addToBlacklist = base
   .use(requirePermission("blacklist:manage"))
   .input(
@@ -249,6 +160,14 @@ export const addToBlacklist = base
     return { message: "Address blacklisted successfully" };
   });
 
+/**
+ * Removes an address from the blacklist, restoring its ability to transact.
+ * The removal is recorded with the acting admin's user ID for audit purposes.
+ *
+ * @permission blacklist:manage
+ * @input  publicId - UUID of the blacklist entry to remove.
+ * @output Confirmation message.
+ */
 export const removeFromBlacklist = base
   .use(requirePermission("blacklist:manage"))
   .input(z.object({ publicId: z.string().uuid() }))
@@ -264,6 +183,18 @@ export const removeFromBlacklist = base
     return { message: "Address removed from blacklist" };
   });
 
+/**
+ * Seizes all ONE tokens from a blacklisted address and transfers them to
+ * the configured treasury wallet.
+ *
+ * This is an irreversible on-chain action and is therefore restricted to
+ * the `admin` role (stricter than the general `blacklist:manage` permission).
+ * Requires `TREASURY_ADDRESS` to be configured in the environment.
+ *
+ * @role   admin
+ * @input  publicId - UUID of the blacklist entry whose tokens should be seized.
+ * @output Confirmation message.
+ */
 export const seizeTokens = base
   .use(requireRole("admin"))
   .input(z.object({ publicId: z.uuid() }))

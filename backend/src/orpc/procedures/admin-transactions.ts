@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import z from "zod";
 import { db } from "@/src/db";
-import { TransactionAdminService } from "@/src/services/transaction-admin.service";
+import { TransactionAdminService } from "@/src/services/transaction-admin";
 import { base } from "../context";
 import { mapToORPCError } from "../errors";
 import { requirePermission } from "../middleware";

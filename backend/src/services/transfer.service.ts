@@ -22,7 +22,8 @@ import { BlockchainTransactionRepository } from "../repositories/blockchain-tran
 import { TransferRepository } from "../repositories/transfer.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { WalletRepository } from "../repositories/wallet.repository";
-import { getOnChainBalance, transferTokens } from "./blockchain";
+import { getOnChainBalance } from "./blockchain/balance";
+import { transferTokens } from "./blockchain/transfer";
 import { calculateTokenAmountWei } from "./stripe.service";
 
 export class TransferService {
