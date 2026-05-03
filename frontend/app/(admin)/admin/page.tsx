@@ -192,7 +192,11 @@ function AuditActivityContent({ isLoading, items }: AuditActivityContentProps) {
 }
 
 export default function AdminDashboardPage() {
-  const { data: metrics, isLoading } = useQuery({
+  const {
+    data: metrics,
+    isLoading,
+    isError: metricsError,
+  } = useQuery({
     queryKey: ["admin-metrics"],
     queryFn: () => orpcClient.admin.metrics.getSummary({}),
   });
@@ -218,6 +222,11 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
+      {metricsError && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-destructive text-sm">
+          Failed to load metrics. Data shown may be stale or unavailable.
+        </p>
+      )}
       {/* Top-level stat cards */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard

@@ -63,8 +63,8 @@ export const listAuditLogs = base
       search: z.string().trim().optional(),
       action: z.string().optional(),
       entityType: z.string().optional(),
-      dateFrom: z.string().optional(),
-      dateTo: z.string().optional(),
+      dateFrom: z.iso.date().optional(),
+      dateTo: z.iso.date().optional(),
     })
   )
   .output(
@@ -101,7 +101,7 @@ export const listAuditLogs = base
     }
     if (input.dateTo) {
       const end = new Date(input.dateTo);
-      end.setHours(
+      end.setUTCHours(
         END_OF_DAY_HOURS,
         END_OF_DAY_MINUTES,
         END_OF_DAY_SECONDS,
