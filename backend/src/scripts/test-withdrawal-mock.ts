@@ -9,7 +9,20 @@ import { db, pool } from "../db";
 import { WithdrawalService } from "../services/withdrawal.service";
 
 async function run() {
-  const userId = BigInt(process.argv[2] ?? "105");
+  const { eq } = await import("drizzle-orm");
+  const { users } = await import("../db/schema/users");
+  const withdrawUser = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, process.argv[2] ?? "withdraw@onecurrency.com"))
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+  if (!withdrawUser) {
+    console.error("User not found");
+    await pool.end();
+    process.exit(1);
+  }
+  const userId = withdrawUser.id;
   const amountCents = Number(process.argv[3] ?? "2000");
 
   console.log(
