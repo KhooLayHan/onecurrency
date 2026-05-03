@@ -12,6 +12,7 @@
       }
     ],
     "paths": {
+      "@/*": ["./*"],
       "@/common/*": ["../packages/common/src/*"],
       "@/src/*": ["../backend/src/*"]
     }
