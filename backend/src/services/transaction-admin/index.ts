@@ -16,23 +16,14 @@
  * so no callers need to change their import statements.
  */
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
+import type { AppError } from "@/common/errors/base";
 import { InternalError } from "@/common/errors/infrastructure";
+import { TransactionNotFoundError } from "@/common/errors/transaction";
 import type { Database } from "../../db";
-import {
-  countDeposits,
-  fetchDeposits,
-  findDeposit,
-  queryDeposits,
-} from "./deposit-query";
-import {
-  countTransfers,
-  fetchTransfers,
-  findTransfer,
-  queryTransfers,
-} from "./transfer-query";
+import { fetchDeposits, findDeposit, queryDeposits } from "./deposit-query";
+import { fetchTransfers, findTransfer, queryTransfers } from "./transfer-query";
 import type { AdminTransactionItem, ListFilters, ListResult } from "./types";
 import {
-  countWithdrawals,
   fetchWithdrawals,
   findWithdrawal,
   queryWithdrawals,
@@ -86,13 +77,13 @@ export class TransactionAdminService {
    * Fetches a single transaction by its public ID.
    *
    * Searches deposits, withdrawals, and transfers in parallel and returns
-   * whichever table has a matching row. Returns an `InternalError` if the
-   * public ID does not exist in any table.
+   * whichever table has a matching row.
    *
    * @param publicId - The transaction's UUID public identifier.
-   * @returns `Ok(AdminTransactionItem)` on success, or `InternalError` if not found.
+   * @returns `Ok(AdminTransactionItem)` on success, `TransactionNotFoundError`
+   *          when the ID matches no row in any table, or `InternalError` on DB failure.
    */
-  get(publicId: string): ResultAsync<AdminTransactionItem, InternalError> {
+  get(publicId: string): ResultAsync<AdminTransactionItem, AppError> {
     return ResultAsync.fromPromise(
       Promise.all([
         findDeposit(this.db, publicId),
@@ -107,9 +98,7 @@ export class TransactionAdminService {
     ).andThen(([deposit, withdrawal, transfer]) => {
       const found = deposit ?? withdrawal ?? transfer;
       if (!found) {
-        return errAsync(
-          new InternalError("Transaction not found", { context: { publicId } })
-        );
+        return errAsync(new TransactionNotFoundError(publicId));
       }
       return okAsync(found);
     });
@@ -142,6 +131,11 @@ export class TransactionAdminService {
    *
    * Used when no `type` filter is active (the "All" tab in the admin UI).
    *
+   * Total is derived from the merged row arrays **after** `validateStatus`
+   * has been applied inside each fetch function. This ensures the total
+   * matches the actual number of displayable items and does not diverge
+   * from rows that would be silently dropped by the status validator.
+   *
    * @param filters - Filter and pagination options (without a type constraint).
    */
   private listAllTypes(
@@ -151,9 +145,6 @@ export class TransactionAdminService {
 
     return ResultAsync.fromPromise(
       Promise.all([
-        countDeposits(this.db, filters),
-        countWithdrawals(this.db, filters),
-        countTransfers(this.db, filters),
         fetchDeposits(this.db, filters),
         fetchWithdrawals(this.db, filters),
         fetchTransfers(this.db, filters),
@@ -162,24 +153,15 @@ export class TransactionAdminService {
         new InternalError("Failed to fetch unified transaction list", {
           cause: e,
         })
-    ).map(
-      ([
-        depositCount,
-        withdrawalCount,
-        transferCount,
-        depositRows,
-        withdrawalRows,
-        transferRows,
-      ]) => {
-        const total = depositCount + withdrawalCount + transferCount;
-        const all = [...depositRows, ...withdrawalRows, ...transferRows].sort(
-          (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-        );
-        const start = (filters.page - 1) * pageSize;
-        const items = all.slice(start, start + pageSize);
-        return { items, total, page: filters.page, pageSize };
-      }
-    );
+    ).map(([depositRows, withdrawalRows, transferRows]) => {
+      const all = [...depositRows, ...withdrawalRows, ...transferRows].sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      );
+      const total = all.length;
+      const start = (filters.page - 1) * pageSize;
+      const items = all.slice(start, start + pageSize);
+      return { items, total, page: filters.page, pageSize };
+    });
   }
 }
 

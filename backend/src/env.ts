@@ -7,7 +7,7 @@ export const env = createEnv({
   server: {
     NODE_ENV: z
       .enum(["development", "testing", "staging", "production"])
-      .default("production"),
+      .default("development"),
     API_PORT: z.coerce.number().int().min(1).default(PORT_NUMBER),
 
     DATABASE_URL: z.url(),

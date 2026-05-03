@@ -18,6 +18,7 @@
 import { ORPCError } from "@orpc/server";
 import z from "zod";
 import { db } from "@/src/db";
+import { env } from "@/src/env";
 import { logger } from "@/src/lib/logger";
 import { KycRepository } from "@/src/repositories/kyc.repository";
 import {
@@ -156,13 +157,11 @@ export const submitKyc = base
   .handler(async ({ context, input }) => {
     const userId = context.session?.userId;
 
+    // Log only non-sensitive metadata — never log PII such as name, DOB,
+    // nationality, or storage keys.
     logger.info(
-      {
-        input,
-        dateOfBirthType: typeof input.dateOfBirth,
-        dateOfBirthValue: input.dateOfBirth,
-      },
-      "submitKyc received raw input"
+      { userId, documentType: input.documentType },
+      "submitKyc received request"
     );
 
     if (!userId) {
@@ -267,6 +266,14 @@ export const simulateKyc = base
       });
     }
 
+    // This endpoint must never run in production — it bypasses the KYC review
+    // process entirely and is intended only for development and staging.
+    if (env.NODE_ENV === "production") {
+      throw new ORPCError("FORBIDDEN", {
+        message: "This endpoint is not available in production",
+      });
+    }
+
     const result = await userService.simulateKyc(BigInt(userId));
     if (result.isErr()) {
       throw mapToORPCError(result.error);
@@ -300,7 +307,7 @@ export const getLatestKycSubmission = base
       BigInt(userId)
     );
     if (result.isErr()) {
-      throw new Error(result.error.message);
+      throw mapToORPCError(result.error);
     }
     const submission = result.value;
     if (!submission) {

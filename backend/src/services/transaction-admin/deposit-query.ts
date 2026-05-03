@@ -44,7 +44,7 @@ import {
 export function buildDepositWhere(filters: ListFilters): SQL | undefined {
   const conditions: SQL[] = [];
 
-  if (filters.statusId) {
+  if (filters.statusId !== undefined) {
     conditions.push(eq(deposits.statusId, filters.statusId));
   }
   if (filters.dateFrom) {

@@ -15,8 +15,9 @@ import {
 import type { AppError } from "@/common/errors/base";
 import { TransactionRevertedError } from "@/common/errors/transaction";
 import { InvalidAddressError } from "@/common/errors/wallet";
+import { MIN_CONFIRMATIONS } from "../../constants/blockchain";
 import { logger } from "../../lib/logger";
-import { account, chain, publicClient, walletClient } from "./client";
+import { chain, getOperatorAccount, publicClient } from "./client";
 import { mapBlockchainError } from "./helpers";
 
 /**
@@ -41,6 +42,8 @@ export function mintTokens(
         "Initiating mint transaction..."
       );
 
+      const { account, walletClient } = getOperatorAccount();
+
       // Simulate first — catches permission / blacklist errors before spending gas
       const { request } = await publicClient.simulateContract({
         address: ONECURRENCY_ADDRESS as `0x${string}`,
@@ -62,7 +65,7 @@ export function mintTokens(
 
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
-        confirmations: 1,
+        confirmations: MIN_CONFIRMATIONS,
       });
 
       if (receipt.status === "reverted") {

@@ -1,12 +1,22 @@
 /**
  * Blockchain client initialization.
  *
- * Sets up the viem public client (for reading data and simulating transactions)
- * and the operator wallet client (the "relayer" that signs and broadcasts
- * transactions on behalf of the platform).
+ * Exports two categories of client:
  *
- * Both clients are singletons — import them wherever you need to interact
- * with the chain rather than creating new instances per request.
+ * **Read-only (always available)**
+ * - `publicClient` — viem public client for `balanceOf`, `simulateContract`,
+ *   and `waitForTransactionReceipt`. Safe to import in any module, including
+ *   contexts where no private key is configured (e.g. read-only balance checks
+ *   in local dev without a Sepolia key).
+ *
+ * **Write-only (lazy, key required)**
+ * - `getOperatorAccount()` — returns the `{ account, walletClient }` pair
+ *   needed to sign and broadcast transactions. Throws at call time (not at
+ *   import time) if `SEPOLIA_PRIVATE_KEY` is absent, so importing this module
+ *   never blocks read-only callers.
+ *
+ * Chain selection follows `NODE_ENV`: production → Sepolia, everything else
+ * → Hardhat local node.
  */
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -14,51 +24,61 @@ import { hardhat, sepolia } from "viem/chains";
 import { env } from "../../env";
 import { logger } from "../../lib/logger";
 
-// Determine the active chain and RPC endpoint from the runtime environment
 const isProd = env.NODE_ENV === "production";
 
-/** The viem chain object used by all clients in this module. */
+/** The viem chain object for the active environment. */
 export const chain = isProd ? sepolia : hardhat;
 
 /** The RPC URL for the active chain. */
 export const rpcUrl = isProd ? env.SEPOLIA_RPC_URL : env.LOCAL_RPC_URL;
 
-// The operator private key must be present at startup — fail fast if missing
-if (!env.SEPOLIA_PRIVATE_KEY) {
-  logger.fatal(
-    "SEPOLIA_PRIVATE_KEY is missing from environment! Cannot initialize minter."
-  );
-  throw new Error("SEPOLIA_PRIVATE_KEY is required for blockchain service");
-}
-
-// Normalise the key: viem requires a 0x-prefixed string
-const formattedPrivateKey = env.SEPOLIA_PRIVATE_KEY.startsWith("0x")
-  ? env.SEPOLIA_PRIVATE_KEY
-  : `0x${env.SEPOLIA_PRIVATE_KEY}`;
-
-/** The operator account derived from the platform private key. */
-export const account = privateKeyToAccount(
-  formattedPrivateKey as `0x${string}`
-);
-
 /**
- * Public client — used for read-only operations (balanceOf, simulateContract)
+ * Public client — used for read-only operations (`balanceOf`, `simulateContract`)
  * and for waiting on transaction receipts.
+ *
+ * Initialised unconditionally so modules that only read chain state (e.g.
+ * `balance.ts`) can import it without requiring `SEPOLIA_PRIVATE_KEY`.
  */
 export const publicClient = createPublicClient({
   chain,
   transport: http(rpcUrl),
 });
 
-/**
- * Operator wallet client — used to sign and broadcast write transactions
- * (mint, blacklist, seize) from the platform operator account.
- */
-export const walletClient = createWalletClient({
-  account,
-  chain,
-  transport: http(rpcUrl),
-});
-
-/** Numeric chain ID of the currently active chain (exported for callers that need it). */
+/** Numeric chain ID of the currently active chain. */
 export const activeChainId: number = chain.id;
+
+/**
+ * Returns the operator account and wallet client needed to sign and broadcast
+ * write transactions (mint, burn, blacklist, seize).
+ *
+ * Validation and key derivation happen here — at call time — rather than at
+ * module evaluation time. This means importing `client.ts` never fails due to
+ * a missing key, keeping read-only paths (e.g. `balance.ts`) independent.
+ *
+ * @returns An object containing the derived `account` and a `walletClient`
+ *          configured for the active chain.
+ * @throws `Error` immediately if `SEPOLIA_PRIVATE_KEY` is not set in the
+ *         environment, preventing silent no-ops for write operations.
+ */
+export function getOperatorAccount() {
+  if (!env.SEPOLIA_PRIVATE_KEY) {
+    logger.fatal(
+      "SEPOLIA_PRIVATE_KEY is missing from environment! Cannot sign transactions."
+    );
+    throw new Error("SEPOLIA_PRIVATE_KEY is required for write operations");
+  }
+
+  const formattedKey = env.SEPOLIA_PRIVATE_KEY.startsWith("0x")
+    ? env.SEPOLIA_PRIVATE_KEY
+    : `0x${env.SEPOLIA_PRIVATE_KEY}`;
+
+  const account = privateKeyToAccount(formattedKey as `0x${string}`);
+
+  const walletClient = createWalletClient({
+    account,
+    chain,
+    transport: http(rpcUrl),
+  });
+
+  return { account, walletClient };
+}

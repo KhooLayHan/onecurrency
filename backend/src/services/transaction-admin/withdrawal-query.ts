@@ -44,7 +44,7 @@ import {
 export function buildWithdrawalWhere(filters: ListFilters): SQL | undefined {
   const conditions: SQL[] = [];
 
-  if (filters.statusId) {
+  if (filters.statusId !== undefined) {
     conditions.push(eq(withdrawals.statusId, filters.statusId));
   }
   if (filters.dateFrom) {

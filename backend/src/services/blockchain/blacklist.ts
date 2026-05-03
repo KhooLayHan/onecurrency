@@ -20,7 +20,7 @@ import { TransactionRevertedError } from "@/common/errors/transaction";
 import { InvalidAddressError } from "@/common/errors/wallet";
 import { MIN_CONFIRMATIONS } from "../../constants/blockchain";
 import { logger } from "../../lib/logger";
-import { account, chain, publicClient, walletClient } from "./client";
+import { chain, getOperatorAccount, publicClient } from "./client";
 import { mapBlockchainError } from "./helpers";
 
 /**
@@ -39,6 +39,8 @@ export function blacklistAddress(
       }
 
       logger.info({ address }, "Blacklisting address on-chain...");
+
+      const { account, walletClient } = getOperatorAccount();
 
       const { request } = await publicClient.simulateContract({
         address: ONECURRENCY_ADDRESS as `0x${string}`,
@@ -91,6 +93,8 @@ export function unblacklistAddress(
       }
 
       logger.info({ address }, "Removing address from on-chain blacklist...");
+
+      const { account, walletClient } = getOperatorAccount();
 
       const { request } = await publicClient.simulateContract({
         address: ONECURRENCY_ADDRESS as `0x${string}`,
@@ -154,6 +158,8 @@ export function seizeAddressTokens(
       }
 
       logger.info({ fromAddress, toAddress }, "Seizing tokens on-chain...");
+
+      const { account, walletClient } = getOperatorAccount();
 
       const { request } = await publicClient.simulateContract({
         address: ONECURRENCY_ADDRESS as `0x${string}`,

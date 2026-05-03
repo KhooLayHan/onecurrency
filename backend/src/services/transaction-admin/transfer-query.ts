@@ -57,7 +57,7 @@ export function buildTransferWhere(
 ): SQL | undefined {
   const conditions: SQL[] = [];
 
-  if (filters.statusId) {
+  if (filters.statusId !== undefined) {
     conditions.push(eq(transfers.statusId, filters.statusId));
   }
   if (filters.dateFrom) {
