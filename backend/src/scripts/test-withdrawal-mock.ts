@@ -23,6 +23,7 @@ async function run() {
     process.exit(1);
   }
   const userId = withdrawUser.id;
+
   const amountCents = Number(process.argv[3] ?? "2000");
 
   console.log(
