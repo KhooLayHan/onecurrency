@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeftRight,
   ClipboardList,
+  LayoutDashboard,
   LogOut,
   Menu,
+  ScrollText,
   ShieldAlert,
   ShieldCheck,
   User,
@@ -34,6 +36,13 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   {
+    label: "Dashboard",
+    href: "/admin",
+    icon: LayoutDashboard,
+    roles: ["admin", "compliance"],
+    showInMobile: true,
+  },
+  {
     label: "KYC Submissions",
     href: "/admin/kyc",
     icon: ClipboardList,
@@ -61,13 +70,22 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["admin", "compliance"],
     showInMobile: true,
   },
+  {
+    label: "Audit Logs",
+    href: "/admin/audit-logs",
+    icon: ScrollText,
+    roles: ["admin", "compliance"],
+    showInMobile: false,
+  },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
+  "/admin": "Dashboard",
   "/admin/kyc": "KYC Submissions",
   "/admin/blacklist": "Blacklist Manager",
   "/admin/users": "Users",
   "/admin/transactions": "Transactions",
+  "/admin/audit-logs": "Audit Logs",
 };
 
 function getPageTitle(pathname: string): string {
@@ -262,7 +280,7 @@ export default function AdminLayout({
     <>
       {/* Brand header */}
       <div className="border-b px-4 py-4">
-        <Link className="flex items-center gap-2.5" href="/admin/kyc">
+        <Link className="flex items-center gap-2.5" href="/admin">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary">
             <span className="font-bold text-lg text-primary-foreground leading-none">
               1
@@ -280,7 +298,10 @@ export default function AdminLayout({
       {/* Navigation */}
       <nav className="flex flex-1 flex-col gap-1 p-2">
         {visibleNav.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive =
+            item.href === "/admin"
+              ? pathname === "/admin"
+              : pathname.startsWith(item.href);
           return (
             <Link
               className={cn(
@@ -351,7 +372,7 @@ export default function AdminLayout({
           </Button>
 
           {/* Mobile brand */}
-          <Link className="flex items-center gap-2 md:hidden" href="/admin/kyc">
+          <Link className="flex items-center gap-2 md:hidden" href="/admin">
             <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary">
               <span className="font-bold text-primary-foreground text-sm leading-none">
                 1
@@ -387,7 +408,10 @@ export default function AdminLayout({
         {/* Mobile bottom nav */}
         <nav className="fixed right-0 bottom-0 left-0 z-50 flex border-t bg-background md:hidden">
           {mobileNav.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const isActive =
+              item.href === "/admin"
+                ? pathname === "/admin"
+                : pathname.startsWith(item.href);
             return (
               <Link
                 className={cn(
