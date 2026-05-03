@@ -17,6 +17,7 @@
  *   admin.users   — admin user management
  */
 
+import { listAuditLogs } from "./procedures/admin-audit-logs";
 import {
   addToBlacklist,
   listBlacklist,
@@ -29,6 +30,7 @@ import {
   listKycSubmissions,
   rejectKyc,
 } from "./procedures/admin-kyc";
+import { getAdminMetricsSummary } from "./procedures/admin-metrics";
 import {
   getAdminTransaction,
   listAdminTransactions,
@@ -99,6 +101,8 @@ export const appRouter = {
       suspend: suspendUser,
       restore: restoreUser,
     },
+    metrics: { getSummary: getAdminMetricsSummary },
+    auditLogs: { list: listAuditLogs },
   },
 };
 
