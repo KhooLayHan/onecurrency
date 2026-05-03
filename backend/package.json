@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1038.0",
+    "@onecurrency/transactional": "workspace:*",
     "@aws-sdk/s3-request-presigner": "^3.1038.0",
     "@hono/standard-validator": "^0.2.2",
     "@neondatabase/serverless": "^1.0.2",
