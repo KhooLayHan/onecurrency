@@ -104,12 +104,12 @@ export const auth = betterAuth({
   advanced: {
     crossSubDomainCookies: {
       enabled: true,
-      domain: ".onecurrency.tech",
+      domain: env.NODE_ENV === "production" ? ".onecurrency.tech" : undefined,
     },
 
     // Ensure cookies are marked Secure and SameSite=None for cross-origin requests
-    cookiePrefix: "onecurrency", // Optional: names your cookies clearly
-    useSecureCookies: true,
+    cookiePrefix: env.NODE_ENV === "production" ? "onecurrency" : undefined, // Optional: names your cookies clearly
+    useSecureCookies: env.NODE_ENV === "production",
 
     ipAddress: {
       ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip"],
