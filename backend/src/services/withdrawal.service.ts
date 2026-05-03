@@ -22,7 +22,8 @@ import { BlockchainTransactionRepository } from "../repositories/blockchain-tran
 import { UserRepository } from "../repositories/user.repository";
 import { WalletRepository } from "../repositories/wallet.repository";
 import { WithdrawalRepository } from "../repositories/withdrawal.repository";
-import { burnTokens, getOnChainBalance } from "./blockchain";
+import { getOnChainBalance } from "./blockchain/balance";
+import { burnTokens } from "./blockchain/burn";
 import {
   addBankAccount,
   calculateTokenAmountWei,

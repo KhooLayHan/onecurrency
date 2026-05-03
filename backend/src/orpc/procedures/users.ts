@@ -1,3 +1,19 @@
+/**
+ * Core user procedures.
+ *
+ * Handles user identity and wallet operations that are not specific to KYC:
+ *
+ * - `getPrimaryWallet` — returns the authenticated user's primary custodial
+ *                        wallet address and its associated network info.
+ * - `findRecipient`    — looks up a user by email for the transfer recipient
+ *                        preview step. Collapses "not found" and "self" cases
+ *                        into a single generic error to avoid user enumeration.
+ * - `getMyRoles`       — returns the list of role names assigned to the
+ *                        current user (e.g. "admin", "user").
+ *
+ * KYC-related procedures live in `users-kyc.ts`.
+ * All procedures require an authenticated session via `requireAuth`.
+ */
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import z from "zod";
@@ -5,60 +21,28 @@ import { db } from "@/src/db";
 import { roles } from "@/src/db/schema/roles";
 import { userRoles } from "@/src/db/schema/user-roles";
 import { logger } from "@/src/lib/logger";
-import { KycRepository } from "@/src/repositories/kyc.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
-import {
-  checkObjectExists,
-  generateUploadUrl,
-} from "@/src/services/r2.service";
-import { UserService } from "@/src/services/user.service";
 import { WalletService } from "@/src/services/wallet.service";
 import { base } from "../context";
 import { mapToORPCError } from "../errors";
 import { requireAuth } from "../middleware";
 
-const userService = new UserService(db);
 const walletService = new WalletService(db);
 
-const DOCUMENT_TYPES_REQUIRING_BACK = new Set([
-  "drivers_license",
-  "national_id",
-]);
-
-// Zod schema for KYC submission (matches KycFormData from frontend)
-const kycSubmissionInputSchema = z
-  .object({
-    fullName: z.string().min(1, "Full name is required"),
-    dateOfBirth: z.coerce.date(),
-    nationality: z
-      .string()
-      .length(2, "Nationality must be a 2-letter ISO code"),
-    documentType: z.enum(["passport", "drivers_license", "national_id"]),
-    documentFrontKey: z.string().min(1, "Front document is required"),
-    documentBackKey: z.string().default(""),
-    selfieKey: z.string().min(1, "Selfie is required"),
-  })
-  .superRefine((data, ctx) => {
-    if (
-      DOCUMENT_TYPES_REQUIRING_BACK.has(data.documentType) &&
-      !data.documentBackKey
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["documentBackKey"],
-        message: "Back of document is required for this document type",
-      });
-    }
-  });
-
+/**
+ * Returns the authenticated user's primary custodial wallet.
+ *
+ * The wallet address is needed by the frontend to read the on-chain token
+ * balance directly from the contract without a server round-trip.
+ *
+ * @auth   requireAuth
+ * @output walletId  - Internal wallet identifier (stringified bigint).
+ * @output address   - The wallet's Ethereum address.
+ * @output networkId - Database ID of the associated network record.
+ * @output chainId   - Numeric EVM chain ID (e.g. 1337 for Hardhat, 11155111 for Sepolia).
+ */
 export const getPrimaryWallet = base
   .use(requireAuth)
-  // .route({
-  //   method: "GET",
-  //   // path: "/users/wallet",
-  //   summary: "Get the authenticated user's primary wallet",
-  //   tags: ["Users"],
-  // })
   .output(
     z.object({
       walletId: z.string(),
@@ -75,10 +59,12 @@ export const getPrimaryWallet = base
         message: "Authentication required",
       });
     }
+
     const result = await walletService.getUserPrimaryWallet(BigInt(userId));
     if (result.isErr()) {
       throw mapToORPCError(result.error);
     }
+
     const { walletId, address, networkId, chainId } = result.value;
     logger.info({ userId, chainId }, "User primary wallet fetched");
     return {
@@ -89,132 +75,16 @@ export const getPrimaryWallet = base
     };
   });
 
-export const submitKyc = base
-  .use(requireAuth)
-  .route({
-    method: "POST",
-    // path: "/users/kyc/submit",
-    summary: "Submit KYC identity verification request",
-    description:
-      "Submits KYC form data and sets user status to PENDING. Documents will be reviewed within 1-2 business days.",
-    tags: ["Users"],
-  })
-  .input(kycSubmissionInputSchema)
-  .output(z.object({ message: z.string() }))
-  .handler(async ({ context, input }) => {
-    const userId = context.session?.userId;
-
-    logger.info(
-      {
-        input,
-        dateOfBirthType: typeof input.dateOfBirth,
-        dateOfBirthValue: input.dateOfBirth,
-      },
-      "submitKyc received raw input"
-    );
-
-    logger.info({ context }, "submitKyc received input");
-    logger.info({ userId }, "submitKyc received input");
-    logger.info({ input }, "submitKyc received input");
-    if (!userId) {
-      logger.warn("submitKyc called without authenticated session");
-      throw new ORPCError("UNAUTHORIZED", {
-        message: "Authentication required",
-      });
-    }
-
-    const EXPECTED_PREFIXES = {
-      documentFrontKey: `kyc/documents/front/${userId}/`,
-      documentBackKey: `kyc/documents/back/${userId}/`,
-      selfieKey: `kyc/selfies/${userId}/`,
-    } as const;
-
-    const keysToValidate = [
-      {
-        key: input.documentFrontKey,
-        field: "documentFrontKey",
-        prefix: EXPECTED_PREFIXES.documentFrontKey,
-      },
-      {
-        key: input.selfieKey,
-        field: "selfieKey",
-        prefix: EXPECTED_PREFIXES.selfieKey,
-      },
-      ...(input.documentBackKey
-        ? [
-            {
-              key: input.documentBackKey,
-              field: "documentBackKey",
-              prefix: EXPECTED_PREFIXES.documentBackKey,
-            },
-          ]
-        : []),
-    ];
-
-    for (const { key, field, prefix } of keysToValidate) {
-      if (!key.startsWith(prefix)) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: `Invalid storage key for ${field}`,
-        });
-      }
-    }
-
-    const existenceChecks = await Promise.all(
-      keysToValidate.map(({ key }) => checkObjectExists(key))
-    );
-    if (existenceChecks.some((exists) => !exists)) {
-      throw new ORPCError("BAD_REQUEST", {
-        message:
-          "One or more document files could not be found. Please re-upload and try again.",
-      });
-    }
-
-    const result = await userService.submitKyc(BigInt(userId), {
-      fullName: input.fullName,
-      dateOfBirth: new Date(input.dateOfBirth),
-      nationality: input.nationality,
-      documentType: input.documentType,
-      documentFrontKey: input.documentFrontKey,
-      documentBackKey: input.documentBackKey,
-      selfieKey: input.selfieKey,
-    });
-    if (result.isErr()) {
-      logger.info({ context }, "submitKyc received input here failed");
-      throw mapToORPCError(result.error);
-    }
-    logger.info("User successfully submitted KYC request");
-    return result.value;
-  });
-
-export const simulateKyc = base
-  .use(requireAuth)
-  .route({
-    method: "POST",
-    path: "/users/kyc/simulate",
-    summary: "Simulate KYC identity verification",
-    tags: ["Users"],
-  })
-  .output(z.object({ message: z.string() }))
-  .handler(async ({ context }) => {
-    const userId = context.session?.userId;
-
-    // Explicit auth check (requireAuth middleware should already enforce this,
-    // but we validate again to fail fast with clear error)
-    if (!userId) {
-      logger.warn("simulateKyc called without authenticated session");
-      throw new ORPCError("UNAUTHORIZED", {
-        message: "Authentication required",
-      });
-    }
-
-    const result = await userService.simulateKyc(BigInt(userId));
-    if (result.isErr()) {
-      throw mapToORPCError(result.error);
-    }
-    logger.info({ userId }, "User successfully completed KYC simulation");
-    return result.value;
-  });
-
+/**
+ * Looks up a user by email address for the send-money recipient preview step.
+ *
+ * Both "user not found" and "user is yourself" cases are collapsed into a
+ * single `NOT_FOUND` error to prevent user enumeration via the API.
+ *
+ * @auth   requireAuth
+ * @input  email - The email address to look up.
+ * @output name  - Display name of the found recipient.
+ */
 export const findRecipient = base
   .use(requireAuth)
   .route({
@@ -240,6 +110,9 @@ export const findRecipient = base
     }
 
     const recipient = result.value;
+
+    // Generic error used for both "not found" and "self-transfer" to avoid
+    // leaking information about which emails are registered in the system.
     const NO_ELIGIBLE_RECIPIENT = new ORPCError("NOT_FOUND", {
       message: "No eligible recipient found for this email.",
     });
@@ -264,72 +137,15 @@ export const findRecipient = base
     return { name: recipient.name };
   });
 
-const FILE_TYPE_TO_PREFIX: Record<string, string> = {
-  front: "kyc/documents/front",
-  back: "kyc/documents/back",
-  selfie: "kyc/selfies",
-};
-
-export const getKycUploadUrl = base
-  .use(requireAuth)
-  .input(
-    z
-      .object({
-        fileType: z.enum(["front", "back", "selfie"]),
-        contentType: z
-          .string()
-          .regex(/^(image\/(jpeg|png|webp|heic)|application\/pdf)$/),
-      })
-      .superRefine(({ fileType, contentType }, ctx) => {
-        if (fileType === "selfie" && contentType === "application/pdf") {
-          ctx.addIssue({
-            code: "custom",
-            path: ["contentType"],
-            message: "Selfie uploads must use an image content type",
-          });
-        }
-      })
-  )
-  .output(z.object({ uploadUrl: z.string(), key: z.string() }))
-  .handler(async ({ context, input }) => {
-    const userId = context.session.userId;
-    const CONTENT_TYPE_TO_EXT: Record<string, string> = {
-      "image/jpeg": "jpg",
-      "image/png": "png",
-      "image/webp": "webp",
-      "image/heic": "heic",
-      "application/pdf": "pdf",
-    };
-    const ext = CONTENT_TYPE_TO_EXT[input.contentType] ?? "bin";
-    const key = `${FILE_TYPE_TO_PREFIX[input.fileType]}/${userId}/${Date.now()}.${ext}`;
-    const uploadUrl = await generateUploadUrl(key, input.contentType);
-    return { uploadUrl, key };
-  });
-
-export const getLatestKycSubmission = base
-  .use(requireAuth)
-  .output(
-    z
-      .object({
-        rejectionReason: z.string().nullable(),
-      })
-      .nullable()
-  )
-  .handler(async ({ context }) => {
-    const userId = context.session.userId;
-    const result = await new KycRepository(db).findLatestByUserId(
-      BigInt(userId)
-    );
-    if (result.isErr()) {
-      throw new Error(result.error.message);
-    }
-    const submission = result.value;
-    if (!submission) {
-      return null;
-    }
-    return { rejectionReason: submission.rejectionReason ?? null };
-  });
-
+/**
+ * Returns the role names assigned to the currently authenticated user.
+ *
+ * Used by the frontend to conditionally show admin navigation and gate
+ * access to admin-only routes without a separate permission check endpoint.
+ *
+ * @auth   requireAuth
+ * @output Array of role name strings (e.g. ["user", "admin"]).
+ */
 export const getMyRoles = base
   .use(requireAuth)
   .input(z.object({}))

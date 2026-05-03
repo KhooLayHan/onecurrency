@@ -21,7 +21,7 @@ import {
   finalizeWebhookProcessing,
   recordWebhookEvent,
 } from "../routes/deposits/helpers";
-import { mintTokens } from "./blockchain";
+import { mintTokens } from "./blockchain/mint";
 import { calculateTokenAmountWei, stripe } from "./stripe.service";
 
 export class DepositService {

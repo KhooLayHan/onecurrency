@@ -12,7 +12,7 @@ import {
   blacklistAddress,
   seizeAddressTokens,
   unblacklistAddress,
-} from "./blockchain";
+} from "./blockchain/blacklist";
 
 type AddInput = {
   address: string;

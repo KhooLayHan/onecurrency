@@ -1,13 +1,34 @@
+/**
+ * Application router.
+ *
+ * Assembles all oRPC procedures into the `appRouter` object that the
+ * `RPCHandler` in `index.ts` serves. Each key in the router maps directly
+ * to the namespace the frontend RPCLink uses to call procedures.
+ *
+ * Procedures are organised by domain:
+ *   deposits      — add-money / Stripe checkout flows
+ *   users         — wallet info, recipient lookup, role query
+ *   users.kyc     — KYC submission, upload URLs, status queries
+ *   withdrawals   — cash-out initiation and history
+ *   transfers     — P2P send and history
+ *   admin.kyc     — KYC review (list, approve, reject)
+ *   admin.blacklist — on-chain blacklist management
+ *   admin.transactions — admin transaction list and detail
+ *   admin.users   — admin user management
+ */
+
 import {
   addToBlacklist,
-  approveKyc,
-  getKycSubmission,
   listBlacklist,
-  listKycSubmissions,
-  rejectKyc,
   removeFromBlacklist,
   seizeTokens,
-} from "./procedures/admin";
+} from "./procedures/admin-blacklist";
+import {
+  approveKyc,
+  getKycSubmission,
+  listKycSubmissions,
+  rejectKyc,
+} from "./procedures/admin-kyc";
 import {
   getAdminTransaction,
   listAdminTransactions,
@@ -27,13 +48,15 @@ import {
 import { getHistory as getTransferHistory, send } from "./procedures/transfers";
 import {
   findRecipient,
-  getKycUploadUrl,
-  getLatestKycSubmission,
   getMyRoles,
   getPrimaryWallet,
+} from "./procedures/users";
+import {
+  getKycUploadUrl,
+  getLatestKycSubmission,
   simulateKyc,
   submitKyc,
-} from "./procedures/users";
+} from "./procedures/users-kyc";
 import {
   getHistory as getWithdrawalHistory,
   initiate,
@@ -42,13 +65,13 @@ import {
 export const appRouter = {
   deposits: { testMint, checkout, getHistory: getDepositHistory },
   users: {
-    submitKyc,
-    simulateKyc,
     getPrimaryWallet,
     findRecipient,
+    getMyRoles,
+    submitKyc,
+    simulateKyc,
     getKycUploadUrl,
     getLatestKycSubmission,
-    getMyRoles,
   },
   withdrawals: { initiate, getHistory: getWithdrawalHistory },
   transfers: { send, getHistory: getTransferHistory },

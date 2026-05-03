@@ -1,3 +1,18 @@
+/**
+ * Admin user management procedures.
+ *
+ * Exposes five oRPC procedures for the admin user management UI:
+ *
+ * - `listAdminUsers`         — paginated, filterable user list.
+ * - `getAdminUser`           — full profile for a single user.
+ * - `updateUserDepositLimit` — adjusts a user's per-deposit spending cap.
+ * - `suspendUser`            — soft-deletes the account and invalidates all sessions.
+ * - `restoreUser`            — reinstates a previously suspended account.
+ *
+ * All procedures require the appropriate `user:*` permission enforced by the
+ * `requirePermission` middleware. Mutations are recorded in the audit log via
+ * `AuditService`.
+ */
 import { ORPCError } from "@orpc/server";
 import {
   and,
@@ -22,11 +37,16 @@ import { requirePermission } from "../middleware";
 
 const auditService = new AuditService(db);
 
+/** Default page size for the admin user list. */
 const ADMIN_USERS_PAGE_SIZE = 20;
+
+/** Maximum valid KYC status ID — used to bound the filter input. */
 const MAX_KYC_STATUS_ID = 5;
 
-// ─── Shared output schemas ──────────────────────────────────────────────────
-
+/**
+ * Output schema for a single row in the admin user list.
+ * Contains summary fields suitable for a table view.
+ */
 const adminUserListItemSchema = z.object({
   publicId: z.string(),
   name: z.string(),
@@ -38,6 +58,11 @@ const adminUserListItemSchema = z.object({
   deletedAt: z.date().nullable(),
 });
 
+/**
+ * Output schema for the admin user detail view.
+ * Extends the list schema with fields that are expensive to compute at
+ * list scale (e.g. `emailVerified`, `kycVerifiedAt`, `updatedAt`).
+ */
 const adminUserDetailSchema = z.object({
   publicId: z.string(),
   name: z.string(),
@@ -52,8 +77,16 @@ const adminUserDetailSchema = z.object({
   deletedAt: z.date().nullable(),
 });
 
-// ─── Helper: batch-fetch roles for a list of user IDs ──────────────────────
-
+/**
+ * Batch-fetches role names for a list of user IDs in a single query and
+ * returns a `Map<userId, roleNames[]>` keyed by stringified user ID.
+ *
+ * Returning an empty map immediately when `userIds` is empty avoids an
+ * unnecessary DB round-trip on pages with no results.
+ *
+ * @param userIds - Array of bigint user primary keys to fetch roles for.
+ * @returns Map from user ID string to the list of role names assigned to that user.
+ */
 async function fetchRolesForUsers(
   userIds: bigint[]
 ): Promise<Map<string, string[]>> {
@@ -79,8 +112,16 @@ async function fetchRolesForUsers(
   return map;
 }
 
-// ─── Helper: find user by publicId or throw NOT_FOUND ───────────────────
-
+/**
+ * Fetches a single user row by its public UUID or throws a `NOT_FOUND` error.
+ *
+ * Used as a shared guard by all mutation procedures to ensure the target user
+ * exists before attempting any update.
+ *
+ * @param publicId - The user's UUID public identifier.
+ * @returns The full Drizzle user row.
+ * @throws `ORPCError("NOT_FOUND")` when no user matches the given public ID.
+ */
 async function findUserByPublicId(publicId: string) {
   const [user] = await db
     .select()
@@ -94,8 +135,21 @@ async function findUserByPublicId(publicId: string) {
   return user;
 }
 
-// ─── listAdminUsers ────────────────────────────────────────────────────────
-
+/**
+ * Returns a paginated list of users, optionally filtered by name/email search,
+ * KYC status, or assigned role.
+ *
+ * When a `role` filter is provided, the procedure first resolves the matching
+ * user IDs via a sub-query and returns an empty result immediately if none
+ * exist, avoiding a full-table scan.
+ *
+ * @permission user:list
+ * @input  page       - 1-based page number (default 1).
+ * @input  search     - Optional text search matched against user name and email.
+ * @input  kycStatusId - Optional KYC status ID to filter by (1–5).
+ * @input  role       - Optional role name to filter by (e.g. "admin").
+ * @output Paginated list of `adminUserListItemSchema` rows with role arrays.
+ */
 export const listAdminUsers = base
   .use(requirePermission("user:list"))
   .input(
@@ -193,8 +247,13 @@ export const listAdminUsers = base
     };
   });
 
-// ─── getAdminUser ───────────────────────────────────────────────────────────
-
+/**
+ * Returns the full profile of a single user including their role assignments.
+ *
+ * @permission user:read
+ * @input  publicId - UUID of the user to retrieve.
+ * @output Full `adminUserDetailSchema` row.
+ */
 export const getAdminUser = base
   .use(requirePermission("user:read"))
   .input(z.object({ publicId: z.uuid() }))
@@ -222,8 +281,16 @@ export const getAdminUser = base
     };
   });
 
-// ─── updateUserDepositLimit ────────────────────────────────────────────────
-
+/**
+ * Updates the maximum single-deposit amount allowed for a user.
+ *
+ * The old and new limit values are recorded in the audit log for compliance.
+ *
+ * @permission user:write
+ * @input  publicId           - UUID of the user to update.
+ * @input  depositLimitCents  - New limit in cents (must be ≥ 0).
+ * @output Confirmation message.
+ */
 export const updateUserDepositLimit = base
   .use(requirePermission("user:write"))
   .input(
@@ -264,8 +331,17 @@ export const updateUserDepositLimit = base
     return { message: "Deposit limit updated successfully" };
   });
 
-// ─── suspendUser ────────────────────────────────────────────────────────────
-
+/**
+ * Suspends a user account by setting `deletedAt` to the current timestamp
+ * and immediately invalidating all of their active sessions.
+ *
+ * Returns `BAD_REQUEST` when the user is already suspended to prevent
+ * double-suspension from creating a misleading audit trail.
+ *
+ * @permission user:write
+ * @input  publicId - UUID of the user to suspend.
+ * @output Confirmation message.
+ */
 export const suspendUser = base
   .use(requirePermission("user:write"))
   .input(z.object({ publicId: z.uuid() }))
@@ -305,8 +381,16 @@ export const suspendUser = base
     return { message: "User suspended and sessions invalidated" };
   });
 
-// ─── restoreUser ────────────────────────────────────────────────────────────
-
+/**
+ * Restores a previously suspended user account by clearing `deletedAt`.
+ *
+ * Returns `BAD_REQUEST` when the user is not currently suspended to prevent
+ * no-op writes from creating a misleading audit trail.
+ *
+ * @permission user:write
+ * @input  publicId - UUID of the user to restore.
+ * @output Confirmation message.
+ */
 export const restoreUser = base
   .use(requirePermission("user:write"))
   .input(z.object({ publicId: z.uuid() }))

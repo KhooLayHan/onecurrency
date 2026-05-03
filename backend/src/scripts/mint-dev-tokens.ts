@@ -12,7 +12,8 @@ import { db, pool } from "../db";
 import { users } from "../db/schema/users";
 import { wallets } from "../db/schema/wallets";
 import { logger } from "../lib/logger";
-import { mintTokens, walletClient } from "../services/blockchain";
+import { getOperatorAccount } from "../services/blockchain/client";
+import { mintTokens } from "../services/blockchain/mint";
 
 const DEFAULT_MINT_AMOUNT_USD = 1000;
 const TOKEN_DECIMALS = 18;
@@ -37,6 +38,7 @@ function usdToWei(amountUsd: number): string {
 }
 
 async function fundWalletWithEth(address: string): Promise<string> {
+  const { walletClient } = getOperatorAccount();
   const txHash = await walletClient.sendTransaction({
     to: address as `0x${string}`,
     value: parseEther(ETH_FUND_AMOUNT),
