@@ -1,0 +1,1 @@
+ALTER TABLE "blacklisted_addresses" ADD COLUMN "seized_at" timestamp with time zone;

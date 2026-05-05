@@ -68,6 +68,7 @@ export class BlacklistRepository {
             addedByUserId: blacklistedAddresses.addedByUserId,
             createdAt: blacklistedAddresses.createdAt,
             expiresAt: blacklistedAddresses.expiresAt,
+            seizedAt: blacklistedAddresses.seizedAt,
             networkName: networks.name,
             addedByName: users.name,
           })
@@ -158,6 +159,21 @@ export class BlacklistRepository {
       })(),
       (e): InternalError =>
         new InternalError("Failed to delete blacklist entry", { cause: e })
+    );
+  }
+
+  markSeized(publicId: string): ResultAsync<void, InternalError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        await this.db
+          .update(blacklistedAddresses)
+          .set({ seizedAt: new Date() })
+          .where(eq(blacklistedAddresses.publicId, publicId));
+      })(),
+      (e): InternalError =>
+        new InternalError("Failed to mark blacklist entry as seized", {
+          cause: e,
+        })
     );
   }
 }

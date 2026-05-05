@@ -120,6 +120,7 @@ export class BlacklistService {
       }
       return (
         seizeAddressTokens(entry.address, treasuryAddress)
+          .andThen((txHash) => repo.markSeized(publicId).map(() => txHash))
           // biome-ignore lint/suspicious/useIterableCallbackReturn: neverthrow ResultAsync.map for fire-and-forget audit; void return is intentional
           .map((txHash) => {
             auditService

@@ -71,7 +71,7 @@ export class ContractCallRevertedError extends AppError {
   ) {
     super(
       decodedReason
-        ? `Contract method '${method}' reverted: ${decodedReason}.`
+        ? `Contract method reverted: ${decodedReason}.`
         : `Contract method '${method}' reverted with unknown error.`,
       {
         ...options,
