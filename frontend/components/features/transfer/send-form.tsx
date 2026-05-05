@@ -28,6 +28,14 @@ import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 
 const CENTS_PER_DOLLAR = 100;
+
+function getErrorMessage(e: unknown): string {
+  if (typeof e === "string") {
+    return e;
+  }
+  const err = e as { message?: string };
+  return err.message ?? String(e);
+}
 const NOTE_MAX_LENGTH = 140;
 const RECIPIENT_LOOKUP_DEBOUNCE_MS = 600;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -247,7 +255,7 @@ export function SendForm() {
             </div>
             {field.state.meta.errors.length > 0 && (
               <p className="font-medium text-destructive text-sm">
-                {field.state.meta.errors.join(", ")}
+                {field.state.meta.errors.map(getErrorMessage).join(", ")}
               </p>
             )}
           </div>
