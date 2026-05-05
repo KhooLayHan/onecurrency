@@ -1,14 +1,17 @@
+/** @jsxImportSource react */
 import { Button, Hr, Preview, Text } from "react-email";
 import { EmailLayout } from "./layout";
 
-export type DepositFailedEmailProps = {
+export type WithdrawalInitiatedEmailProps = {
   name: string;
   amountCents: number;
-  depositId: string;
+  withdrawalId: string;
   dashboardUrl: string;
 };
 
 const CENTS_PER_DOLLAR = 100;
+const PAYOUT_BUSINESS_DAYS_MIN = 1;
+const PAYOUT_BUSINESS_DAYS_MAX = 3;
 
 function formatUsd(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -17,62 +20,47 @@ function formatUsd(cents: number): string {
   }).format(cents / CENTS_PER_DOLLAR);
 }
 
-export function DepositFailedEmail({
+export function WithdrawalInitiatedEmail({
   name,
   amountCents,
-  depositId,
+  withdrawalId,
   dashboardUrl,
-}: DepositFailedEmailProps) {
+}: WithdrawalInitiatedEmailProps) {
   return (
     <EmailLayout
-      preview={`We couldn't add ${formatUsd(amountCents)} to your account`}
+      preview={`Your cash out of ${formatUsd(amountCents)} is on its way`}
     >
-      <Preview>{`There was a problem adding ${formatUsd(amountCents)} to your OneCurrency account`}</Preview>
-
-      {/* Status indicator */}
-      <Text className="m-0 mb-4 text-center text-4xl">✕</Text>
-      <Text className="m-0 mb-6 text-center font-semibold text-red-500 text-sm uppercase tracking-wide">
-        Add Money Failed
+      <Preview>{`Your ${formatUsd(amountCents)} cash out is being processed`}</Preview>
+      <Text className="m-0 mb-4 text-center text-4xl">⟳</Text>
+      <Text className="m-0 mb-6 text-center font-semibold text-blue-600 text-sm uppercase tracking-wide">
+        Cash Out Processing
       </Text>
-
-      {/* Amount */}
       <Text className="m-0 mb-2 text-center font-bold text-4xl text-slate-900 tabular-nums">
         {formatUsd(amountCents)}
       </Text>
       <Text className="m-0 mb-8 text-center text-slate-500 text-sm">
-        Was not added to your account
+        On its way to your bank account
       </Text>
-
       <Hr className="my-6 border-slate-200" />
-
-      {/* Message */}
       <Text className="m-0 mb-2 text-base text-slate-900">Hi {name},</Text>
       <Text className="m-0 mb-2 text-base text-slate-700">
-        Your payment was charged, but we encountered a problem crediting your
-        account. Your balance has not been updated.
+        Your cash out is being processed. Funds typically arrive within{" "}
+        {PAYOUT_BUSINESS_DAYS_MIN}–{PAYOUT_BUSINESS_DAYS_MAX} business days
+        depending on your bank.
       </Text>
       <Text className="m-0 mb-6 text-base text-slate-700">
-        Please contact our support team at{" "}
-        <a href="mailto:support@onecurrency.tech">support@onecurrency.tech</a>{" "}
-        for assistance or to request a refund.
+        You can track the status of your cash out from your account at any time.
       </Text>
-
-      {/* CTA */}
       <Button
         className="inline-block rounded-lg bg-blue-600 px-6 py-3 font-semibold text-sm text-white no-underline"
         href={dashboardUrl}
       >
-        Try Again
+        View Account
       </Button>
-
       <Hr className="my-6 border-slate-200" />
-
-      {/* Reference */}
       <Text className="m-0 text-slate-400 text-xs">
-        Receipt reference: {depositId}
+        Receipt reference: {withdrawalId}
       </Text>
     </EmailLayout>
   );
 }
-
-export default DepositFailedEmail;

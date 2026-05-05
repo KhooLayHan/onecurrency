@@ -1,10 +1,10 @@
+import { Resend } from "resend";
 import {
   renderDepositFailed,
   renderDepositSuccess,
   renderWithdrawalFailed,
   renderWithdrawalInitiated,
-} from "@onecurrency/transactional";
-import { Resend } from "resend";
+} from "../emails";
 import { env } from "../env";
 import { logger } from "./logger";
 

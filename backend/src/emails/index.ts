@@ -1,14 +1,14 @@
 import { render } from "@react-email/render";
 import React from "react";
-import { DepositFailedEmail } from "./emails/deposit-failed";
-import { DepositSuccessEmail } from "./emails/deposit-success";
-import { WithdrawalFailedEmail } from "./emails/withdrawal-failed";
-import { WithdrawalInitiatedEmail } from "./emails/withdrawal-initiated";
+import { DepositFailedEmail } from "./deposit-failed";
+import { DepositSuccessEmail } from "./deposit-success";
+import { WithdrawalFailedEmail } from "./withdrawal-failed";
+import { WithdrawalInitiatedEmail } from "./withdrawal-initiated";
 
-export type { DepositFailedEmailProps } from "./emails/deposit-failed";
-export type { DepositSuccessEmailProps } from "./emails/deposit-success";
-export type { WithdrawalFailedEmailProps } from "./emails/withdrawal-failed";
-export type { WithdrawalInitiatedEmailProps } from "./emails/withdrawal-initiated";
+export type { DepositFailedEmailProps } from "./deposit-failed";
+export type { DepositSuccessEmailProps } from "./deposit-success";
+export type { WithdrawalFailedEmailProps } from "./withdrawal-failed";
+export type { WithdrawalInitiatedEmailProps } from "./withdrawal-initiated";
 
 export function renderDepositSuccess(
   props: React.ComponentProps<typeof DepositSuccessEmail>
