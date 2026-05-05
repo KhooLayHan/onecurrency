@@ -43,8 +43,12 @@ const BLACKLIST_REASON_MIN_LENGTH = 5;
 const TREASURY_ADDRESS: `0x${string}` | null =
   (env.TREASURY_ADDRESS as `0x${string}`) ?? null;
 
-// Validate at module load: the treasury must never be the same wallet
-// as the operator to prevent accidental self-seizure.
+/**
+ * Module-load safety check: asserts that the configured treasury address is
+ * never the same wallet as the operator (relayer) account derived from
+ * `SEPOLIA_PRIVATE_KEY`. Running at import time means a misconfiguration is
+ * caught at startup rather than at the point of an irreversible seize call.
+ */
 if (TREASURY_ADDRESS && env.SEPOLIA_PRIVATE_KEY) {
   const operatorAddress = privateKeyToAccount(
     (env.SEPOLIA_PRIVATE_KEY.startsWith("0x")

@@ -31,6 +31,7 @@ import { mapToORPCError } from "../errors";
 import { requireAuth } from "../middleware";
 
 const userService = new UserService(db);
+const kycRepository = new KycRepository(db);
 
 /**
  * Document types that legally require a photograph of both sides.
@@ -49,6 +50,18 @@ const FILE_TYPE_TO_PREFIX: Record<string, string> = {
   front: "kyc/documents/front",
   back: "kyc/documents/back",
   selfie: "kyc/selfies",
+};
+
+/**
+ * Maps MIME content-type strings to their corresponding file extensions.
+ * Used when constructing the R2 object key for a new upload.
+ */
+const CONTENT_TYPE_TO_EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/heic": "heic",
+  "application/pdf": "pdf",
 };
 
 /**
@@ -80,6 +93,52 @@ const kycSubmissionInputSchema = z
       });
     }
   });
+
+/** Input shape inferred from `kycSubmissionInputSchema` for use in helpers. */
+type KycSubmissionInput = z.infer<typeof kycSubmissionInputSchema>;
+
+/**
+ * Builds the list of R2 storage key validation entries for a KYC submission.
+ *
+ * Each entry contains the key value, its field name (for error messages), and
+ * the user-scoped path prefix it must start with. Including the `back` key is
+ * conditional: it is only validated when the document type requires a back photo
+ * and a non-empty key was provided.
+ *
+ * Prefix validation prevents a user from referencing another user's uploaded
+ * documents by guessing their storage path.
+ *
+ * @param input  - The validated KYC submission input.
+ * @param userId - The calling user's ID string (from `context.session.userId`).
+ * @returns An array of `{ key, field, prefix }` entries ready for validation.
+ */
+function buildKycKeysToValidate(
+  input: KycSubmissionInput,
+  userId: string
+): Array<{ key: string; field: string; prefix: string }> {
+  const entries: Array<{ key: string; field: string; prefix: string }> = [
+    {
+      key: input.documentFrontKey,
+      field: "documentFrontKey",
+      prefix: `kyc/documents/front/${userId}/`,
+    },
+    {
+      key: input.selfieKey,
+      field: "selfieKey",
+      prefix: `kyc/selfies/${userId}/`,
+    },
+  ];
+
+  if (input.documentBackKey) {
+    entries.push({
+      key: input.documentBackKey,
+      field: "documentBackKey",
+      prefix: `kyc/documents/back/${userId}/`,
+    });
+  }
+
+  return entries;
+}
 
 /**
  * Generates a short-lived pre-signed R2 URL the client can use to upload
@@ -117,15 +176,6 @@ export const getKycUploadUrl = base
   .output(z.object({ uploadUrl: z.string(), key: z.string() }))
   .handler(async ({ context, input }) => {
     const userId = context.session.userId;
-
-    const CONTENT_TYPE_TO_EXT: Record<string, string> = {
-      "image/jpeg": "jpg",
-      "image/png": "png",
-      "image/webp": "webp",
-      "image/heic": "heic",
-      "application/pdf": "pdf",
-    };
-
     const ext = CONTENT_TYPE_TO_EXT[input.contentType] ?? "bin";
     const key = `${FILE_TYPE_TO_PREFIX[input.fileType]}/${userId}/${Date.now()}.${ext}`;
     const uploadUrl = await generateUploadUrl(key, input.contentType);
@@ -171,35 +221,7 @@ export const submitKyc = base
       });
     }
 
-    // Each uploaded key must belong to the requesting user's namespace to
-    // prevent document substitution attacks.
-    const EXPECTED_PREFIXES = {
-      documentFrontKey: `kyc/documents/front/${userId}/`,
-      documentBackKey: `kyc/documents/back/${userId}/`,
-      selfieKey: `kyc/selfies/${userId}/`,
-    } as const;
-
-    const keysToValidate = [
-      {
-        key: input.documentFrontKey,
-        field: "documentFrontKey",
-        prefix: EXPECTED_PREFIXES.documentFrontKey,
-      },
-      {
-        key: input.selfieKey,
-        field: "selfieKey",
-        prefix: EXPECTED_PREFIXES.selfieKey,
-      },
-      ...(input.documentBackKey
-        ? [
-            {
-              key: input.documentBackKey,
-              field: "documentBackKey",
-              prefix: EXPECTED_PREFIXES.documentBackKey,
-            },
-          ]
-        : []),
-    ];
+    const keysToValidate = buildKycKeysToValidate(input, userId);
 
     for (const { key, field, prefix } of keysToValidate) {
       if (!key.startsWith(prefix)) {
@@ -303,9 +325,7 @@ export const getLatestKycSubmission = base
   )
   .handler(async ({ context }) => {
     const userId = context.session.userId;
-    const result = await new KycRepository(db).findLatestByUserId(
-      BigInt(userId)
-    );
+    const result = await kycRepository.findLatestByUserId(BigInt(userId));
     if (result.isErr()) {
       throw mapToORPCError(result.error);
     }

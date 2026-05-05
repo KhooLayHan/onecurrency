@@ -48,6 +48,61 @@ const auditLogItemSchema = z.object({
 });
 
 /**
+ * Builds the Drizzle `SQL` condition array for the `listAuditLogs` query based
+ * on the provided filter inputs.
+ *
+ * Returns `undefined` when no filters are active so callers can pass it
+ * directly to `.where()` without a special-case branch.
+ *
+ * @param input - The validated procedure input.
+ * @returns A non-empty `SQL[]`, or `undefined` when no filters are set.
+ */
+function buildAuditLogConditions(
+  input: {
+    search?: string;
+    action?: string;
+    entityType?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }
+): SQL[] | undefined {
+  const conditions: SQL[] = [];
+
+  if (input.search) {
+    const term = `%${input.search}%`;
+    conditions.push(
+      or(
+        ilike(auditLogs.action, term),
+        ilike(auditLogs.entityType, term),
+        ilike(users.name, term),
+        ilike(users.email, term)
+      ) as SQL
+    );
+  }
+  if (input.action) {
+    conditions.push(eq(auditLogs.action, input.action));
+  }
+  if (input.entityType) {
+    conditions.push(eq(auditLogs.entityType, input.entityType));
+  }
+  if (input.dateFrom) {
+    conditions.push(gte(auditLogs.createdAt, new Date(input.dateFrom)));
+  }
+  if (input.dateTo) {
+    const end = new Date(input.dateTo);
+    end.setUTCHours(
+      END_OF_DAY_HOURS,
+      END_OF_DAY_MINUTES,
+      END_OF_DAY_SECONDS,
+      END_OF_DAY_MS
+    );
+    conditions.push(lte(auditLogs.createdAt, end));
+  }
+
+  return conditions.length > 0 ? conditions : undefined;
+}
+
+/**
  * Returns a paginated list of audit log entries, newest first.
  *
  * Supports filtering by free-text search (actor name/email, action,
@@ -77,40 +132,9 @@ export const listAuditLogs = base
   )
   .handler(async ({ input }) => {
     const offset = (input.page - 1) * AUDIT_LOGS_PAGE_SIZE;
-    const conditions: SQL[] = [];
 
-    if (input.search) {
-      const term = `%${input.search}%`;
-      conditions.push(
-        or(
-          ilike(auditLogs.action, term),
-          ilike(auditLogs.entityType, term),
-          ilike(users.name, term),
-          ilike(users.email, term)
-        ) as SQL
-      );
-    }
-    if (input.action) {
-      conditions.push(eq(auditLogs.action, input.action));
-    }
-    if (input.entityType) {
-      conditions.push(eq(auditLogs.entityType, input.entityType));
-    }
-    if (input.dateFrom) {
-      conditions.push(gte(auditLogs.createdAt, new Date(input.dateFrom)));
-    }
-    if (input.dateTo) {
-      const end = new Date(input.dateTo);
-      end.setUTCHours(
-        END_OF_DAY_HOURS,
-        END_OF_DAY_MINUTES,
-        END_OF_DAY_SECONDS,
-        END_OF_DAY_MS
-      );
-      conditions.push(lte(auditLogs.createdAt, end));
-    }
-
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const conditionList = buildAuditLogConditions(input);
+    const where = conditionList ? and(...conditionList) : undefined;
 
     const joined = db
       .select({

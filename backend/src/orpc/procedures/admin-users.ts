@@ -260,11 +260,8 @@ export const getAdminUser = base
   .output(adminUserDetailSchema)
   .handler(async ({ input }) => {
     const user = await findUserByPublicId(input.publicId);
-    const userRoleRows = await db
-      .select({ roleName: roles.name })
-      .from(userRoles)
-      .innerJoin(roles, eq(userRoles.roleId, roles.id))
-      .where(eq(userRoles.userId, user.id));
+    const rolesMap = await fetchRolesForUsers([user.id]);
+    const userRoleNames = rolesMap.get(user.id.toString()) ?? [];
 
     return {
       publicId: user.publicId,
@@ -274,7 +271,7 @@ export const getAdminUser = base
       kycStatusId: user.kycStatusId,
       kycVerifiedAt: user.kycVerifiedAt,
       depositLimitCents: Number(user.depositLimitCents),
-      roles: userRoleRows.map((r) => r.roleName),
+      roles: userRoleNames,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       deletedAt: user.deletedAt,

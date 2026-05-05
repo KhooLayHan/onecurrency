@@ -1,3 +1,14 @@
+/**
+ * Withdrawal procedures.
+ *
+ * Handles user-facing cash-out (money-out) flows:
+ *
+ * - `initiate`    — burns the user's on-chain tokens and triggers a Stripe payout
+ *                   to their linked bank account.
+ * - `getHistory`  — returns the authenticated user's withdrawal history.
+ *
+ * Both procedures require an authenticated session via `requireAuth`.
+ */
 import { ORPCError } from "@orpc/server";
 import z from "zod";
 import { db } from "@/src/db";
@@ -12,6 +23,37 @@ import { requireAuth } from "../middleware";
 const withdrawalService = new WithdrawalService(db);
 const withdrawalRepository = new WithdrawalRepository(db);
 
+/**
+ * Output schema for a single row in the withdrawal history list.
+ */
+const withdrawalHistoryItemSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  type: z.literal("cash_out"),
+  amountCents: z.number(),
+  status: z.enum([
+    "pending",
+    "processing",
+    "completed",
+    "failed",
+    "refunded",
+  ]),
+  createdAt: z.date(),
+});
+
+/**
+ * Initiates a cash-out by burning the user's on-chain tokens and triggering
+ * a Stripe payout to their linked bank account.
+ *
+ * The response status reflects the initial state of the payout:
+ * `"processing"` means the Stripe payout was queued; `"completed"` means it
+ * settled synchronously (rare, typically only in test mode).
+ *
+ * @auth   requireAuth
+ * @input  initiateWithdrawalSchema fields (amount, bank account details, etc.)
+ * @output withdrawalId - The public UUID of the new withdrawal record.
+ * @output status       - Initial payout status (`"processing"` | `"completed"`).
+ */
 export const initiate = base
   .use(requireAuth)
   .route({
@@ -47,6 +89,13 @@ export const initiate = base
     return result.value;
   });
 
+/**
+ * Returns the authenticated user's full withdrawal history, ordered by most
+ * recent first.
+ *
+ * @auth   requireAuth
+ * @output Array of `withdrawalHistoryItemSchema` rows.
+ */
 export const getHistory = base
   .use(requireAuth)
   .route({
@@ -55,24 +104,7 @@ export const getHistory = base
     summary: "Get cash-out history for the authenticated user",
     tags: ["Withdrawals"],
   })
-  .output(
-    z.array(
-      z.object({
-        id: z.string(),
-        publicId: z.string(),
-        type: z.literal("cash_out"),
-        amountCents: z.number(),
-        status: z.enum([
-          "pending",
-          "processing",
-          "completed",
-          "failed",
-          "refunded",
-        ]),
-        createdAt: z.date(),
-      })
-    )
-  )
+  .output(z.array(withdrawalHistoryItemSchema))
   .handler(async ({ context }) => {
     const userId = context.session?.userId;
     if (!userId) {

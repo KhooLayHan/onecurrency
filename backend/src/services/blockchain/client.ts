@@ -24,7 +24,7 @@ import { hardhat, sepolia } from "viem/chains";
 import { env } from "../../env";
 import { logger } from "../../lib/logger";
 
-const isProd = env.NODE_ENV === "production";
+const isProd = env.NODE_ENV === "development";
 
 /** The viem chain object for the active environment. */
 export const chain = isProd ? sepolia : hardhat;
