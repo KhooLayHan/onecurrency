@@ -20,7 +20,7 @@ RUN pnpm --filter @onecurrency/transactional build
 
 # Bundle backend + its resolved deps into a standalone directory
 # pnpm deploy replaces workspace:* symlinks with real package copies
-RUN pnpm deploy --filter onecurrency-backend --legacy /app/standalone
+RUN pnpm deploy --filter onecurrency-backend --legacy /app/standalone 
 
 FROM oven/bun:1.3.13-slim AS runner
 
