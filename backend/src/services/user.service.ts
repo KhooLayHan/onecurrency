@@ -8,7 +8,6 @@ import {
 import { UserNotFoundError } from "@/common/errors/user";
 import { KYC_STATUS } from "../constants/kyc-status";
 import type { Database } from "../db";
-import { logger } from "../lib/logger";
 import { withTransaction } from "../lib/transaction";
 import { KycRepository } from "../repositories/kyc.repository";
 import { UserRepository } from "../repositories/user.repository";
@@ -38,8 +37,6 @@ export class UserService {
       if (user === null) {
         return errAsync(new UserNotFoundError(userId.toString()));
       }
-
-      logger.warn("dada");
 
       if (user.kycStatusId === KYC_STATUS.PENDING) {
         // If already PENDING, fetch the submission record for accurate timestamp
