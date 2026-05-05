@@ -194,12 +194,8 @@ export class UserRepository {
           .offset(offset);
 
         const [[totalResult], userRows] = await Promise.all([
-          whereResult.where
-            ? countQuery.where(whereResult.where)
-            : countQuery,
-          whereResult.where
-            ? listQuery.where(whereResult.where)
-            : listQuery,
+          whereResult.where ? countQuery.where(whereResult.where) : countQuery,
+          whereResult.where ? listQuery.where(whereResult.where) : listQuery,
         ]);
 
         const total = totalResult?.count ?? 0;
