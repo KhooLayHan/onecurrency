@@ -39,7 +39,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     href: "/admin",
     icon: LayoutDashboard,
-    roles: ["admin", "compliance", "support"],
+    roles: ["admin", "compliance"],
     showInMobile: true,
   },
   {
@@ -74,7 +74,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Audit Logs",
     href: "/admin/audit-logs",
     icon: ScrollText,
-    roles: ["admin", "compliance", "support"],
+    roles: ["admin", "compliance"],
     showInMobile: false,
   },
 ];
