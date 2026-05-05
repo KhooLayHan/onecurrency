@@ -16,12 +16,11 @@
  * ensure it is never the same wallet as the operator (relayer) account.
  */
 import { ORPCError } from "@orpc/server";
-import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import z from "zod";
 import { db } from "@/src/db";
-import { networks } from "@/src/db/schema/networks";
 import { env } from "@/src/env";
+import { NetworkRepository } from "@/src/repositories/network.repository";
 import { BlacklistService } from "@/src/services/blacklist.service";
 import { activeChainId } from "@/src/services/blockchain/client";
 import { base } from "../context";
@@ -29,6 +28,7 @@ import { mapToORPCError } from "../errors";
 import { requirePermission, requireRole } from "../middleware";
 
 const blacklistService = new BlacklistService(db);
+const networkRepository = new NetworkRepository(db);
 
 /** Number of blacklist entries returned per page. */
 const BLACKLIST_PAGE_SIZE = 20;
@@ -43,8 +43,12 @@ const BLACKLIST_REASON_MIN_LENGTH = 5;
 const TREASURY_ADDRESS: `0x${string}` | null =
   (env.TREASURY_ADDRESS as `0x${string}`) ?? null;
 
-// Validate at module load: the treasury must never be the same wallet
-// as the operator to prevent accidental self-seizure.
+/**
+ * Module-load safety check: asserts that the configured treasury address is
+ * never the same wallet as the operator (relayer) account derived from
+ * `SEPOLIA_PRIVATE_KEY`. Running at import time means a misconfiguration is
+ * caught at startup rather than at the point of an irreversible seize call.
+ */
 if (TREASURY_ADDRESS && env.SEPOLIA_PRIVATE_KEY) {
   const operatorAddress = privateKeyToAccount(
     (env.SEPOLIA_PRIVATE_KEY.startsWith("0x")
@@ -135,11 +139,13 @@ export const addToBlacklist = base
   )
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
-    const [activeNetwork] = await db
-      .select({ id: networks.id })
-      .from(networks)
-      .where(eq(networks.chainId, BigInt(activeChainId)))
-      .limit(1);
+    const networkResult = await networkRepository.findByChainId(
+      BigInt(activeChainId)
+    );
+    if (networkResult.isErr()) {
+      throw mapToORPCError(networkResult.error);
+    }
+    const activeNetwork = networkResult.value;
 
     if (!activeNetwork) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", {

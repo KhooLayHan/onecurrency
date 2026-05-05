@@ -14,27 +14,15 @@
  * `AuditService`.
  */
 import { ORPCError } from "@orpc/server";
-import {
-  and,
-  count,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  or,
-  type SQL,
-} from "drizzle-orm";
 import z from "zod";
 import { db } from "@/src/db";
-import { roles } from "@/src/db/schema/roles";
-import { sessions } from "@/src/db/schema/sessions";
-import { userRoles } from "@/src/db/schema/user-roles";
-import { users } from "@/src/db/schema/users";
+import { UserRepository } from "@/src/repositories/user.repository";
 import { AuditService } from "@/src/services/audit.service";
 import { base } from "../context";
 import { mapToORPCError } from "../errors";
 import { requirePermission } from "../middleware";
 
+const userRepository = new UserRepository(db);
 const auditService = new AuditService(db);
 
 /** Default page size for the admin user list. */
@@ -78,76 +66,14 @@ const adminUserDetailSchema = z.object({
 });
 
 /**
- * Batch-fetches role names for a list of user IDs in a single query and
- * returns a `Map<userId, roleNames[]>` keyed by stringified user ID.
- *
- * Returning an empty map immediately when `userIds` is empty avoids an
- * unnecessary DB round-trip on pages with no results.
- *
- * @param userIds - Array of bigint user primary keys to fetch roles for.
- * @returns Map from user ID string to the list of role names assigned to that user.
- */
-async function fetchRolesForUsers(
-  userIds: bigint[]
-): Promise<Map<string, string[]>> {
-  if (userIds.length === 0) {
-    return new Map();
-  }
-  const rows = await db
-    .select({
-      userId: userRoles.userId,
-      roleName: roles.name,
-    })
-    .from(userRoles)
-    .innerJoin(roles, eq(userRoles.roleId, roles.id))
-    .where(inArray(userRoles.userId, userIds));
-
-  const map = new Map<string, string[]>();
-  for (const row of rows) {
-    const key = row.userId.toString();
-    const existing = map.get(key) ?? [];
-    existing.push(row.roleName);
-    map.set(key, existing);
-  }
-  return map;
-}
-
-/**
- * Fetches a single user row by its public UUID or throws a `NOT_FOUND` error.
- *
- * Used as a shared guard by all mutation procedures to ensure the target user
- * exists before attempting any update.
- *
- * @param publicId - The user's UUID public identifier.
- * @returns The full Drizzle user row.
- * @throws `ORPCError("NOT_FOUND")` when no user matches the given public ID.
- */
-async function findUserByPublicId(publicId: string) {
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.publicId, publicId))
-    .limit(1);
-
-  if (!user) {
-    throw new ORPCError("NOT_FOUND", { message: "User not found" });
-  }
-  return user;
-}
-
-/**
  * Returns a paginated list of users, optionally filtered by name/email search,
  * KYC status, or assigned role.
  *
- * When a `role` filter is provided, the procedure first resolves the matching
- * user IDs via a sub-query and returns an empty result immediately if none
- * exist, avoiding a full-table scan.
- *
  * @permission user:list
- * @input  page       - 1-based page number (default 1).
- * @input  search     - Optional text search matched against user name and email.
+ * @input  page        - 1-based page number (default 1).
+ * @input  search      - Optional text search matched against user name and email.
  * @input  kycStatusId - Optional KYC status ID to filter by (1–5).
- * @input  role       - Optional role name to filter by (e.g. "admin").
+ * @input  role        - Optional role name to filter by (e.g. "admin").
  * @output Paginated list of `adminUserListItemSchema` rows with role arrays.
  */
 export const listAdminUsers = base
@@ -169,79 +95,29 @@ export const listAdminUsers = base
     })
   )
   .handler(async ({ input }) => {
-    const offset = (input.page - 1) * ADMIN_USERS_PAGE_SIZE;
-    const conditions: SQL[] = [];
-
-    if (input.search) {
-      const term = `%${input.search}%`;
-      conditions.push(
-        or(ilike(users.name, term), ilike(users.email, term)) as SQL
-      );
+    const result = await userRepository.listAdmin({
+      page: input.page,
+      pageSize: ADMIN_USERS_PAGE_SIZE,
+      search: input.search,
+      kycStatusId: input.kycStatusId,
+      role: input.role,
+    });
+    if (result.isErr()) {
+      throw mapToORPCError(result.error);
     }
-    if (input.kycStatusId) {
-      conditions.push(eq(users.kycStatusId, input.kycStatusId));
-    }
-
-    if (input.role) {
-      const roleRows = await db
-        .select({ userId: userRoles.userId })
-        .from(userRoles)
-        .innerJoin(roles, eq(userRoles.roleId, roles.id))
-        .where(eq(roles.name, input.role));
-
-      const ids = roleRows.map((r) => r.userId);
-      if (ids.length === 0) {
-        return {
-          items: [],
-          total: 0,
-          page: input.page,
-          pageSize: ADMIN_USERS_PAGE_SIZE,
-        };
-      }
-      conditions.push(inArray(users.id, ids));
-    }
-
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
-
-    const countQuery = db.select({ count: count() }).from(users);
-    const listQuery = db
-      .select({
-        id: users.id,
-        publicId: users.publicId,
-        name: users.name,
-        email: users.email,
-        kycStatusId: users.kycStatusId,
-        depositLimitCents: users.depositLimitCents,
-        createdAt: users.createdAt,
-        deletedAt: users.deletedAt,
-      })
-      .from(users)
-      .orderBy(desc(users.createdAt))
-      .limit(ADMIN_USERS_PAGE_SIZE)
-      .offset(offset);
-
-    const [[totalResult], userRows] = await Promise.all([
-      where ? countQuery.where(where) : countQuery,
-      where ? listQuery.where(where) : listQuery,
-    ]);
-
-    const total = totalResult?.count ?? 0;
-    const rolesMap = await fetchRolesForUsers(userRows.map((u) => u.id));
-
-    const items = userRows.map((u) => ({
-      publicId: u.publicId,
-      name: u.name,
-      email: u.email,
-      kycStatusId: u.kycStatusId,
-      depositLimitCents: Number(u.depositLimitCents),
-      roles: rolesMap.get(u.id.toString()) ?? [],
-      createdAt: u.createdAt,
-      deletedAt: u.deletedAt,
-    }));
 
     return {
-      items,
-      total,
+      items: result.value.items.map((u) => ({
+        publicId: u.publicId,
+        name: u.name,
+        email: u.email,
+        kycStatusId: u.kycStatusId,
+        depositLimitCents: Number(u.depositLimitCents),
+        roles: u.roles,
+        createdAt: u.createdAt,
+        deletedAt: u.deletedAt,
+      })),
+      total: result.value.total,
       page: input.page,
       pageSize: ADMIN_USERS_PAGE_SIZE,
     };
@@ -259,12 +135,20 @@ export const getAdminUser = base
   .input(z.object({ publicId: z.uuid() }))
   .output(adminUserDetailSchema)
   .handler(async ({ input }) => {
-    const user = await findUserByPublicId(input.publicId);
-    const userRoleRows = await db
-      .select({ roleName: roles.name })
-      .from(userRoles)
-      .innerJoin(roles, eq(userRoles.roleId, roles.id))
-      .where(eq(userRoles.userId, user.id));
+    const userResult = await userRepository.findByPublicId(input.publicId);
+    if (userResult.isErr()) {
+      throw mapToORPCError(userResult.error);
+    }
+    const user = userResult.value;
+    if (!user) {
+      throw new ORPCError("NOT_FOUND", { message: "User not found" });
+    }
+
+    const rolesResult = await userRepository.fetchRolesByIds([user.id]);
+    if (rolesResult.isErr()) {
+      throw mapToORPCError(rolesResult.error);
+    }
+    const roles = rolesResult.value.get(user.id.toString()) ?? [];
 
     return {
       publicId: user.publicId,
@@ -274,7 +158,7 @@ export const getAdminUser = base
       kycStatusId: user.kycStatusId,
       kycVerifiedAt: user.kycVerifiedAt,
       depositLimitCents: Number(user.depositLimitCents),
-      roles: userRoleRows.map((r) => r.roleName),
+      roles,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       deletedAt: user.deletedAt,
@@ -287,8 +171,8 @@ export const getAdminUser = base
  * The old and new limit values are recorded in the audit log for compliance.
  *
  * @permission user:write
- * @input  publicId           - UUID of the user to update.
- * @input  depositLimitCents  - New limit in cents (must be ≥ 0).
+ * @input  publicId          - UUID of the user to update.
+ * @input  depositLimitCents - New limit in cents (must be ≥ 0).
  * @output Confirmation message.
  */
 export const updateUserDepositLimit = base
@@ -304,16 +188,24 @@ export const updateUserDepositLimit = base
   )
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
-    const user = await findUserByPublicId(input.publicId);
+    const userResult = await userRepository.findByPublicId(input.publicId);
+    if (userResult.isErr()) {
+      throw mapToORPCError(userResult.error);
+    }
+    const user = userResult.value;
+    if (!user) {
+      throw new ORPCError("NOT_FOUND", { message: "User not found" });
+    }
+
     const oldLimit = Number(user.depositLimitCents);
 
-    await db
-      .update(users)
-      .set({
-        depositLimitCents: BigInt(input.depositLimitCents),
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
+    const updateResult = await userRepository.updateDepositLimit(
+      user.id,
+      BigInt(input.depositLimitCents)
+    );
+    if (updateResult.isErr()) {
+      throw mapToORPCError(updateResult.error);
+    }
 
     const auditResult = await auditService.log({
       userId: BigInt(context.session.userId),
@@ -323,7 +215,6 @@ export const updateUserDepositLimit = base
       oldValues: { depositLimitCents: oldLimit },
       newValues: { depositLimitCents: input.depositLimitCents },
     });
-
     if (auditResult.isErr()) {
       throw mapToORPCError(auditResult.error);
     }
@@ -347,7 +238,14 @@ export const suspendUser = base
   .input(z.object({ publicId: z.uuid() }))
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
-    const user = await findUserByPublicId(input.publicId);
+    const userResult = await userRepository.findByPublicId(input.publicId);
+    if (userResult.isErr()) {
+      throw mapToORPCError(userResult.error);
+    }
+    const user = userResult.value;
+    if (!user) {
+      throw new ORPCError("NOT_FOUND", { message: "User not found" });
+    }
 
     if (user.deletedAt !== null) {
       throw new ORPCError("BAD_REQUEST", {
@@ -357,13 +255,10 @@ export const suspendUser = base
 
     const suspendedAt = new Date();
 
-    await Promise.all([
-      db
-        .update(users)
-        .set({ deletedAt: suspendedAt, updatedAt: suspendedAt })
-        .where(eq(users.id, user.id)),
-      db.delete(sessions).where(eq(sessions.userId, user.id)),
-    ]);
+    const suspendResult = await userRepository.suspend(user.id, suspendedAt);
+    if (suspendResult.isErr()) {
+      throw mapToORPCError(suspendResult.error);
+    }
 
     const auditResult = await auditService.log({
       userId: BigInt(context.session.userId),
@@ -373,7 +268,6 @@ export const suspendUser = base
       oldValues: { deletedAt: null },
       newValues: { deletedAt: suspendedAt.toISOString() },
     });
-
     if (auditResult.isErr()) {
       throw mapToORPCError(auditResult.error);
     }
@@ -396,7 +290,14 @@ export const restoreUser = base
   .input(z.object({ publicId: z.uuid() }))
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
-    const user = await findUserByPublicId(input.publicId);
+    const userResult = await userRepository.findByPublicId(input.publicId);
+    if (userResult.isErr()) {
+      throw mapToORPCError(userResult.error);
+    }
+    const user = userResult.value;
+    if (!user) {
+      throw new ORPCError("NOT_FOUND", { message: "User not found" });
+    }
 
     if (user.deletedAt === null) {
       throw new ORPCError("BAD_REQUEST", {
@@ -404,10 +305,10 @@ export const restoreUser = base
       });
     }
 
-    await db
-      .update(users)
-      .set({ deletedAt: null, updatedAt: new Date() })
-      .where(eq(users.id, user.id));
+    const restoreResult = await userRepository.restore(user.id);
+    if (restoreResult.isErr()) {
+      throw mapToORPCError(restoreResult.error);
+    }
 
     const auditResult = await auditService.log({
       userId: BigInt(context.session.userId),
@@ -417,7 +318,6 @@ export const restoreUser = base
       oldValues: { deletedAt: user.deletedAt.toISOString() },
       newValues: { deletedAt: null },
     });
-
     if (auditResult.isErr()) {
       throw mapToORPCError(auditResult.error);
     }

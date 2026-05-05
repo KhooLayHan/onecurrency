@@ -3,20 +3,18 @@
  *
  * Returns aggregated platform statistics for the admin dashboard home:
  * user growth, KYC funnel, transaction volume, and failure signal.
- * All queries run in parallel. Requires admin or compliance role.
+ * All queries run in parallel inside `MetricsRepository`. Requires admin
+ * or compliance role.
  */
-import { and, count, eq, gte, isNotNull, sum } from "drizzle-orm";
 import z from "zod";
 import { KYC_STATUS } from "@/src/constants/kyc-status";
-import { TRANSACTION_STATUS } from "@/src/constants/transaction-status";
 import { db } from "@/src/db";
-import { deposits } from "@/src/db/schema/deposits";
-import { kycSubmissions } from "@/src/db/schema/kyc-submissions";
-import { transfers } from "@/src/db/schema/transfers";
-import { users } from "@/src/db/schema/users";
-import { withdrawals } from "@/src/db/schema/withdrawals";
+import { MetricsRepository } from "@/src/repositories/metrics.repository";
 import { base } from "../context";
+import { mapToORPCError } from "../errors";
 import { requireRole } from "../middleware";
+
+const metricsRepository = new MetricsRepository(db);
 
 /** Rolling window for "new users" metric (days). */
 const NEW_USERS_WINDOW_DAYS = 30;
@@ -31,114 +29,6 @@ const txVolumeSchema = z.object({
   count: z.number(),
   totalAmountCents: z.number(),
 });
-
-/**
- * Runs all metrics DB queries in parallel and returns raw result arrays.
- * Extracted to keep the handler's cognitive complexity below the limit.
- */
-function runMetricsQueries(thirtyDaysAgo: Date, sevenDaysAgo: Date) {
-  return Promise.all([
-    // 0: total registered users
-    db
-      .select({ count: count() })
-      .from(users),
-    // 1: new users in last 30 days
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(gte(users.createdAt, thirtyDaysAgo)),
-    // 2: suspended users (soft-deleted)
-    db
-      .select({ count: count() })
-      .from(users)
-      .where(isNotNull(users.deletedAt)),
-    // 3: user counts grouped by KYC status ID
-    db
-      .select({ kycStatusId: users.kycStatusId, count: count() })
-      .from(users)
-      .groupBy(users.kycStatusId),
-    // 4: unreviewed KYC submissions
-    db
-      .select({ count: count() })
-      .from(kycSubmissions)
-      .where(eq(kycSubmissions.kycStatusId, KYC_STATUS.PENDING)),
-    // 5: completed deposit count + volume
-    db
-      .select({ count: count(), totalAmountCents: sum(deposits.amountCents) })
-      .from(deposits)
-      .where(eq(deposits.statusId, TRANSACTION_STATUS.COMPLETED)),
-    // 6: completed withdrawal count + volume
-    db
-      .select({
-        count: count(),
-        totalAmountCents: sum(withdrawals.fiatAmountCents),
-      })
-      .from(withdrawals)
-      .where(eq(withdrawals.statusId, TRANSACTION_STATUS.COMPLETED)),
-    // 7: completed transfer count + volume
-    db
-      .select({ count: count(), totalAmountCents: sum(transfers.amountCents) })
-      .from(transfers)
-      .where(eq(transfers.statusId, TRANSACTION_STATUS.COMPLETED)),
-    // 8: failed deposits in last 7 days
-    db
-      .select({ count: count() })
-      .from(deposits)
-      .where(
-        and(
-          eq(deposits.statusId, TRANSACTION_STATUS.FAILED),
-          gte(deposits.createdAt, sevenDaysAgo)
-        )
-      ),
-    // 9: failed withdrawals in last 7 days
-    db
-      .select({ count: count() })
-      .from(withdrawals)
-      .where(
-        and(
-          eq(withdrawals.statusId, TRANSACTION_STATUS.FAILED),
-          gte(withdrawals.createdAt, sevenDaysAgo)
-        )
-      ),
-    // 10: failed transfers in last 7 days
-    db
-      .select({ count: count() })
-      .from(transfers)
-      .where(
-        and(
-          eq(transfers.statusId, TRANSACTION_STATUS.FAILED),
-          gte(transfers.createdAt, sevenDaysAgo)
-        )
-      ),
-  ]);
-}
-
-type KycCountRow = { kycStatusId: number; count: number };
-
-/** Builds a statusId → count lookup map from the grouped KYC query result. */
-function buildKycByStatus(rows: KycCountRow[]): Record<number, number> {
-  const map: Record<number, number> = {};
-  for (const row of rows) {
-    map[row.kycStatusId] = row.count;
-  }
-  return map;
-}
-
-/** Returns the count from the first row of a count query, or 0. */
-function firstCount(rows: Array<{ count: number }>): number {
-  return rows[0]?.count ?? 0;
-}
-type VolumeRow = { count: number; totalAmountCents: string | null | undefined };
-/** Converts a volume query row to { count, totalAmountCents }. */
-function toVolume(rows: VolumeRow[]): {
-  count: number;
-  totalAmountCents: number;
-} {
-  return {
-    count: rows[0]?.count ?? 0,
-    totalAmountCents: Number(rows[0]?.totalAmountCents ?? 0),
-  };
-}
 
 /**
  * Returns aggregated platform metrics for the admin dashboard home.
@@ -179,42 +69,36 @@ export const getAdminMetricsSummary = base
       now.getTime() - FAILED_TX_WINDOW_DAYS * MS_PER_DAY
     );
 
-    const [
-      totalUsersRows,
-      newUsersRows,
-      suspendedRows,
-      kycCountRows,
-      pendingKycRows,
-      depositsVolumeRows,
-      withdrawalsVolumeRows,
-      transfersVolumeRows,
-      failedDepositsRows,
-      failedWithdrawalsRows,
-      failedTransfersRows,
-    ] = await runMetricsQueries(thirtyDaysAgo, sevenDaysAgo);
+    const result = await metricsRepository.getSummary({
+      thirtyDaysAgo,
+      sevenDaysAgo,
+    });
+    if (result.isErr()) {
+      throw mapToORPCError(result.error);
+    }
 
-    const kycByStatus = buildKycByStatus(kycCountRows);
+    const data = result.value;
 
     return {
-      totalUsers: firstCount(totalUsersRows),
-      newUsersLast30Days: firstCount(newUsersRows),
-      suspendedUsers: firstCount(suspendedRows),
+      totalUsers: data.totalUsers,
+      newUsersLast30Days: data.newUsersLast30Days,
+      suspendedUsers: data.suspendedUsers,
       kycCounts: {
-        none: kycByStatus[KYC_STATUS.NONE] ?? 0,
-        pending: kycByStatus[KYC_STATUS.PENDING] ?? 0,
-        verified: kycByStatus[KYC_STATUS.VERIFIED] ?? 0,
-        rejected: kycByStatus[KYC_STATUS.REJECTED] ?? 0,
-        expired: kycByStatus[KYC_STATUS.EXPIRED] ?? 0,
+        none: data.kycByStatusId[KYC_STATUS.NONE] ?? 0,
+        pending: data.kycByStatusId[KYC_STATUS.PENDING] ?? 0,
+        verified: data.kycByStatusId[KYC_STATUS.VERIFIED] ?? 0,
+        rejected: data.kycByStatusId[KYC_STATUS.REJECTED] ?? 0,
+        expired: data.kycByStatusId[KYC_STATUS.EXPIRED] ?? 0,
       },
-      pendingKycSubmissions: firstCount(pendingKycRows),
+      pendingKycSubmissions: data.pendingKycSubmissions,
       transactionVolume: {
-        deposits: toVolume(depositsVolumeRows),
-        withdrawals: toVolume(withdrawalsVolumeRows),
-        transfers: toVolume(transfersVolumeRows),
+        deposits: data.depositsVolume,
+        withdrawals: data.withdrawalsVolume,
+        transfers: data.transfersVolume,
       },
       failedTransactionsLast7Days:
-        firstCount(failedDepositsRows) +
-        firstCount(failedWithdrawalsRows) +
-        firstCount(failedTransfersRows),
+        data.failedDepositsLast7Days +
+        data.failedWithdrawalsLast7Days +
+        data.failedTransfersLast7Days,
     };
   });

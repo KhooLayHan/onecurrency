@@ -7,8 +7,8 @@
  *
  * Procedures are organised by domain:
  *   deposits      — add-money / Stripe checkout flows
- *   users         — wallet info, recipient lookup, role query
- *   users.kyc     — KYC submission, upload URLs, status queries
+ *   users         — wallet info, recipient lookup, role query,
+ *                   KYC submission, upload URLs, and status queries
  *   withdrawals   — cash-out initiation and history
  *   transfers     — P2P send and history
  *   admin.kyc     — KYC review (list, approve, reject)

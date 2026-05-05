@@ -28,6 +28,7 @@ import { mapToORPCError } from "../errors";
 import { requireAuth } from "../middleware";
 
 const walletService = new WalletService(db);
+const userRepository = new UserRepository(db);
 
 /**
  * Returns the authenticated user's primary custodial wallet.
@@ -103,8 +104,7 @@ export const findRecipient = base
       });
     }
 
-    const userRepo = new UserRepository(db);
-    const result = await userRepo.findByEmail(input.email);
+    const result = await userRepository.findByEmail(input.email);
     if (result.isErr()) {
       throw mapToORPCError(result.error);
     }

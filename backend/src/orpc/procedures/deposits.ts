@@ -1,3 +1,16 @@
+/**
+ * Deposit procedures.
+ *
+ * Handles user-facing money-in flows:
+ *
+ * - `testMint`    — dev/staging helper that mints tokens directly to an address
+ *                   without going through Stripe (gated by env).
+ * - `checkout`    — creates a Stripe Checkout Session and returns the redirect URL.
+ * - `getHistory`  — returns the authenticated user's deposit history.
+ *
+ * `testMint` requires no authentication.
+ * `checkout` and `getHistory` require an authenticated session via `requireAuth`.
+ */
 import { ORPCError } from "@orpc/server";
 import z from "zod";
 import { db } from "@/src/db";
@@ -16,9 +29,31 @@ import { requireAuth } from "../middleware";
 const depositService = new DepositService(db);
 const depositRepository = new DepositRepository(db);
 
-// Only available in non-production environments
+/** Only available in non-production environments. */
 const isProduction = env.NODE_ENV === "production";
 
+/**
+ * Output schema for a single row in the deposit history list.
+ * Shared between the procedure output definition and any downstream consumers.
+ */
+const depositHistoryItemSchema = z.object({
+  id: z.string(),
+  publicId: z.string(),
+  type: z.literal("add_money"),
+  amountCents: z.number(),
+  status: z.enum(["pending", "processing", "completed", "failed", "refunded"]),
+  createdAt: z.date(),
+});
+
+/**
+ * Dev/staging-only procedure that mints tokens directly to a given address
+ * without a Stripe payment step, allowing end-to-end testing of post-deposit flows.
+ *
+ * @auth   None required.
+ * @input  address   - The Ethereum address to mint tokens to.
+ * @input  amountWei - The token amount to mint, expressed in wei.
+ * @output txHash    - The on-chain transaction hash of the mint operation.
+ */
 export const testMint = base
   .route({
     method: "POST",
@@ -47,6 +82,15 @@ export const testMint = base
     return result.value;
   });
 
+/**
+ * Creates a Stripe Checkout Session and returns the redirect URL for the
+ * client to complete payment on the Stripe-hosted page.
+ *
+ * @auth   requireAuth
+ * @input  amountCents - Deposit amount in cents.
+ * @input  walletId    - The destination wallet ID for the deposit.
+ * @output checkoutUrl - The Stripe-hosted Checkout redirect URL.
+ */
 export const checkout = base
   .use(requireAuth)
   .route({
@@ -81,6 +125,13 @@ export const checkout = base
     return result.value;
   });
 
+/**
+ * Returns the authenticated user's full deposit history, ordered by most
+ * recent first.
+ *
+ * @auth   requireAuth
+ * @output Array of `depositHistoryItemSchema` rows.
+ */
 export const getHistory = base
   .use(requireAuth)
   .route({
@@ -89,24 +140,7 @@ export const getHistory = base
     summary: "Get deposit history for the authenticated user",
     tags: ["Deposits"],
   })
-  .output(
-    z.array(
-      z.object({
-        id: z.string(),
-        publicId: z.string(),
-        type: z.literal("add_money"),
-        amountCents: z.number(),
-        status: z.enum([
-          "pending",
-          "processing",
-          "completed",
-          "failed",
-          "refunded",
-        ]),
-        createdAt: z.date(),
-      })
-    )
-  )
+  .output(z.array(depositHistoryItemSchema))
   .handler(async ({ context }) => {
     const userId = context.session?.userId;
     if (!userId) {
