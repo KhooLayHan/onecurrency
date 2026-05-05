@@ -27,11 +27,10 @@ const DASHBOARD_URL =
 
 export async function sendPasswordResetEmail(
   to: string,
-  url: string,
-  name: string
+  url: string
 ): Promise<void> {
   try {
-    const html = await renderPasswordReset({ url, name });
+    const html = await renderPasswordReset({ url });
     const { error } = await resend.emails.send({
       from: env.EMAIL_FROM,
       to: [to],

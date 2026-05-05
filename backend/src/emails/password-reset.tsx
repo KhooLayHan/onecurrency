@@ -1,14 +1,14 @@
 /** @jsxImportSource react */
 import { Button, Hr, Text } from "react-email";
 import { EmailLayout } from "./layout";
+
 export type PasswordResetEmailProps = {
   url: string;
-  name: string;
 };
 
 const PASSWORD_RESET_EXPIRY_HOURS = 1;
 
-export function PasswordResetEmail({ url, name }: PasswordResetEmailProps) {
+export function PasswordResetEmail({ url }: PasswordResetEmailProps) {
   return (
     <EmailLayout preview="Reset your OneCurrency password">
       <Text className="m-0 mb-4 text-center text-4xl">🔒</Text>
@@ -16,7 +16,7 @@ export function PasswordResetEmail({ url, name }: PasswordResetEmailProps) {
         Password Reset
       </Text>
       <Hr className="my-6 border-slate-200" />
-      <Text className="m-0 mb-2 text-base text-slate-900">Hi {name},</Text>
+      <Text className="m-0 mb-2 text-base text-slate-900">Hi,</Text>
       <Text className="m-0 mb-2 text-base text-slate-700">
         We received a request to reset your OneCurrency password.
       </Text>
