@@ -11,6 +11,7 @@
  * - `isErrorMessage` — a narrow type-guard used by the error mapper.
  */
 import {
+  ContractFunctionExecutionError,
   ContractFunctionRevertedError,
   HttpRequestError,
   TimeoutError,
@@ -97,6 +98,11 @@ export function mapBlockchainError(
   }
   if (e instanceof HttpRequestError || e instanceof TimeoutError) {
     return handleNetworkError(e);
+  }
+  if (e instanceof ContractFunctionExecutionError) {
+    const revert =
+      e.cause instanceof ContractFunctionRevertedError ? e.cause : e;
+    return handleContractRevert(revert, functionName);
   }
   if (e instanceof ContractFunctionRevertedError) {
     return handleContractRevert(e, functionName);

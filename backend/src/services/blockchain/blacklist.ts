@@ -16,6 +16,7 @@ import {
   OneCurrencyABI,
 } from "@/common/contracts/one-currency";
 import type { AppError } from "@/common/errors/base";
+import { ContractCallRevertedError } from "@/common/errors/contract";
 import { TransactionRevertedError } from "@/common/errors/transaction";
 import { InvalidAddressError } from "@/common/errors/wallet";
 import { MIN_CONFIRMATIONS } from "../../constants/blockchain";
@@ -160,6 +161,21 @@ export function seizeAddressTokens(
       logger.info({ fromAddress, toAddress }, "Seizing tokens on-chain...");
 
       const { account, walletClient } = getOperatorAccount();
+
+      const balance = await publicClient.readContract({
+        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        abi: OneCurrencyABI,
+        functionName: "balanceOf",
+        args: [fromAddress as `0x${string}`],
+      });
+
+      if (balance === 0n) {
+        throw new ContractCallRevertedError(
+          "seizeTokens",
+          undefined,
+          "Address has no tokens to seize"
+        );
+      }
 
       const { request } = await publicClient.simulateContract({
         address: ONECURRENCY_ADDRESS as `0x${string}`,

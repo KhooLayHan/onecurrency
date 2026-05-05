@@ -125,6 +125,7 @@ export default function BlacklistPage() {
       orpcClient.admin.blacklist.seize({ publicId }),
     onSuccess: () => {
       toast.success("Tokens seized successfully");
+      queryClient.invalidateQueries({ queryKey: ["admin-blacklist"] });
       setPendingAction(null);
     },
     onError: (error) => {
@@ -205,10 +206,15 @@ export default function BlacklistPage() {
               : data?.items.map((row) => (
                   <TableRow key={row.publicId}>
                     <TableCell>
-                      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-                        {row.address.slice(0, ADDRESS_PREFIX_LENGTH)}...
-                        {row.address.slice(-ADDRESS_SUFFIX_LENGTH)}
-                      </code>
+                      <div className="flex items-center gap-2">
+                        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                          {row.address.slice(0, ADDRESS_PREFIX_LENGTH)}...
+                          {row.address.slice(-ADDRESS_SUFFIX_LENGTH)}
+                        </code>
+                        {row.seizedAt && (
+                          <Badge variant="secondary">Seized</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="default">
@@ -230,6 +236,7 @@ export default function BlacklistPage() {
                           <Button
                             aria-label="Seize tokens"
                             className="min-h-11 min-w-11"
+                            disabled={!!row.seizedAt}
                             onClick={() =>
                               setPendingAction({
                                 type: "seize",
@@ -237,7 +244,11 @@ export default function BlacklistPage() {
                                 address: row.address,
                               })
                             }
-                            title="Seize tokens"
+                            title={
+                              row.seizedAt
+                                ? "Tokens already seized"
+                                : "Seize tokens"
+                            }
                             variant="outline"
                           >
                             <Zap className="size-3.5" />

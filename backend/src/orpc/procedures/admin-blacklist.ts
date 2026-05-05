@@ -95,6 +95,7 @@ export const listBlacklist = base
           addedByName: z.string().nullable(),
           createdAt: z.date(),
           expiresAt: z.date().nullable(),
+          seizedAt: z.date().nullable(),
         })
       ),
       total: z.number(),

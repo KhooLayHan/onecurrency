@@ -33,6 +33,7 @@ export const blacklistedAddresses = pgTable(
       .defaultNow()
       .notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
+    seizedAt: timestamp("seized_at", { withTimezone: true }),
   },
   (table) => [
     check(
