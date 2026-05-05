@@ -24,7 +24,7 @@ import { orpcClient } from "@/lib/api";
 import { signOut, useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
-const ADMIN_ROLES = ["admin", "compliance"];
+const ADMIN_ROLES = ["admin", "compliance", "support"];
 
 type NavItem = {
   label: string;
@@ -39,14 +39,14 @@ const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     href: "/admin",
     icon: LayoutDashboard,
-    roles: ["admin", "compliance"],
+    roles: ["admin", "compliance", "support"],
     showInMobile: true,
   },
   {
     label: "KYC Submissions",
     href: "/admin/kyc",
     icon: ClipboardList,
-    roles: ["admin", "compliance"],
+    roles: ["admin", "compliance", "support"],
     showInMobile: true,
   },
   {
@@ -60,21 +60,21 @@ const NAV_ITEMS: NavItem[] = [
     label: "Users",
     href: "/admin/users",
     icon: Users,
-    roles: ["admin", "compliance"],
+    roles: ["admin", "compliance", "support"],
     showInMobile: true,
   },
   {
     label: "Transactions",
     href: "/admin/transactions",
     icon: ArrowLeftRight,
-    roles: ["admin", "compliance"],
+    roles: ["admin", "compliance", "support"],
     showInMobile: true,
   },
   {
     label: "Audit Logs",
     href: "/admin/audit-logs",
     icon: ScrollText,
-    roles: ["admin", "compliance"],
+    roles: ["admin", "compliance", "support"],
     showInMobile: false,
   },
 ];
@@ -98,6 +98,26 @@ function getPageTitle(pathname: string): string {
     }
   }
   return "Admin";
+}
+
+function getPortalLabel(isAdmin: boolean, isSupport: boolean): string {
+  if (isAdmin) {
+    return "Admin Portal";
+  }
+  if (isSupport) {
+    return "Support Portal";
+  }
+  return "Compliance Portal";
+}
+
+function getRoleBadgeLabel(isAdmin: boolean, isSupport: boolean): string {
+  if (isAdmin) {
+    return "Administrator";
+  }
+  if (isSupport) {
+    return "Support Staff";
+  }
+  return "Compliance Officer";
 }
 
 type SidebarUserFooterProps = {
@@ -185,6 +205,7 @@ export default function AdminLayout({
 
   const hasAccess = roles?.some((r) => ADMIN_ROLES.includes(r)) ?? false;
   const isAdmin = roles?.includes("admin") ?? false;
+  const isSupport = roles?.includes("support") ?? false;
 
   useEffect(() => {
     if (sessionLoading) {
@@ -289,7 +310,7 @@ export default function AdminLayout({
           <div className="flex flex-col">
             <span className="font-bold text-sm leading-tight">OneCurrency</span>
             <span className="text-muted-foreground text-xs leading-tight">
-              {isAdmin ? "Admin Portal" : "Compliance Portal"}
+              {getPortalLabel(isAdmin, isSupport)}
             </span>
           </div>
         </Link>
@@ -394,7 +415,7 @@ export default function AdminLayout({
 
           {/* Role badge — desktop only */}
           <span className="hidden items-center rounded-full border bg-muted/50 px-2.5 py-0.5 font-medium text-muted-foreground text-xs md:inline-flex">
-            {isAdmin ? "Administrator" : "Compliance Officer"}
+            {getRoleBadgeLabel(isAdmin, isSupport)}
           </span>
         </header>
 
