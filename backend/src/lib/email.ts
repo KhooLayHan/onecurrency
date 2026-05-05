@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import {
   renderDepositFailed,
   renderDepositSuccess,
+  renderPasswordReset,
   renderWithdrawalFailed,
   renderWithdrawalInitiated,
 } from "../emails";
@@ -26,18 +27,16 @@ const DASHBOARD_URL =
 
 export async function sendPasswordResetEmail(
   to: string,
-  url: string
+  url: string,
+  name: string
 ): Promise<void> {
   try {
+    const html = await renderPasswordReset({ url, name });
     const { error } = await resend.emails.send({
       from: env.EMAIL_FROM,
       to: [to],
       subject: "Reset your OneCurrency password",
-      html: `
-        <p>We received a request to reset your OneCurrency password.</p>
-        <p><a href="${url}">Click here to reset your password</a></p>
-        <p>This link expires in 1 hour. If you did not request this, you can safely ignore this email.</p>
-      `,
+      html,
     });
     if (error) {
       logger.warn({ error }, "Failed to send password reset email");
