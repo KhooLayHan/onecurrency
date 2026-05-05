@@ -94,7 +94,7 @@ async function run() {
     });
     if (operatorBalance < needed) {
       await publicClient.request({
-        method: "hardhat_setBalance",
+        methods: "hardhat_setBalance",
         params: [account.address, toHex(needed + parseEther("1"))],
       });
       logger.info(
