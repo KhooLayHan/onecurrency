@@ -14,6 +14,9 @@ export const env = createEnv({
     NEXT_PUBLIC_CHAIN_ID: z.enum(["31337", "11155111"]).default("11155111"), // Sepolia default
     NEXT_PUBLIC_WALLET_CONNECT_ID: z.string().min(1), // For AppKit/Wagmi
     NEXT_PUBLIC_BETTER_AUTH_URL: z.url(),
+    NEXT_PUBLIC_ONECURRENCY_ADDRESS: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address"),
   },
   runtimeEnv: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
@@ -22,6 +25,8 @@ export const env = createEnv({
     NEXT_PUBLIC_CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
     NEXT_PUBLIC_WALLET_CONNECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_ID,
     NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    NEXT_PUBLIC_ONECURRENCY_ADDRESS:
+      process.env.NEXT_PUBLIC_ONECURRENCY_ADDRESS,
   },
   emptyStringAsUndefined: true,
   skipValidation: !!process.env.CI,

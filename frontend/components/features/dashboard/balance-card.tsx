@@ -4,10 +4,7 @@ import { ExternalLink, Lock, Plus, RefreshCw, Send } from "lucide-react";
 import Link from "next/link";
 import { formatUnits } from "viem";
 import { useConnection, useReadContract } from "wagmi";
-import {
-  ONECURRENCY_ADDRESS,
-  OneCurrencyABI,
-} from "@/common/contracts/one-currency";
+import { OneCurrencyABI } from "@/common/contracts/one-currency";
 import { AmountDisplay } from "@/components/shared/amount-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { env } from "@/env";
 import { useUserWallet } from "@/hooks/use-user-wallet";
 import { useSession } from "@/lib/auth-client";
 import { DepositForm } from "../deposit/deposit-form";
@@ -77,7 +75,7 @@ export function BalanceCard() {
     isError: isCustodialBalanceError,
     refetch: refetchCustodial,
   } = useReadContract({
-    address: ONECURRENCY_ADDRESS as `0x${string}`,
+    address: env.NEXT_PUBLIC_ONECURRENCY_ADDRESS as `0x${string}`,
     abi: OneCurrencyABI,
     functionName: "balanceOf",
     args: custodialAddress ? [custodialAddress] : undefined,
@@ -94,7 +92,7 @@ export function BalanceCard() {
 
   // --- Connected (MetaMask) balance read (informational only) ---
   const { data: connectedBalanceWei } = useReadContract({
-    address: ONECURRENCY_ADDRESS as `0x${string}`,
+    address: env.NEXT_PUBLIC_ONECURRENCY_ADDRESS as `0x${string}`,
     abi: OneCurrencyABI,
     functionName: "balanceOf",
     args: connectedAddress ? [connectedAddress] : undefined,
