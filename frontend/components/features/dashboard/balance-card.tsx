@@ -61,7 +61,7 @@ export function BalanceCard() {
     isLoading: isCustodialLoading,
     isBlacklisted,
     seizedAt,
-    // chainId,
+    chainId,
   } = useUserWallet();
 
   const { data: session } = useSession();
@@ -79,7 +79,7 @@ export function BalanceCard() {
     abi: OneCurrencyABI,
     functionName: "balanceOf",
     args: custodialAddress ? [custodialAddress] : undefined,
-    // chainId,
+    chainId,
     query: {
       enabled: !!custodialAddress,
       refetchInterval: (query) =>

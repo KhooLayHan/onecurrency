@@ -9,7 +9,7 @@ import { formatUnits } from "viem";
 import { useReadContract } from "wagmi";
 import { KYC_STATUS } from "@/common/constants/kyc";
 import {
-  ONECURRENCY_ADDRESS,
+  // ONECURRENCY_ADDRESS,
   OneCurrencyABI,
 } from "@/common/contracts/one-currency";
 import {
@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { env } from "@/env";
 import { useUserWallet } from "@/hooks/use-user-wallet";
 import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
@@ -68,7 +69,7 @@ export function SendForm() {
   // Use the custodial wallet address — this is the actual source of funds for transfers
   const { address: custodialAddress } = useUserWallet();
   const { data: rawBalanceWei } = useReadContract({
-    address: ONECURRENCY_ADDRESS as `0x${string}`,
+    address: env.NEXT_PUBLIC_ONECURRENCY_ADDRESS as `0x${string}`,
     abi: OneCurrencyABI,
     functionName: "balanceOf",
     args: custodialAddress ? [custodialAddress] : undefined,
