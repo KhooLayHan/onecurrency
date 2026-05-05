@@ -29,6 +29,7 @@ const TOKEN_DECIMALS = 18;
 const BASE = 10n;
 const WEI_PER_DOLLAR = BASE ** BigInt(TOKEN_DECIMALS);
 const ETH_FUND_AMOUNT = "0.05";
+const HARDHAT_GAS_RESERVE_ETH = "1";
 
 function parseAmountArg(argv: string[]): number {
   const arg = argv.find((a) => a.startsWith("--amount="));
@@ -102,11 +103,12 @@ async function run() {
     const operatorBalance = await publicClient.getBalance({
       address: account.address,
     });
+    const minimumOperatorBalance = needed + parseEther(HARDHAT_GAS_RESERVE_ETH);
 
-    if (operatorBalance < needed) {
+    if (operatorBalance < minimumOperatorBalance) {
       await testClient.setBalance({
         address: account.address,
-        value: needed + parseEther("1"),
+        value: minimumOperatorBalance,
       });
       logger.info(
         { address: account.address },

@@ -76,6 +76,13 @@ export const getPrimaryWallet = base
       address,
       networkId
     );
+
+    if (blacklistResult.isErr()) {
+      throw mapToORPCError(blacklistResult.error);
+    }
+
+    const blacklistEntry = blacklistResult.value;
+
     const blacklistEntry = blacklistResult.isOk()
       ? blacklistResult.value
       : null;
