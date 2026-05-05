@@ -8,14 +8,12 @@
  */
 import { ResultAsync } from "neverthrow";
 import { isAddress } from "viem";
-import {
-  ONECURRENCY_ADDRESS,
-  OneCurrencyABI,
-} from "@/common/contracts/one-currency";
+import { OneCurrencyABI } from "@/common/contracts/one-currency";
 import type { AppError } from "@/common/errors/base";
 import { TransactionRevertedError } from "@/common/errors/transaction";
 import { InvalidAddressError } from "@/common/errors/wallet";
 import { MIN_CONFIRMATIONS } from "../../constants/blockchain";
+import { env } from "../../env";
 import { logger } from "../../lib/logger";
 import { chain, getOperatorAccount, publicClient } from "./client";
 import { mapBlockchainError } from "./helpers";
@@ -46,7 +44,7 @@ export function mintTokens(
 
       // Simulate first — catches permission / blacklist errors before spending gas
       const { request } = await publicClient.simulateContract({
-        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        address: env.ONECURRENCY_ADDRESS as `0x${string}`,
         abi: OneCurrencyABI,
         functionName: "mint",
         args: [toAddress as `0x${string}`, BigInt(amountWei)],

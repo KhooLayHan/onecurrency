@@ -11,15 +11,13 @@
  */
 import { ResultAsync } from "neverthrow";
 import { isAddress } from "viem";
-import {
-  ONECURRENCY_ADDRESS,
-  OneCurrencyABI,
-} from "@/common/contracts/one-currency";
+import { OneCurrencyABI } from "@/common/contracts/one-currency";
 import type { AppError } from "@/common/errors/base";
 import { ContractCallRevertedError } from "@/common/errors/contract";
 import { TransactionRevertedError } from "@/common/errors/transaction";
 import { InvalidAddressError } from "@/common/errors/wallet";
 import { MIN_CONFIRMATIONS } from "../../constants/blockchain";
+import { env } from "../../env";
 import { logger } from "../../lib/logger";
 import { chain, getOperatorAccount, publicClient } from "./client";
 import { mapBlockchainError } from "./helpers";
@@ -44,7 +42,7 @@ export function blacklistAddress(
       const { account, walletClient } = getOperatorAccount();
 
       const { request } = await publicClient.simulateContract({
-        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        address: env.ONECURRENCY_ADDRESS as `0x${string}`,
         abi: OneCurrencyABI,
         functionName: "blacklistAccount",
         args: [address as `0x${string}`],
@@ -98,7 +96,7 @@ export function unblacklistAddress(
       const { account, walletClient } = getOperatorAccount();
 
       const { request } = await publicClient.simulateContract({
-        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        address: env.ONECURRENCY_ADDRESS as `0x${string}`,
         abi: OneCurrencyABI,
         functionName: "unblacklistAccount",
         args: [address as `0x${string}`],
@@ -163,7 +161,7 @@ export function seizeAddressTokens(
       const { account, walletClient } = getOperatorAccount();
 
       const balance = await publicClient.readContract({
-        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        address: env.ONECURRENCY_ADDRESS as `0x${string}`,
         abi: OneCurrencyABI,
         functionName: "balanceOf",
         args: [fromAddress as `0x${string}`],
@@ -178,7 +176,7 @@ export function seizeAddressTokens(
       }
 
       const { request } = await publicClient.simulateContract({
-        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        address: env.ONECURRENCY_ADDRESS as `0x${string}`,
         abi: OneCurrencyABI,
         functionName: "seizeTokens",
         args: [fromAddress as `0x${string}`, toAddress as `0x${string}`],
