@@ -21,6 +21,7 @@ import { db } from "@/src/db";
 import { roles } from "@/src/db/schema/roles";
 import { userRoles } from "@/src/db/schema/user-roles";
 import { logger } from "@/src/lib/logger";
+import { BlacklistRepository } from "@/src/repositories/blacklist.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { WalletService } from "@/src/services/wallet.service";
 import { base } from "../context";
@@ -29,6 +30,7 @@ import { requireAuth } from "../middleware";
 
 const walletService = new WalletService(db);
 const userRepository = new UserRepository(db);
+const blacklistRepository = new BlacklistRepository(db);
 
 /**
  * Returns the authenticated user's primary custodial wallet.
@@ -50,6 +52,8 @@ export const getPrimaryWallet = base
       address: z.string(),
       networkId: z.number(),
       chainId: z.number(),
+      isBlacklisted: z.boolean(),
+      seizedAt: z.date().nullable(),
     })
   )
   .handler(async ({ context }) => {
@@ -67,12 +71,23 @@ export const getPrimaryWallet = base
     }
 
     const { walletId, address, networkId, chainId } = result.value;
+
+    const blacklistResult = await blacklistRepository.findByAddress(
+      address,
+      networkId
+    );
+    const blacklistEntry = blacklistResult.isOk()
+      ? blacklistResult.value
+      : null;
+
     logger.info({ userId, chainId }, "User primary wallet fetched");
     return {
       walletId: walletId.toString(),
       address,
       networkId,
       chainId,
+      isBlacklisted: blacklistEntry !== null,
+      seizedAt: blacklistEntry?.seizedAt ?? null,
     };
   });
 

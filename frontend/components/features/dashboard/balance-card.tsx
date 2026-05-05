@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Plus, RefreshCw, Send } from "lucide-react";
+import { ExternalLink, Lock, Plus, RefreshCw, Send } from "lucide-react";
 import Link from "next/link";
 import { formatUnits } from "viem";
 import { useConnection, useReadContract } from "wagmi";
@@ -26,6 +26,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useUserWallet } from "@/hooks/use-user-wallet";
+import { useSession } from "@/lib/auth-client";
 import { DepositForm } from "../deposit/deposit-form";
 import { SendForm } from "../transfer/send-form";
 
@@ -60,8 +61,14 @@ export function BalanceCard() {
   const {
     address: custodialAddress,
     isLoading: isCustodialLoading,
+    isBlacklisted,
+    seizedAt,
     // chainId,
   } = useUserWallet();
+
+  const { data: session } = useSession();
+  const isSuspended = session?.user.deletedAt != null;
+  const isRestricted = isBlacklisted || seizedAt !== null || isSuspended;
 
   // --- Custodial balance read (primary / hero) ---
   const {
@@ -246,59 +253,73 @@ export function BalanceCard() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3 pt-4">
-          <Dialog>
-            <DialogTrigger
-              render={
-                <Button className="flex w-full gap-2 font-semibold" size="lg" />
-              }
-            >
-              <Plus className="size-4.5" />
-              Add Money
-            </DialogTrigger>
+        <div className="pt-4">
+          {isRestricted ? (
+            <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3">
+              <Lock className="size-4 shrink-0 text-destructive" />
+              <span className="text-destructive/80 text-sm">
+                Account access restricted — contact support
+              </span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <Dialog>
+                <DialogTrigger
+                  render={
+                    <Button
+                      className="flex w-full gap-2 font-semibold"
+                      size="lg"
+                    />
+                  }
+                >
+                  <Plus className="size-4.5" />
+                  Add Money
+                </DialogTrigger>
 
-            <DialogContent className="rounded-2xl sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="font-bold text-2xl">
-                  Top Up Account
-                </DialogTitle>
-                <DialogDescription>
-                  Enter the amount of USD you want to add. This will be
-                  instantly converted to OneCurrency.
-                </DialogDescription>
-              </DialogHeader>
+                <DialogContent className="rounded-2xl sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-bold text-2xl">
+                      Top Up Account
+                    </DialogTitle>
+                    <DialogDescription>
+                      Enter the amount of USD you want to add. This will be
+                      instantly converted to OneCurrency.
+                    </DialogDescription>
+                  </DialogHeader>
 
-              <DepositForm />
-            </DialogContent>
-          </Dialog>
+                  <DepositForm />
+                </DialogContent>
+              </Dialog>
 
-          <Dialog>
-            <DialogTrigger
-              render={
-                <Button
-                  className="flex w-full gap-2 bg-secondary/60 font-semibold"
-                  size="lg"
-                  variant="secondary"
-                />
-              }
-            >
-              <Send className="size-4.5" />
-              Send
-            </DialogTrigger>
+              <Dialog>
+                <DialogTrigger
+                  render={
+                    <Button
+                      className="flex w-full gap-2 bg-secondary/60 font-semibold"
+                      size="lg"
+                      variant="secondary"
+                    />
+                  }
+                >
+                  <Send className="size-4.5" />
+                  Send
+                </DialogTrigger>
 
-            <DialogContent className="rounded-2xl sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="font-bold text-2xl">
-                  Send Money
-                </DialogTitle>
-                <DialogDescription>
-                  Send funds instantly to another OneCurrency user.
-                </DialogDescription>
-              </DialogHeader>
+                <DialogContent className="rounded-2xl sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-bold text-2xl">
+                      Send Money
+                    </DialogTitle>
+                    <DialogDescription>
+                      Send funds instantly to another OneCurrency user.
+                    </DialogDescription>
+                  </DialogHeader>
 
-              <SendForm />
-            </DialogContent>
-          </Dialog>
+                  <SendForm />
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowRight, Info, ShieldCheck } from "lucide-react";
+import { ArrowRight, Info, ShieldCheck, User } from "lucide-react";
 import Link from "next/link";
 import { KYC_STATUS } from "@/common/constants/kyc";
+import { AccountRestrictedBanner } from "@/components/features/dashboard/account-restricted-banner";
 import { BalanceCard } from "@/components/features/dashboard/balance-card";
 import { KycBanner } from "@/components/features/dashboard/kyc-banner";
 import { RecentActivityList } from "@/components/features/dashboard/recent-activity";
@@ -16,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useUserWallet } from "@/hooks/use-user-wallet";
 import { useSession } from "@/lib/auth-client";
 
 // Hardcoded exchange rate used in sidebar
@@ -60,8 +62,44 @@ function getKycStatusLabel(statusId: number): string {
   }
 }
 
+function getAccountStatusBadgeVariant(
+  isBlacklisted: boolean,
+  isSeized: boolean,
+  isSuspended: boolean
+): "success" | "warning" | "error" {
+  if (isSuspended || isSeized) {
+    return "error";
+  }
+  if (isBlacklisted) {
+    return "warning";
+  }
+  return "success";
+}
+
+function getAccountStatusLabel(
+  isBlacklisted: boolean,
+  isSeized: boolean,
+  isSuspended: boolean
+): string {
+  if (isSuspended) {
+    return "Suspended";
+  }
+  if (isSeized) {
+    return "Seized";
+  }
+  if (isBlacklisted) {
+    return "Restricted";
+  }
+  return "Active";
+}
+
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
+  const {
+    isBlacklisted,
+    seizedAt,
+    isLoading: isWalletStatusLoading,
+  } = useUserWallet();
 
   // Loading state
   if (isPending) {
@@ -115,6 +153,8 @@ export default function DashboardPage() {
   const kycStatusId = session.user.kycStatusId ?? KYC_STATUS.NONE;
   const greeting = getTimeOfDayGreeting();
   const firstName = session.user.name?.split(" ")[0] ?? "there";
+  const isSuspended = session.user.deletedAt != null;
+  const isSeized = seizedAt !== null;
 
   return (
     <div className="fade-in flex animate-in flex-col gap-6 duration-300 ease-out">
@@ -132,6 +172,12 @@ export default function DashboardPage() {
         {/* Main Column */}
         <div className="flex flex-col gap-6 md:col-span-7 lg:col-span-8">
           <BalanceCard />
+
+          <AccountRestrictedBanner
+            isBlacklisted={isBlacklisted}
+            isSeized={isSeized}
+            isSuspended={isSuspended}
+          />
 
           <KycBanner kycStatusId={kycStatusId} />
 
@@ -183,6 +229,31 @@ export default function DashboardPage() {
                     {getKycStatusLabel(kycStatusId)}
                   </Badge>
                 </Link>
+              </div>
+
+              {/* Account / Wallet Status */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="size-4 text-muted-foreground" />
+                  <span className="text-sm">Account</span>
+                </div>
+                {isWalletStatusLoading ? (
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                ) : (
+                  <Badge
+                    variant={getAccountStatusBadgeVariant(
+                      isBlacklisted,
+                      isSeized,
+                      isSuspended
+                    )}
+                  >
+                    {getAccountStatusLabel(
+                      isBlacklisted,
+                      isSeized,
+                      isSuspended
+                    )}
+                  </Badge>
+                )}
               </div>
 
               <Separator />

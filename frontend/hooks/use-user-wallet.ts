@@ -11,6 +11,8 @@ type UserWallet = {
   address: string;
   networkId: number;
   chainId: number;
+  isBlacklisted: boolean;
+  seizedAt: Date | null;
 };
 
 export function useUserWallet(): {
@@ -18,6 +20,8 @@ export function useUserWallet(): {
   address: string | undefined;
   networkId: number | undefined;
   chainId: number | undefined;
+  isBlacklisted: boolean;
+  seizedAt: Date | null;
   isLoading: boolean;
   error: Error | null;
 } {
@@ -34,6 +38,8 @@ export function useUserWallet(): {
     address: data?.address,
     networkId: data?.networkId,
     chainId: data?.chainId,
+    isBlacklisted: data?.isBlacklisted ?? false,
+    seizedAt: data?.seizedAt ?? null,
     isLoading,
     error,
   };
