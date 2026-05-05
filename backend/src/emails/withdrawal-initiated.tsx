@@ -1,5 +1,6 @@
 /** @jsxImportSource react */
 import { Button, Hr, Preview, Text } from "react-email";
+import { formatUsd } from "./format-usd";
 import { EmailLayout } from "./layout";
 
 export type WithdrawalInitiatedEmailProps = {
@@ -9,16 +10,8 @@ export type WithdrawalInitiatedEmailProps = {
   dashboardUrl: string;
 };
 
-const CENTS_PER_DOLLAR = 100;
 const PAYOUT_BUSINESS_DAYS_MIN = 1;
 const PAYOUT_BUSINESS_DAYS_MAX = 3;
-
-function formatUsd(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / CENTS_PER_DOLLAR);
-}
 
 export function WithdrawalInitiatedEmail({
   name,

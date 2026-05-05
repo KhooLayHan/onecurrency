@@ -1,5 +1,6 @@
 /** @jsxImportSource react */
 import { Button, Hr, Preview, Text } from "react-email";
+import { formatUsd } from "./format-usd";
 import { EmailLayout } from "./layout";
 
 export type DepositFailedEmailProps = {
@@ -8,15 +9,6 @@ export type DepositFailedEmailProps = {
   depositId: string;
   dashboardUrl: string;
 };
-
-const CENTS_PER_DOLLAR = 100;
-
-function formatUsd(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / CENTS_PER_DOLLAR);
-}
 
 export function DepositFailedEmail({
   name,

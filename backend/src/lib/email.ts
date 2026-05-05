@@ -5,6 +5,7 @@ import {
   renderWithdrawalFailed,
   renderWithdrawalInitiated,
 } from "../emails";
+import { formatUsd } from "../emails/format-usd";
 import { env } from "../env";
 import { logger } from "./logger";
 
@@ -205,12 +206,6 @@ export async function sendTransferSentEmail({
   amountCents,
   transferId,
 }: SendTransferSentEmailOptions): Promise<void> {
-  const CENTS_PER_DOLLAR = 100;
-  const formatUsd = (cents: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(cents / CENTS_PER_DOLLAR);
   try {
     const { error } = await resend.emails.send(
       {
@@ -250,12 +245,6 @@ export async function sendTransferReceivedEmail({
   amountCents,
   transferId,
 }: SendTransferReceivedEmailOptions): Promise<void> {
-  const CENTS_PER_DOLLAR = 100;
-  const formatUsd = (cents: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(cents / CENTS_PER_DOLLAR);
   try {
     const { error } = await resend.emails.send(
       {
