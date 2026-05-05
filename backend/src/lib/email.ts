@@ -1,10 +1,12 @@
+import { Resend } from "resend";
 import {
   renderDepositFailed,
   renderDepositSuccess,
+  renderPasswordReset,
   renderWithdrawalFailed,
   renderWithdrawalInitiated,
-} from "@onecurrency/transactional";
-import { Resend } from "resend";
+} from "../emails";
+import { formatUsd } from "../emails/format-usd";
 import { env } from "../env";
 import { logger } from "./logger";
 
@@ -28,15 +30,12 @@ export async function sendPasswordResetEmail(
   url: string
 ): Promise<void> {
   try {
+    const html = await renderPasswordReset({ url });
     const { error } = await resend.emails.send({
       from: env.EMAIL_FROM,
       to: [to],
       subject: "Reset your OneCurrency password",
-      html: `
-        <p>We received a request to reset your OneCurrency password.</p>
-        <p><a href="${url}">Click here to reset your password</a></p>
-        <p>This link expires in 1 hour. If you did not request this, you can safely ignore this email.</p>
-      `,
+      html,
     });
     if (error) {
       logger.warn({ error }, "Failed to send password reset email");
@@ -205,12 +204,6 @@ export async function sendTransferSentEmail({
   amountCents,
   transferId,
 }: SendTransferSentEmailOptions): Promise<void> {
-  const CENTS_PER_DOLLAR = 100;
-  const formatUsd = (cents: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(cents / CENTS_PER_DOLLAR);
   try {
     const { error } = await resend.emails.send(
       {
@@ -250,12 +243,6 @@ export async function sendTransferReceivedEmail({
   amountCents,
   transferId,
 }: SendTransferReceivedEmailOptions): Promise<void> {
-  const CENTS_PER_DOLLAR = 100;
-  const formatUsd = (cents: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(cents / CENTS_PER_DOLLAR);
   try {
     const { error } = await resend.emails.send(
       {

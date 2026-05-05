@@ -107,8 +107,6 @@ export function recordWebhookEvent(
   db: Database,
   event: Stripe.Event
 ): ResultAsync<WebhookEvent | null, AppError> {
-  logger.info("213");
-
   return new WebhookEventRepository(db)
     .create({
       stripeEventId: event.id,

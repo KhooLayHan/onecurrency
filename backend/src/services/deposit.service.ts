@@ -188,8 +188,6 @@ export class DepositService {
       return okAsync(undefined);
     }
 
-    // logger.info("DDD");
-
     const checkoutSession = event.data.object as Stripe.Checkout.Session;
     logger.info(
       {
@@ -244,7 +242,6 @@ export class DepositService {
           return okAsync<void, AppError>(undefined);
         }
 
-        // logger.info("DDDWADAD");
         // Attempt to record event atomically; null = duplicate (another request is processing)
         return recordWebhookEvent(this.db, event).andThen((recordedEvent) => {
           logger.info(
