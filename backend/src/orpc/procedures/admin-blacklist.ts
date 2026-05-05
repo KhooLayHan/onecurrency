@@ -16,12 +16,11 @@
  * ensure it is never the same wallet as the operator (relayer) account.
  */
 import { ORPCError } from "@orpc/server";
-import { eq } from "drizzle-orm";
 import { privateKeyToAccount } from "viem/accounts";
 import z from "zod";
 import { db } from "@/src/db";
-import { networks } from "@/src/db/schema/networks";
 import { env } from "@/src/env";
+import { NetworkRepository } from "@/src/repositories/network.repository";
 import { BlacklistService } from "@/src/services/blacklist.service";
 import { activeChainId } from "@/src/services/blockchain/client";
 import { base } from "../context";
@@ -29,6 +28,7 @@ import { mapToORPCError } from "../errors";
 import { requirePermission, requireRole } from "../middleware";
 
 const blacklistService = new BlacklistService(db);
+const networkRepository = new NetworkRepository(db);
 
 /** Number of blacklist entries returned per page. */
 const BLACKLIST_PAGE_SIZE = 20;
@@ -139,11 +139,13 @@ export const addToBlacklist = base
   )
   .output(z.object({ message: z.string() }))
   .handler(async ({ input, context }) => {
-    const [activeNetwork] = await db
-      .select({ id: networks.id })
-      .from(networks)
-      .where(eq(networks.chainId, BigInt(activeChainId)))
-      .limit(1);
+    const networkResult = await networkRepository.findByChainId(
+      BigInt(activeChainId)
+    );
+    if (networkResult.isErr()) {
+      throw mapToORPCError(networkResult.error);
+    }
+    const activeNetwork = networkResult.value;
 
     if (!activeNetwork) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", {

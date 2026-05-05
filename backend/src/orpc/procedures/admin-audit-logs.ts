@@ -7,32 +7,17 @@
  *
  * @permission audit:read (held by both admin and compliance roles)
  */
-import {
-  and,
-  count,
-  desc,
-  eq,
-  gte,
-  ilike,
-  lte,
-  or,
-  type SQL,
-} from "drizzle-orm";
 import z from "zod";
 import { db } from "@/src/db";
-import { auditLogs } from "@/src/db/schema/audit-logs";
-import { users } from "@/src/db/schema/users";
+import { AuditLogRepository } from "@/src/repositories/audit-log.repository";
 import { base } from "../context";
+import { mapToORPCError } from "../errors";
 import { requirePermission } from "../middleware";
+
+const auditLogRepository = new AuditLogRepository(db);
 
 /** Number of audit log entries returned per page. */
 const AUDIT_LOGS_PAGE_SIZE = 25;
-
-/** End-of-day time components for inclusive upper-bound date filtering. */
-const END_OF_DAY_HOURS = 23;
-const END_OF_DAY_MINUTES = 59;
-const END_OF_DAY_SECONDS = 59;
-const END_OF_DAY_MS = 999;
 
 const auditLogItemSchema = z.object({
   publicId: z.string(),
@@ -48,67 +33,19 @@ const auditLogItemSchema = z.object({
 });
 
 /**
- * Builds the Drizzle `SQL` condition array for the `listAuditLogs` query based
- * on the provided filter inputs.
- *
- * Returns `undefined` when no filters are active so callers can pass it
- * directly to `.where()` without a special-case branch.
- *
- * @param input - The validated procedure input.
- * @returns A non-empty `SQL[]`, or `undefined` when no filters are set.
- */
-function buildAuditLogConditions(
-  input: {
-    search?: string;
-    action?: string;
-    entityType?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }
-): SQL[] | undefined {
-  const conditions: SQL[] = [];
-
-  if (input.search) {
-    const term = `%${input.search}%`;
-    conditions.push(
-      or(
-        ilike(auditLogs.action, term),
-        ilike(auditLogs.entityType, term),
-        ilike(users.name, term),
-        ilike(users.email, term)
-      ) as SQL
-    );
-  }
-  if (input.action) {
-    conditions.push(eq(auditLogs.action, input.action));
-  }
-  if (input.entityType) {
-    conditions.push(eq(auditLogs.entityType, input.entityType));
-  }
-  if (input.dateFrom) {
-    conditions.push(gte(auditLogs.createdAt, new Date(input.dateFrom)));
-  }
-  if (input.dateTo) {
-    const end = new Date(input.dateTo);
-    end.setUTCHours(
-      END_OF_DAY_HOURS,
-      END_OF_DAY_MINUTES,
-      END_OF_DAY_SECONDS,
-      END_OF_DAY_MS
-    );
-    conditions.push(lte(auditLogs.createdAt, end));
-  }
-
-  return conditions.length > 0 ? conditions : undefined;
-}
-
-/**
  * Returns a paginated list of audit log entries, newest first.
  *
  * Supports filtering by free-text search (actor name/email, action,
  * entity type), a specific action string, entity type, and date range.
  *
  * @permission audit:read
+ * @input  page       - 1-based page number (default 1).
+ * @input  search     - Optional text to search across action, entity type, actor name/email.
+ * @input  action     - Optional exact action string to filter by.
+ * @input  entityType - Optional entity type to filter by.
+ * @input  dateFrom   - Optional ISO date for the inclusive lower bound of `createdAt`.
+ * @input  dateTo     - Optional ISO date for the inclusive upper bound of `createdAt`.
+ * @output Paginated list of `auditLogItemSchema` rows with actor info.
  */
 export const listAuditLogs = base
   .use(requirePermission("audit:read"))
@@ -131,54 +68,33 @@ export const listAuditLogs = base
     })
   )
   .handler(async ({ input }) => {
-    const offset = (input.page - 1) * AUDIT_LOGS_PAGE_SIZE;
-
-    const conditionList = buildAuditLogConditions(input);
-    const where = conditionList ? and(...conditionList) : undefined;
-
-    const joined = db
-      .select({
-        publicId: auditLogs.publicId,
-        action: auditLogs.action,
-        entityType: auditLogs.entityType,
-        entityId: auditLogs.entityId,
-        oldValues: auditLogs.oldValues,
-        newValues: auditLogs.newValues,
-        metadata: auditLogs.metadata,
-        createdAt: auditLogs.createdAt,
-        actorName: users.name,
-        actorEmail: users.email,
-      })
-      .from(auditLogs)
-      .leftJoin(users, eq(auditLogs.userId, users.id));
-
-    const countJoined = db
-      .select({ count: count(auditLogs.id) })
-      .from(auditLogs)
-      .leftJoin(users, eq(auditLogs.userId, users.id));
-
-    const [[totalResult], rows] = await Promise.all([
-      where ? countJoined.where(where) : countJoined,
-      (where ? joined.where(where) : joined)
-        .orderBy(desc(auditLogs.createdAt))
-        .limit(AUDIT_LOGS_PAGE_SIZE)
-        .offset(offset),
-    ]);
+    const result = await auditLogRepository.listWithActor({
+      page: input.page,
+      pageSize: AUDIT_LOGS_PAGE_SIZE,
+      search: input.search,
+      action: input.action,
+      entityType: input.entityType,
+      dateFrom: input.dateFrom,
+      dateTo: input.dateTo,
+    });
+    if (result.isErr()) {
+      throw mapToORPCError(result.error);
+    }
 
     return {
-      items: rows.map((row) => ({
+      items: result.value.items.map((row) => ({
         publicId: row.publicId,
         action: row.action,
         entityType: row.entityType,
         entityId: row.entityId?.toString() ?? null,
-        actorName: row.actorName ?? null,
-        actorEmail: row.actorEmail ?? null,
+        actorName: row.actorName,
+        actorEmail: row.actorEmail,
         oldValues: (row.oldValues as Record<string, unknown>) ?? null,
         newValues: (row.newValues as Record<string, unknown>) ?? null,
         metadata: (row.metadata as Record<string, unknown>) ?? null,
         createdAt: row.createdAt,
       })),
-      total: totalResult?.count ?? 0,
+      total: result.value.total,
       page: input.page,
       pageSize: AUDIT_LOGS_PAGE_SIZE,
     };

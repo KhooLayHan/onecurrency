@@ -31,13 +31,7 @@ const withdrawalHistoryItemSchema = z.object({
   publicId: z.string(),
   type: z.literal("cash_out"),
   amountCents: z.number(),
-  status: z.enum([
-    "pending",
-    "processing",
-    "completed",
-    "failed",
-    "refunded",
-  ]),
+  status: z.enum(["pending", "processing", "completed", "failed", "refunded"]),
   createdAt: z.date(),
 });
 
