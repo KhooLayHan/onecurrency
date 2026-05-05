@@ -1,4 +1,5 @@
 "use client";
+
 import { useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -8,7 +9,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 
-const ADMIN_ROLES = ["admin", "compliance"];
+const ADMIN_ROLES = ["admin", "compliance", "support"];
 
 export default function MainLayout({
   children,

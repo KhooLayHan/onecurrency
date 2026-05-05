@@ -10,14 +10,12 @@
 import { ResultAsync } from "neverthrow";
 import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import {
-  ONECURRENCY_ADDRESS,
-  OneCurrencyABI,
-} from "@/common/contracts/one-currency";
+import { OneCurrencyABI } from "@/common/contracts/one-currency";
 import type { AppError } from "@/common/errors/base";
 import { TransactionRevertedError } from "@/common/errors/transaction";
 import { WalletSigningError } from "@/common/errors/wallet";
 import { MIN_CONFIRMATIONS } from "../../constants/blockchain";
+import { env } from "../../env";
 import { decrypt } from "../../lib/encryption";
 import { logger } from "../../lib/logger";
 import { chain, publicClient, rpcUrl } from "./client";
@@ -65,7 +63,7 @@ export function burnTokens(
       });
 
       const { request } = await publicClient.simulateContract({
-        address: ONECURRENCY_ADDRESS as `0x${string}`,
+        address: env.ONECURRENCY_ADDRESS as `0x${string}`,
         abi: OneCurrencyABI,
         functionName: "burn",
         args: [BigInt(amountWei)],

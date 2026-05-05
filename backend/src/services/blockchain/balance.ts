@@ -6,12 +6,10 @@
  */
 import { ResultAsync } from "neverthrow";
 import { HttpRequestError, TimeoutError } from "viem";
-import {
-  ONECURRENCY_ADDRESS,
-  OneCurrencyABI,
-} from "@/common/contracts/one-currency";
+import { OneCurrencyABI } from "@/common/contracts/one-currency";
 import type { AppError } from "@/common/errors/base";
 import { InternalError } from "@/common/errors/infrastructure";
+import { env } from "../../env";
 import { publicClient } from "./client";
 import { handleNetworkError } from "./helpers";
 
@@ -27,7 +25,7 @@ export function getOnChainBalance(
 ): ResultAsync<string, AppError> {
   return ResultAsync.fromPromise(
     publicClient.readContract({
-      address: ONECURRENCY_ADDRESS as `0x${string}`,
+      address: env.ONECURRENCY_ADDRESS as `0x${string}`,
       abi: OneCurrencyABI,
       functionName: "balanceOf",
       args: [address as `0x${string}`],

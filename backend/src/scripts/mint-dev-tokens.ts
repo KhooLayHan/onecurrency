@@ -6,13 +6,22 @@
  *   bun run src/scripts/mint-dev-tokens.ts
  *   bun run src/scripts/mint-dev-tokens.ts --amount=500
  */
+
+// import { setBalance } from "@//hardhat-network-helpers";
 import { and, eq, isNull } from "drizzle-orm";
-import { parseEther } from "viem";
+import { createTestClient, http, parseEther } from "viem";
+import { hardhat } from "viem/chains";
+import { HARDHAT_CHAIN_ID } from "../constants/blockchain";
 import { db, pool } from "../db";
 import { users } from "../db/schema/users";
 import { wallets } from "../db/schema/wallets";
 import { logger } from "../lib/logger";
-import { getOperatorAccount } from "../services/blockchain/client";
+import {
+  chain,
+  getOperatorAccount,
+  publicClient,
+  rpcUrl,
+} from "../services/blockchain/client";
 import { mintTokens } from "../services/blockchain/mint";
 
 const DEFAULT_MINT_AMOUNT_USD = 1000;
@@ -20,6 +29,7 @@ const TOKEN_DECIMALS = 18;
 const BASE = 10n;
 const WEI_PER_DOLLAR = BASE ** BigInt(TOKEN_DECIMALS);
 const ETH_FUND_AMOUNT = "0.05";
+const HARDHAT_GAS_RESERVE_ETH = "1";
 
 function parseAmountArg(argv: string[]): number {
   const arg = argv.find((a) => a.startsWith("--amount="));
@@ -79,6 +89,33 @@ async function run() {
   }
 
   logger.info({ count: targets.length }, "Found wallets to fund + mint");
+
+  // Self-fund operator wallet on local Hardhat nodes (resilient to restarts)
+  if (chain.id === HARDHAT_CHAIN_ID) {
+    const testClient = createTestClient({
+      chain: hardhat,
+      mode: "hardhat",
+      transport: http(rpcUrl),
+    });
+
+    const { account } = getOperatorAccount();
+    const needed = parseEther(ETH_FUND_AMOUNT) * BigInt(targets.length);
+    const operatorBalance = await publicClient.getBalance({
+      address: account.address,
+    });
+    const minimumOperatorBalance = needed + parseEther(HARDHAT_GAS_RESERVE_ETH);
+
+    if (operatorBalance < minimumOperatorBalance) {
+      await testClient.setBalance({
+        address: account.address,
+        value: minimumOperatorBalance,
+      });
+      logger.info(
+        { address: account.address },
+        "Operator wallet topped up via hardhat_setBalance"
+      );
+    }
+  }
 
   let fundSuccessCount = 0;
   let fundFailureCount = 0;

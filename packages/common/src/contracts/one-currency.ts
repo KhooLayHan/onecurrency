@@ -28,6 +28,6 @@ export const OneCurrencyABI: Abi = parseAbi([
   "error ExceedsMaxSupply(uint256 requested, uint256 available)",
 ]);
 
-export const ONECURRENCY_ADDRESS: string =
-  // "0x5fbdb2315678afecb367f032d93f642f64180aa3"; // Local Hardhat address
-  "0xa275676fc4728575a9a953b016a33dd418f9a30f"; // Sepolia address
+// export const ONECURRENCY_ADDRESS: string =
+// "0x5fbdb2315678afecb367f032d93f642f64180aa3"; // Local Hardhat address
+// "0xa275676fc4728575a9a953b016a33dd418f9a30f"; // Sepolia address

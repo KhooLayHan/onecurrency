@@ -14,6 +14,14 @@ import { orpcClient } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 
 const CENTS_PER_DOLLAR = 100;
+
+function getErrorMessage(e: unknown): string {
+  if (typeof e === "string") {
+    return e;
+  }
+  const err = e as { message?: string };
+  return err.message ?? String(e);
+}
 const PERCENTAGE_CONVERSION_FACTOR = 100;
 const FEE_DISPLAY_PERCENT =
   WITHDRAWAL_FEE_PERCENT * PERCENTAGE_CONVERSION_FACTOR;
@@ -141,7 +149,7 @@ export function CashOutForm() {
             </div>
             {field.state.meta.errors.length > 0 && (
               <p className="font-medium text-destructive text-sm">
-                {field.state.meta.errors.join(", ")}
+                {field.state.meta.errors.map(getErrorMessage).join(", ")}
               </p>
             )}
           </div>
@@ -216,7 +224,7 @@ export function CashOutForm() {
               />
               {field.state.meta.errors.length > 0 && (
                 <p className="text-destructive text-xs">
-                  {field.state.meta.errors.join(", ")}
+                  {field.state.meta.errors.map(getErrorMessage).join(", ")}
                 </p>
               )}
             </div>
@@ -238,7 +246,7 @@ export function CashOutForm() {
               />
               {field.state.meta.errors.length > 0 && (
                 <p className="text-destructive text-xs">
-                  {field.state.meta.errors.join(", ")}
+                  {field.state.meta.errors.map(getErrorMessage).join(", ")}
                 </p>
               )}
             </div>

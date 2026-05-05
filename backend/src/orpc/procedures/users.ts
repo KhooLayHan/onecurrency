@@ -21,6 +21,7 @@ import { db } from "@/src/db";
 import { roles } from "@/src/db/schema/roles";
 import { userRoles } from "@/src/db/schema/user-roles";
 import { logger } from "@/src/lib/logger";
+import { BlacklistRepository } from "@/src/repositories/blacklist.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { WalletService } from "@/src/services/wallet.service";
 import { base } from "../context";
@@ -29,6 +30,9 @@ import { requireAuth } from "../middleware";
 
 const walletService = new WalletService(db);
 const userRepository = new UserRepository(db);
+const blacklistRepository = new BlacklistRepository(db);
+
+const PRIVILEGED_ROLE_NAMES = ["admin", "compliance", "support"] as const;
 
 /**
  * Returns the authenticated user's primary custodial wallet.
@@ -50,6 +54,8 @@ export const getPrimaryWallet = base
       address: z.string(),
       networkId: z.number(),
       chainId: z.number(),
+      isBlacklisted: z.boolean(),
+      seizedAt: z.date().nullable(),
     })
   )
   .handler(async ({ context }) => {
@@ -67,12 +73,25 @@ export const getPrimaryWallet = base
     }
 
     const { walletId, address, networkId, chainId } = result.value;
+
+    const blacklistResult = await blacklistRepository.findByAddress(
+      address,
+      networkId
+    );
+
+    if (blacklistResult.isErr()) {
+      throw mapToORPCError(blacklistResult.error);
+    }
+    const blacklistEntry = blacklistResult.value;
+
     logger.info({ userId, chainId }, "User primary wallet fetched");
     return {
       walletId: walletId.toString(),
       address,
       networkId,
       chainId,
+      isBlacklisted: blacklistEntry !== null,
+      seizedAt: blacklistEntry?.seizedAt ?? null,
     };
   });
 
@@ -125,6 +144,24 @@ export const findRecipient = base
           reason: recipient ? "self_transfer" : "not_found",
         },
         "Recipient lookup rejected — collapsing to generic error"
+      );
+      throw NO_ELIGIBLE_RECIPIENT;
+    }
+
+    const recipientRoleRows = await db
+      .select({ name: roles.name })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(userRoles.userId, recipient.id));
+
+    const hasPrivilegedRole = recipientRoleRows.some((r) =>
+      (PRIVILEGED_ROLE_NAMES as readonly string[]).includes(r.name)
+    );
+
+    if (hasPrivilegedRole) {
+      logger.info(
+        { userId, lookupEmail: input.email },
+        "Recipient lookup rejected — privileged role account"
       );
       throw NO_ELIGIBLE_RECIPIENT;
     }

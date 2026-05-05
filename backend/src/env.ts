@@ -35,6 +35,9 @@ export const env = createEnv({
       .string()
       .regex(/^0x[0-9a-fA-F]{64}$/)
       .optional(),
+    ONECURRENCY_ADDRESS: z
+      .string()
+      .regex(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address"),
     TREASURY_ADDRESS: z
       .string()
       .regex(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address")
