@@ -48,6 +48,11 @@ export class DepositService {
       "createCheckoutSession: starting"
     );
 
+    const frontendUrl =
+      env.NODE_ENV === "production"
+        ? env.PROD_CORS_ORIGIN
+        : env.LOCAL_CORS_ORIGIN;
+
     return new UserRepository(this.db)
       .findById(userId)
       .andThen((user) => {
@@ -71,8 +76,8 @@ export class DepositService {
               },
             ],
             mode: "payment",
-            success_url: `${env.LOCAL_CORS_ORIGIN}/dashboard?deposit=success`,
-            cancel_url: `${env.LOCAL_CORS_ORIGIN}/dashboard?deposit=cancelled`,
+            success_url: `${frontendUrl}/dashboard?deposit=success`,
+            cancel_url: `${frontendUrl}/dashboard?deposit=cancelled`,
             metadata: {
               userId: String(userId),
               walletId: String(walletId),
