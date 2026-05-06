@@ -15,7 +15,6 @@ import { TRANSACTION_STATUS } from "../constants/transaction-status";
 import { TRANSACTION_TYPE } from "../constants/transaction-type";
 import type { Database } from "../db";
 import type { InitiateWithdrawalRequest } from "../dto/withdrawal.dto";
-import { env } from "../env";
 import {
   sendWithdrawalFailedEmail,
   sendWithdrawalProcessedEmail,
@@ -298,20 +297,21 @@ export class WithdrawalService {
         withdrawalRepo
           .recordPayoutInitiated(withdrawal.id, transferId, payoutId)
           .andThen(() => {
-            if (env.NODE_ENV !== "production") {
-              return withdrawalRepo
-                .updateStatus(withdrawal.id, TRANSACTION_STATUS.COMPLETED)
-                .map(() => ({
-                  user,
-                  withdrawalId: withdrawal.publicId,
-                  status: "completed" as const,
-                }));
-            }
-            return okAsync({
-              user,
-              withdrawalId: withdrawal.publicId,
-              status: "processing" as const,
-            });
+            // NOTE: Currently, it's a mock setup, and has no real connected accounts.
+            // if (env.NODE_ENV !== "production") {
+            return withdrawalRepo
+              .updateStatus(withdrawal.id, TRANSACTION_STATUS.COMPLETED)
+              .map(() => ({
+                user,
+                withdrawalId: withdrawal.publicId,
+                status: "completed" as const,
+              }));
+            // }
+            // return okAsync({
+            //   user,
+            //   withdrawalId: withdrawal.publicId,
+            //   status: "processing" as const,
+            // });
           })
       )
       .andThen(({ user, withdrawalId, status }) => {

@@ -19,3 +19,4 @@ packages/tsconfig.tsbuildinfo
 
 skills-lock.json
 .agents/**
+.vercel
