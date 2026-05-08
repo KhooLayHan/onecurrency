@@ -11,12 +11,16 @@
  *   requires the raw, unconsumed request body.
  * - All other API calls are handled by the oRPC `RPCHandler`.
  */
+
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
+import { lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { auth } from "./auth";
+import { db } from "./db";
+import { sessions } from "./db/schema/sessions";
 import { env } from "./env";
 import { logger as pinoLogger } from "./lib/logger";
 import type { ORPCContext } from "./orpc/context";
@@ -146,6 +150,17 @@ v1.use("*", async (c, next) => {
 });
 
 app.route("/api/v1", v1);
+
+// biome-ignore lint/style/noMagicNumbers: <>
+const SESSION_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+setInterval(async () => {
+  try {
+    await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
+    pinoLogger.info("Expired sessions cleaned up");
+  } catch (err) {
+    pinoLogger.error({ err }, "Failed to clean up expired sessions");
+  }
+}, SESSION_CLEANUP_INTERVAL_MS);
 
 export default {
   port: env.API_PORT,

@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { twoFactor } from "better-auth/plugins";
+import { multiSession, twoFactor } from "better-auth/plugins";
 import { db } from "./db";
 import { accounts } from "./db/schema/accounts";
 import { rateLimits } from "./db/schema/rate-limit";
@@ -51,7 +51,7 @@ export const auth = betterAuth({
     },
   },
 
-  plugins: [twoFactor()],
+  plugins: [twoFactor(), multiSession()],
 
   rateLimit: {
     enabled: true,

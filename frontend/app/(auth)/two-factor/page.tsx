@@ -2,7 +2,7 @@
 
 import { useForm } from "@tanstack/react-form";
 import { KeyRound, ShieldCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -45,15 +45,21 @@ const backupSchema = z.object({
 type Mode = "totp" | "backup";
 
 export default function TwoFactorPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const [mode, setMode] = useState<Mode>("totp");
+  const searchParams = useSearchParams();
+  const rawCallback = searchParams.get("callbackUrl");
 
-  const DEFAULT_REDIRECT = "/dashboard";
+  const callbackUrl =
+    rawCallback?.startsWith("/") && !rawCallback.startsWith("//")
+      ? rawCallback
+      : "/dashboard";
+
+  // const DEFAULT_REDIRECT = "/dashboard";
 
   const handleSuccess = () => {
     toast.success("Signed in successfully");
-    router.push(DEFAULT_REDIRECT);
-    router.refresh();
+    window.location.replace(callbackUrl);
   };
 
   const totpForm = useForm({
