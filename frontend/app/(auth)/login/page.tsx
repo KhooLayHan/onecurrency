@@ -69,7 +69,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (result.data?.twoFactorRedirect) {
+      if (result.data && "twoFactorRedirect" in result.data) {
         return;
       }
 
