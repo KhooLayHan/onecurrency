@@ -69,6 +69,10 @@ export default function LoginPage() {
         return;
       }
 
+      if (result.data?.twoFactorRedirect) {
+        return;
+      }
+
       toast.success("Signed in successfully");
       window.location.replace(callbackUrl);
     },

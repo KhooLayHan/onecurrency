@@ -1,5 +1,6 @@
 import {
   inferAdditionalFields,
+  multiSessionClient,
   twoFactorClient,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
@@ -19,6 +20,7 @@ export const authClient = createAuthClient({
         window.location.href = `/two-factor${search}`;
       },
     }),
+    multiSessionClient(),
   ],
   fetchOptions: {
     credentials: "include",
