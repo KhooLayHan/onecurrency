@@ -28,7 +28,11 @@ export class WalletRepository {
   ): ResultAsync<Wallet | null, InternalError> {
     return ResultAsync.fromPromise(
       this.db._query.wallets.findFirst({
-        where: and(eq(wallets.userId, userId), eq(wallets.isPrimary, true)),
+        where: and(
+          eq(wallets.userId, userId),
+          eq(wallets.isPrimary, true),
+          isNull(wallets.deletedAt)
+        ),
       }),
       (e): InternalError =>
         new InternalError("Failed to fetch primary wallet from database", {
@@ -62,7 +66,7 @@ export class WalletRepository {
 
   demotePrimaryWallet(
     userId: bigint,
-    networkId: number
+    _networkId: number
   ): ResultAsync<void, InternalError> {
     return ResultAsync.fromPromise(
       this.db
@@ -71,7 +75,6 @@ export class WalletRepository {
         .where(
           and(
             eq(wallets.userId, userId),
-            eq(wallets.networkId, networkId),
             eq(wallets.isPrimary, true),
             isNull(wallets.deletedAt)
           )
@@ -79,7 +82,7 @@ export class WalletRepository {
       (e): InternalError =>
         new InternalError("Failed to demote primary wallet", {
           cause: e,
-          context: { userId: userId.toString(), networkId: String(networkId) },
+          context: { userId: userId.toString(), networkId: String(_networkId) },
         })
     ).andThen(() => okAsync(undefined));
   }

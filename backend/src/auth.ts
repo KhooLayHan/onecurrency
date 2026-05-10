@@ -11,9 +11,11 @@ import { verifications } from "./db/schema/verifications";
 import { env } from "./env";
 import { sendPasswordResetEmail } from "./lib/email";
 import { logger } from "./lib/logger";
+import { RoleRepository } from "./repositories/role.repository";
 import { WalletService } from "./services/wallet.service";
 
 const walletService = new WalletService(db);
+const roleRepository = new RoleRepository(db);
 
 export const auth = betterAuth({
   appName: "OneCurrency",
@@ -82,6 +84,7 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
+          // 1. Provision custodial wallet
           const result = await walletService.provisionCustodialWallet(
             BigInt(user.id)
           );
@@ -95,6 +98,20 @@ export const auth = betterAuth({
               { userId: user.id, address: result.value.address },
               "Custodial wallet provisioned for new user"
             );
+          }
+
+          // 2. Assign default "user" role
+          const roleResult = await roleRepository.assignDefaultUserRole(
+            BigInt(user.id)
+          );
+
+          if (roleResult.isErr()) {
+            logger.error(
+              { err: roleResult.error, userId: user.id },
+              "Failed to assign default user role"
+            );
+          } else {
+            logger.info({ userId: user.id }, "Default user role assigned");
           }
         },
       },

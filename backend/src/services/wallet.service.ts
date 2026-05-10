@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { AppError } from "@/common/errors/base";
@@ -10,6 +10,7 @@ import { type Wallet, wallets } from "../db/schema/wallets";
 import { encrypt } from "../lib/encryption";
 import { logger } from "../lib/logger";
 import { WalletRepository } from "../repositories/wallet.repository";
+import { activeChainId } from "./blockchain/client";
 
 export type PrimaryWallet = {
   walletId: bigint;
@@ -74,8 +75,12 @@ export class WalletService {
       this.db
         .select()
         .from(networks)
-        .where(eq(networks.isActive, true))
-        .orderBy(asc(networks.id))
+        .where(
+          and(
+            eq(networks.isActive, true),
+            eq(networks.chainId, BigInt(activeChainId))
+          )
+        )
         .limit(1)
         .then((rows) => rows[0] ?? null),
       (e): AppError =>

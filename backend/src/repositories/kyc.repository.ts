@@ -33,6 +33,12 @@ export type KycSubmissionWithUser = KycSubmission & {
   userName: string;
 };
 
+type SubmissionReviewUpdate = {
+  kycStatusId: number;
+  reviewedByUserId: bigint;
+  rejectionReason?: string;
+};
+
 export class KycRepository {
   private readonly db: Database;
 
@@ -168,11 +174,7 @@ export class KycRepository {
 
   updateSubmissionReview(
     id: bigint,
-    update: {
-      kycStatusId: number;
-      reviewedByUserId: bigint;
-      rejectionReason?: string;
-    }
+    update: SubmissionReviewUpdate
   ): ResultAsync<void, InternalError> {
     return ResultAsync.fromPromise(
       (async () => {
