@@ -17,6 +17,7 @@ import { BlockchainTransactionRepository } from "@/src/repositories/blockchain-t
 import { DepositRepository } from "@/src/repositories/deposit.repository";
 import { WalletRepository } from "@/src/repositories/wallet.repository";
 import { WebhookEventRepository } from "@/src/repositories/webhook-event.repository";
+import { fundGasIfNeeded } from "@/src/services/blockchain/fund-gas";
 import { mintTokens } from "@/src/services/blockchain/mint";
 import { stripe } from "@/src/services/stripe.service";
 
@@ -215,16 +216,41 @@ export function executeBlockchainMint(
 ): ResultAsync<string, AppError> {
   const { walletAddress, tokenAmountWei, depositId } = params;
 
-  return mintTokens(walletAddress, tokenAmountWei).orElse((error) => {
-    logger.error(
-      { err: error },
-      "Bridge Failed: Could not mint tokens on-chain"
-    );
-    return new DepositRepository(db)
-      .updateStatus(depositId, TRANSACTION_STATUS.FAILED)
-      .orElse(() => okAsync(undefined))
-      .andThen(() => errAsync(error));
-  });
+  return mintTokens(walletAddress, tokenAmountWei)
+    .andThen((txHash) => {
+      // Best-effort: ensure user has ETH for future transfer/withdraw
+      // biome-ignore lint/complexity/noVoid: <>
+      void (async () => {
+        const result = await fundGasIfNeeded(walletAddress);
+        result.match(
+          (gasTxHash) => {
+            if (gasTxHash) {
+              logger.info(
+                { gasTxHash, walletAddress },
+                "Gas funded after deposit"
+              );
+            }
+          },
+          (err) => {
+            logger.warn(
+              { err, walletAddress },
+              "Gas funding failed — user may lack ETH for future transactions"
+            );
+          }
+        );
+      })();
+      return okAsync(txHash);
+    })
+    .orElse((error) => {
+      logger.error(
+        { err: error },
+        "Bridge Failed: Could not mint tokens on-chain"
+      );
+      return new DepositRepository(db)
+        .updateStatus(depositId, TRANSACTION_STATUS.FAILED)
+        .orElse(() => okAsync(undefined))
+        .andThen(() => errAsync(error));
+    });
 }
 
 /**
