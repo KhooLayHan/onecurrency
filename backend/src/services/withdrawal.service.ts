@@ -9,6 +9,7 @@ import {
   WalletNotCustodialError,
   WithdrawalKycRequiredError,
 } from "@/common/errors/withdrawal";
+import { WITHDRAWAL_FEE_PERCENT } from "@/common/index";
 import { ZERO_ADDRESS } from "../constants/blockchain";
 import { KYC_STATUS } from "../constants/kyc-status";
 import { TRANSACTION_STATUS } from "../constants/transaction-status";
@@ -34,8 +35,14 @@ import {
   createTransfer,
 } from "./stripe-mock.service";
 
-const WITHDRAWAL_FEE_NUMERATOR = 5n;
-const WITHDRAWAL_FEE_DENOMINATOR = 1000n;
+// Derive bigint-safe numerator/denominator from the shared constant.
+// WITHDRAWAL_FEE_PERCENT = 0.001 → 1/1000
+
+const WITHDRAWAL_FEE_DENOMINATOR = 1_000_000n;
+
+const WITHDRAWAL_FEE_NUMERATOR = BigInt(
+  Math.round(WITHDRAWAL_FEE_PERCENT * Number(WITHDRAWAL_FEE_DENOMINATOR))
+);
 
 export class WithdrawalService {
   private readonly db: Database;

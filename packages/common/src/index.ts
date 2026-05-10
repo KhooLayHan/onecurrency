@@ -24,7 +24,7 @@ export const AMOUNT_CENTS = 1000;
 export const DEPOSIT_MAX = 10_000;
 export const WITHDRAWAL_MIN = 10;
 export const WITHDRAWAL_MAX = 10_000;
-export const WITHDRAWAL_FEE_PERCENT = 0.005; // 0.5%
+export const WITHDRAWAL_FEE_PERCENT = 0.001; // 0.1%
 
 export const depositSchema = z.object({
   amount: z

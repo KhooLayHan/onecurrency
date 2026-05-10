@@ -13,6 +13,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { OneCurrencyABI } from "@/common/contracts/one-currency";
 import type { AppError } from "@/common/errors/base";
 import { TransactionRevertedError } from "@/common/errors/transaction";
+import { InsufficientGasError } from "@/common/errors/transfer";
 import { WalletSigningError } from "@/common/errors/wallet";
 import { MIN_CONFIRMATIONS } from "../../constants/blockchain";
 import { env } from "../../env";
@@ -20,6 +21,8 @@ import { decrypt } from "../../lib/encryption";
 import { logger } from "../../lib/logger";
 import { chain, publicClient, rpcUrl } from "./client";
 import { mapBlockchainError } from "./helpers";
+
+const BURN_GAS_ESTIMATE = 65_000n;
 
 /**
  * Burns ONE tokens from the custodial wallet identified by `encryptedPrivateKey`.
@@ -49,6 +52,26 @@ export function burnTokens(
         ? decryptedKey
         : `0x${decryptedKey}`;
       const userAccount = privateKeyToAccount(formattedKey as `0x${string}`);
+
+      const nativeBalance = await publicClient.getBalance({
+        address: userAccount.address,
+      });
+      const gasPrice = await publicClient.getGasPrice();
+      const estimatedGasCost = BURN_GAS_ESTIMATE * gasPrice;
+
+      if (nativeBalance < estimatedGasCost) {
+        logger.error(
+          { address: userAccount.address, nativeBalance, estimatedGasCost },
+          "Custodial wallet has insufficient ETH for gas"
+        );
+        throw new InsufficientGasError({
+          context: {
+            address: userAccount.address,
+            nativeBalance: nativeBalance.toString(),
+            estimatedGasCost: estimatedGasCost.toString(),
+          },
+        });
+      }
 
       logger.info(
         { address: userAccount.address, amountWei },
