@@ -18,13 +18,13 @@ OneCurrency is a currency management platform featuring:
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS 4, Framer Motion |
-| **Backend** | Hono 4, Bun runtime, Drizzle ORM, Neon PostgreSQL |
-| **Contracts** | Hardhat 3, Solidity 0.8.28, OpenZeppelin, Viem |
-| **DevOps** | Turborepo, pnpm 10, Biome 2, Husky, Docker |
-| **Testing** | Vitest, Playwright, Hardhat/Chai |
+| Layer         | Technology                                                      |
+| ------------- | --------------------------------------------------------------- |
+| **Frontend**  | Next.js 16, React 19, TypeScript, Tailwind CSS 4, Framer Motion |
+| **Backend**   | Hono 4, Bun runtime, Drizzle ORM, Neon PostgreSQL               |
+| **Contracts** | Hardhat 3, Solidity 0.8.28, OpenZeppelin, Viem                  |
+| **DevOps**    | Turborepo, pnpm 10, Biome 2, Husky, Docker                      |
+| **Testing**   | Vitest, Playwright, Hardhat/Chai                                |
 
 ## Prerequisites
 
