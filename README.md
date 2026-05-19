@@ -190,14 +190,6 @@ formatting and linting across all packages.
 
 A pre-commit hook (Husky) automatically formats staged files on every commit.
 
-## Contributing
-
-1. Fork the repository and create a new branch
-2. Make your changes following the existing code style
-3. Ensure all tests pass: `pnpm test`
-4. Ensure formatting is correct: `pnpm format:check`
-5. Submit a pull request with a clear description
-
 Please refer to [AGENTS.md](AGENTS.md) for detailed development guidelines,
 design system specifications, and architecture decisions.
 
