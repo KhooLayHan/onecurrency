@@ -10,6 +10,10 @@ import { env } from "../env";
 
 const HTTP_TOO_MANY_REQUESTS = 429;
 
+function fetchWithCredentials(input: RequestInfo | URL, init?: RequestInit) {
+  return fetch(input, { ...init, credentials: "include" });
+}
+
 export const authClient = createAuthClient({
   baseURL: `${env.NEXT_PUBLIC_API_URL}/api/v1/auth`,
   plugins: [
@@ -23,7 +27,7 @@ export const authClient = createAuthClient({
     multiSessionClient(),
   ],
   fetchOptions: {
-    credentials: "include",
+    customFetchImpl: fetchWithCredentials, // forces credentials on every request
     onError: (context) => {
       if (context.response.status === HTTP_TOO_MANY_REQUESTS) {
         const retryAfter = context.response.headers.get("X-Retry-After");
